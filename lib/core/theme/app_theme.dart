@@ -1,4 +1,3 @@
-import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 
 class AppTheme {
@@ -7,40 +6,59 @@ class AppTheme {
   
   // Light Theme
   static ThemeData get lightTheme {
-    return FlexThemeData.light(
-      scheme: FlexScheme.blue,
-      surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-      blendLevel: 7,
-      subThemesData: const FlexSubThemesData(
-        blendOnLevel: 10,
-        blendOnColors: false,
-        useTextTheme: true,
-        useM2StyleDividerInM3: true,
-        alignedDropdown: true,
-        useInputDecoratorThemeInDialogs: true,
-      ),
-      visualDensity: FlexColorScheme.comfortablePlatformDensity,
+    return ThemeData(
       useMaterial3: true,
-      swapLegacyOnMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        brightness: Brightness.light,
+      ),
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        centerTitle: true,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
     );
   }
 
   // Dark Theme
   static ThemeData get darkTheme {
-    return FlexThemeData.dark(
-      scheme: FlexScheme.blue,
-      surfaceMode: FlexSurfaceMode.levelSurfacesLowScaffold,
-      blendLevel: 13,
-      subThemesData: const FlexSubThemesData(
-        blendOnLevel: 20,
-        useTextTheme: true,
-        useM2StyleDividerInM3: true,
-        alignedDropdown: true,
-        useInputDecoratorThemeInDialogs: true,
-      ),
-      visualDensity: FlexColorScheme.comfortablePlatformDensity,
+    return ThemeData(
       useMaterial3: true,
-      swapLegacyOnMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        brightness: Brightness.dark,
+      ),
+      appBarTheme: const AppBarTheme(
+        elevation: 0,
+        centerTitle: true,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
     );
   }
 }
