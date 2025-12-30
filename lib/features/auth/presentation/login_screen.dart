@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../../core/constants/app_constants.dart';
+import '../../../shared/providers/auth_provider.dart';
+import '../../../shared/providers/theme_provider.dart';
 
 class LoginScreen extends HookConsumerWidget {
   const LoginScreen({super.key});
@@ -14,17 +13,12 @@ class LoginScreen extends HookConsumerWidget {
     final emailController = useTextEditingController();
     final passwordController = useTextEditingController();
     final formKey = useMemoized(() => GlobalKey<FormState>());
-    final isLoading = useState(false);
     final obscurePassword = useState(true);
+    final rememberMe = useState(false);
+    
+    final authState = ref.watch(authNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
-        ),
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -33,79 +27,72 @@ class LoginScreen extends HookConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 32),
+                const SizedBox(height: 60),
                 
-                // Logo/Icon
-                const Icon(
-                  Icons.lock_outline,
-                  size: 80,
-                  color: Colors.blue,
-                )
-                    .animate()
-                    .scale(duration: AppConstants.mediumAnimation)
-                    .then()
-                    .shimmer(duration: 2.seconds),
+                // Header com logo e seletor de tema
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'WinConnect',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    _ThemeSelector(),
+                  ],
+                ),
                 
-                const SizedBox(height: 32),
+                const SizedBox(height: 60),
                 
+                // Título
                 Text(
-                  'Welcome Back!',
+                  'Entrar na sua conta',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
-                  textAlign: TextAlign.center,
-                )
-                    .animate()
-                    .fadeIn(duration: AppConstants.mediumAnimation, delay: 200.ms),
+                ),
                 
                 const SizedBox(height: 8),
                 
                 Text(
-                  'Sign in to continue to ${AppConstants.appName}',
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  textAlign: TextAlign.center,
-                )
-                    .animate()
-                    .fadeIn(duration: AppConstants.mediumAnimation, delay: 300.ms),
+                  'Digite seu e-mail e senha abaixo para entrar',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
                 
-                const SizedBox(height: 48),
+                const SizedBox(height: 40),
                 
-                // Email Field
+                // Campo Email
                 TextFormField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                  decoration: const InputDecoration(
+                    labelText: 'E-mail',
+                    prefixIcon: Icon(Icons.email_outlined),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return 'Por favor, digite seu e-mail';
                     }
                     if (!value.contains('@')) {
-                      return 'Please enter a valid email';
+                      return 'Por favor, digite um e-mail válido';
                     }
                     return null;
                   },
-                )
-                    .animate()
-                    .slideX(
-                      duration: AppConstants.mediumAnimation, 
-                      delay: 400.ms,
-                      begin: -0.3,
-                    ),
+                ),
                 
                 const SizedBox(height: 16),
                 
-                // Password Field
+                // Campo Senha
                 TextFormField(
                   controller: passwordController,
                   obscureText: obscurePassword.value,
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: 'Senha',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -115,93 +102,189 @@ class LoginScreen extends HookConsumerWidget {
                       ),
                       onPressed: () => obscurePassword.value = !obscurePassword.value,
                     ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    if (value.length < AppConstants.minPasswordLength) {
-                      return 'Password must be at least ${AppConstants.minPasswordLength} characters';
+                      return 'Por favor, digite sua senha';
                     }
                     return null;
                   },
-                )
-                    .animate()
-                    .slideX(
-                      duration: AppConstants.mediumAnimation, 
-                      delay: 500.ms,
-                      begin: 0.3,
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Lembrar-me e Esqueceu senha
+                Row(
+                  children: [
+                    Checkbox(
+                      value: rememberMe.value,
+                      onChanged: (value) => rememberMe.value = value ?? false,
                     ),
+                    const Text('Lembrar-me'),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {
+                        // TODO: Implementar esqueceu senha
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Funcionalidade em desenvolvimento'),
+                          ),
+                        );
+                      },
+                      child: const Text('Esqueceu a senha?'),
+                    ),
+                  ],
+                ),
                 
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 
-                // Login Button
+                // Botão Entrar
                 FilledButton(
-                  onPressed: isLoading.value
+                  onPressed: authState.isLoading
                       ? null
                       : () async {
                           if (formKey.currentState?.validate() ?? false) {
-                            isLoading.value = true;
-                            
-                            // Simulate API call
-                            await Future.delayed(const Duration(seconds: 2));
-                            
-                            isLoading.value = false;
-                            
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Login successful! (Demo)'),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                              context.go(AppConstants.homeRoute);
-                            }
+                            await ref.read(authNotifierProvider.notifier).login(
+                              emailController.text.trim(),
+                              passwordController.text,
+                            );
                           }
                         },
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
-                  child: isLoading.value
+                  child: authState.isLoading
                       ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Text(
-                          'Sign In',
+                          'Entrar',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                )
-                    .animate()
-                    .scale(
-                      duration: AppConstants.mediumAnimation, 
-                      delay: 600.ms,
+                ),
+                
+                // Mostrar erro se houver
+                if (authState.hasError) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: Text(
+                      authState.error.toString(),
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                    ),
+                  ),
+                ],
                 
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
                 
-                // Register Link
-                TextButton(
-                  onPressed: () => context.push(AppConstants.registerRoute),
-                  child: const Text("Don't have an account? Sign up"),
-                )
-                    .animate()
-                    .fadeIn(duration: AppConstants.mediumAnimation, delay: 700.ms),
+                // Link para cadastro
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Não tem uma conta? '),
+                    TextButton(
+                      onPressed: () {
+                        // TODO: Navegar para tela de cadastro
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Tela de cadastro será implementada'),
+                          ),
+                        );
+                      },
+                      child: const Text('Cadastre-se'),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+}
+
+class _ThemeSelector extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeState = ref.watch(themeNotifierProvider);
+    
+    return themeState.when(
+      data: (themeMode) => PopupMenuButton<ThemeMode>(
+        icon: Icon(_getThemeIcon(themeMode)),
+        tooltip: 'Aparência',
+        onSelected: (mode) {
+          ref.read(themeNotifierProvider.notifier).setThemeMode(mode);
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: ThemeMode.system,
+            child: Row(
+              children: [
+                const Icon(Icons.brightness_auto),
+                const SizedBox(width: 12),
+                const Text('Sistema'),
+                if (themeMode == ThemeMode.system) ...[
+                  const Spacer(),
+                  const Icon(Icons.check, color: Colors.blue),
+                ],
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: ThemeMode.light,
+            child: Row(
+              children: [
+                const Icon(Icons.light_mode),
+                const SizedBox(width: 12),
+                const Text('Claro'),
+                if (themeMode == ThemeMode.light) ...[
+                  const Spacer(),
+                  const Icon(Icons.check, color: Colors.blue),
+                ],
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: ThemeMode.dark,
+            child: Row(
+              children: [
+                const Icon(Icons.dark_mode),
+                const SizedBox(width: 12),
+                const Text('Escuro'),
+                if (themeMode == ThemeMode.dark) ...[
+                  const Spacer(),
+                  const Icon(Icons.check, color: Colors.blue),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+      loading: () => const Icon(Icons.brightness_auto),
+      error: (error, stackTrace) => const Icon(Icons.brightness_auto),
+    );
+  }
+  
+  IconData _getThemeIcon(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return Icons.light_mode;
+      case ThemeMode.dark:
+        return Icons.dark_mode;
+      case ThemeMode.system:
+        return Icons.brightness_auto;
+    }
   }
 }
