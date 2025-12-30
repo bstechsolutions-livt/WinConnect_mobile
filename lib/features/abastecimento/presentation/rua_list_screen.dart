@@ -5,8 +5,9 @@ import '../providers/rua_provider.dart';
 import '../../../shared/models/rua_model.dart';
 import '../../../shared/providers/api_service_provider.dart';
 import 'os_list_screen.dart';
+import 'fase2/unitizador_list_screen.dart';
 
-class RuaListScreen extends ConsumerWidget {
+class RuaListScreen extends ConsumerStatefulWidget {
   final int fase;
   final String faseNome;
 
@@ -17,63 +18,142 @@ class RuaListScreen extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ruasAsync = ref.watch(ruaNotifierProvider(fase));
+  ConsumerState<RuaListScreen> createState() => _RuaListScreenState();
+}
 
-    // Se já está em uma rua, navega automaticamente para lista de OSs
+class _RuaListScreenState extends ConsumerState<RuaListScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Limpa rua atual ao entrar na tela de seleção de ruas
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(ruaAtualProvider.notifier).setRuaAtual(null);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ruasAsync = ref.watch(ruaNotifierProvider(widget.fase));
+
+    // Se já está em uma rua, navega automaticamente para tela correta da fase
     ref.listen(ruaAtualProvider, (previous, next) {
       if (next != null && previous != next) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => OsListScreen(
-                fase: fase,
-                rua: next,
-                faseNome: faseNome,
+          if (widget.fase == 1) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => OsListScreen(
+                  fase: widget.fase,
+                  rua: next,
+                  faseNome: widget.faseNome,
+                ),
               ),
-            ),
-          );
+            );
+          } else {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UnitizadorListScreen(
+                  rua: next,
+                ),
+              ),
+            );
+          }
         });
       }
     });
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Fase $fase - $faseNome'),
+        title: Text('Fase ${widget.fase} - ${widget.faseNome}'),
         centerTitle: true,
       ),
       body: ruasAsync.when(
-        data: (ruas) => ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: ruas.length,
-          itemBuilder: (context, index) {
-            final rua = ruas[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _RuaCard(
-                rua: rua,
+        data: (ruas) {
+          if (ruas.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.inbox_outlined,
+                      size: 80,
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Nenhuma rua com OS pendente',
+                      style: Theme.of(context).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.fase == 1
+                          ? 'Não há ordens de serviço aguardando coleta no momento.\n\nQuando houver OSs pendentes, as ruas aparecerão aqui.'
+                          : 'Não há ordens de serviço aguardando conferência no momento.\n\nQuando a Fase 1 for concluída, as ruas aparecerão aqui.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: () => ref.invalidate(ruaNotifierProvider(widget.fase)),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Atualizar'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+          
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: ruas.length,
+            itemBuilder: (context, index) {
+              final rua = ruas[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _RuaCard(
+                  rua: rua,
                 onTap: () async {
                   // Entra diretamente na rua selecionada
                   try {
                     final apiService = ref.read(apiServiceProvider);
-                    await apiService.post('/abastecimento/fase$fase/ruas/${rua.codigo}/entrar', {});
+                    await apiService.post('/abastecimento/fase${widget.fase}/ruas/${rua.codigo}/entrar', {});
                     
                     if (!context.mounted) return;
                     
-                    // Atualiza rua atual e navega para lista de OSs
+                    // Atualiza rua atual e navega para tela correta da fase
                     ref.read(ruaAtualProvider.notifier).setRuaAtual(rua.codigo);
                     
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OsListScreen(
-                          fase: fase,
-                          rua: rua.codigo,
-                          faseNome: faseNome,
+                    if (widget.fase == 1) {
+                      // Fase 1: Lista de OSs
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OsListScreen(
+                            fase: widget.fase,
+                            rua: rua.codigo,
+                            faseNome: widget.faseNome,
+                          ),
                         ),
-                      ),
-                    );
+                      );
+                    } else {
+                      // Fase 2: Lista de Unitizadores
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UnitizadorListScreen(
+                            rua: rua.codigo,
+                          ),
+                        ),
+                      );
+                    }
                     
                   } catch (e) {
                     if (!context.mounted) return;
@@ -88,7 +168,8 @@ class RuaListScreen extends ConsumerWidget {
               ),
             );
           },
-        ),
+        );
+        },
         loading: () => const Center(
           child: CircularProgressIndicator(),
         ),
@@ -115,7 +196,7 @@ class RuaListScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  ref.invalidate(ruaNotifierProvider(fase));
+                  ref.invalidate(ruaNotifierProvider(widget.fase));
                 },
                 child: const Text('Tentar novamente'),
               ),

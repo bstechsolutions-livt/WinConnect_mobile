@@ -16,6 +16,7 @@ _$OrdemServicoImpl _$$OrdemServicoImplFromJson(Map<String, dynamic> json) =>
       enderecoDestino: json['enderecoDestino'] as String,
       quantidade: (json['quantidade'] as num).toDouble(),
       status: json['status'] as String,
+      podeExecutar: json['podeExecutar'] as bool? ?? false,
       divergencia: json['divergencia'] as String?,
       dtinicio: json['dtinicio'] == null
           ? null
@@ -35,6 +36,7 @@ Map<String, dynamic> _$$OrdemServicoImplToJson(_$OrdemServicoImpl instance) =>
       'enderecoDestino': instance.enderecoDestino,
       'quantidade': instance.quantidade,
       'status': instance.status,
+      'podeExecutar': instance.podeExecutar,
       'divergencia': instance.divergencia,
       'dtinicio': instance.dtinicio?.toIso8601String(),
       'dtfim': instance.dtfim?.toIso8601String(),

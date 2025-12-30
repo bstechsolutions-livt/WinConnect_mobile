@@ -6,7 +6,7 @@ part of 'os_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$osNotifierHash() => r'ea6cdf47642aa3a3c400964d1aa7229ec7629f26';
+String _$osNotifierHash() => r'5a046d62660780b035e170d0b6ac03dd66809eb7';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -30,11 +30,11 @@ class _SystemHash {
 }
 
 abstract class _$OsNotifier
-    extends BuildlessAutoDisposeAsyncNotifier<List<OrdemServico>> {
+    extends BuildlessAutoDisposeAsyncNotifier<OsListResult> {
   late final int fase;
   late final String rua;
 
-  FutureOr<List<OrdemServico>> build(
+  FutureOr<OsListResult> build(
     int fase,
     String rua,
   );
@@ -45,7 +45,7 @@ abstract class _$OsNotifier
 const osNotifierProvider = OsNotifierFamily();
 
 /// See also [OsNotifier].
-class OsNotifierFamily extends Family<AsyncValue<List<OrdemServico>>> {
+class OsNotifierFamily extends Family<AsyncValue<OsListResult>> {
   /// See also [OsNotifier].
   const OsNotifierFamily();
 
@@ -86,8 +86,8 @@ class OsNotifierFamily extends Family<AsyncValue<List<OrdemServico>>> {
 }
 
 /// See also [OsNotifier].
-class OsNotifierProvider extends AutoDisposeAsyncNotifierProviderImpl<
-    OsNotifier, List<OrdemServico>> {
+class OsNotifierProvider
+    extends AutoDisposeAsyncNotifierProviderImpl<OsNotifier, OsListResult> {
   /// See also [OsNotifier].
   OsNotifierProvider(
     int fase,
@@ -124,7 +124,7 @@ class OsNotifierProvider extends AutoDisposeAsyncNotifierProviderImpl<
   final String rua;
 
   @override
-  FutureOr<List<OrdemServico>> runNotifierBuild(
+  FutureOr<OsListResult> runNotifierBuild(
     covariant OsNotifier notifier,
   ) {
     return notifier.build(
@@ -153,7 +153,7 @@ class OsNotifierProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 
   @override
-  AutoDisposeAsyncNotifierProviderElement<OsNotifier, List<OrdemServico>>
+  AutoDisposeAsyncNotifierProviderElement<OsNotifier, OsListResult>
       createElement() {
     return _OsNotifierProviderElement(this);
   }
@@ -175,7 +175,7 @@ class OsNotifierProvider extends AutoDisposeAsyncNotifierProviderImpl<
   }
 }
 
-mixin OsNotifierRef on AutoDisposeAsyncNotifierProviderRef<List<OrdemServico>> {
+mixin OsNotifierRef on AutoDisposeAsyncNotifierProviderRef<OsListResult> {
   /// The parameter `fase` of this provider.
   int get fase;
 
@@ -184,8 +184,8 @@ mixin OsNotifierRef on AutoDisposeAsyncNotifierProviderRef<List<OrdemServico>> {
 }
 
 class _OsNotifierProviderElement
-    extends AutoDisposeAsyncNotifierProviderElement<OsNotifier,
-        List<OrdemServico>> with OsNotifierRef {
+    extends AutoDisposeAsyncNotifierProviderElement<OsNotifier, OsListResult>
+    with OsNotifierRef {
   _OsNotifierProviderElement(super.provider);
 
   @override

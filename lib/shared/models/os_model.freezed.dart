@@ -28,6 +28,7 @@ mixin _$OrdemServico {
   String get enderecoDestino => throw _privateConstructorUsedError;
   double get quantidade => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
+  bool get podeExecutar => throw _privateConstructorUsedError;
   String? get divergencia => throw _privateConstructorUsedError;
   DateTime? get dtinicio => throw _privateConstructorUsedError;
   DateTime? get dtfim => throw _privateConstructorUsedError;
@@ -53,6 +54,7 @@ abstract class $OrdemServicoCopyWith<$Res> {
       String enderecoDestino,
       double quantidade,
       String status,
+      bool podeExecutar,
       String? divergencia,
       DateTime? dtinicio,
       DateTime? dtfim});
@@ -79,6 +81,7 @@ class _$OrdemServicoCopyWithImpl<$Res, $Val extends OrdemServico>
     Object? enderecoDestino = null,
     Object? quantidade = null,
     Object? status = null,
+    Object? podeExecutar = null,
     Object? divergencia = freezed,
     Object? dtinicio = freezed,
     Object? dtfim = freezed,
@@ -116,6 +119,10 @@ class _$OrdemServicoCopyWithImpl<$Res, $Val extends OrdemServico>
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as String,
+      podeExecutar: null == podeExecutar
+          ? _value.podeExecutar
+          : podeExecutar // ignore: cast_nullable_to_non_nullable
+              as bool,
       divergencia: freezed == divergencia
           ? _value.divergencia
           : divergencia // ignore: cast_nullable_to_non_nullable
@@ -149,6 +156,7 @@ abstract class _$$OrdemServicoImplCopyWith<$Res>
       String enderecoDestino,
       double quantidade,
       String status,
+      bool podeExecutar,
       String? divergencia,
       DateTime? dtinicio,
       DateTime? dtfim});
@@ -173,6 +181,7 @@ class __$$OrdemServicoImplCopyWithImpl<$Res>
     Object? enderecoDestino = null,
     Object? quantidade = null,
     Object? status = null,
+    Object? podeExecutar = null,
     Object? divergencia = freezed,
     Object? dtinicio = freezed,
     Object? dtfim = freezed,
@@ -210,6 +219,10 @@ class __$$OrdemServicoImplCopyWithImpl<$Res>
           ? _value.status
           : status // ignore: cast_nullable_to_non_nullable
               as String,
+      podeExecutar: null == podeExecutar
+          ? _value.podeExecutar
+          : podeExecutar // ignore: cast_nullable_to_non_nullable
+              as bool,
       divergencia: freezed == divergencia
           ? _value.divergencia
           : divergencia // ignore: cast_nullable_to_non_nullable
@@ -238,6 +251,7 @@ class _$OrdemServicoImpl implements _OrdemServico {
       required this.enderecoDestino,
       required this.quantidade,
       required this.status,
+      this.podeExecutar = false,
       this.divergencia,
       this.dtinicio,
       this.dtfim});
@@ -262,6 +276,9 @@ class _$OrdemServicoImpl implements _OrdemServico {
   @override
   final String status;
   @override
+  @JsonKey()
+  final bool podeExecutar;
+  @override
   final String? divergencia;
   @override
   final DateTime? dtinicio;
@@ -270,7 +287,7 @@ class _$OrdemServicoImpl implements _OrdemServico {
 
   @override
   String toString() {
-    return 'OrdemServico(numos: $numos, codprod: $codprod, produto: $produto, descricao: $descricao, enderecoOrigem: $enderecoOrigem, enderecoDestino: $enderecoDestino, quantidade: $quantidade, status: $status, divergencia: $divergencia, dtinicio: $dtinicio, dtfim: $dtfim)';
+    return 'OrdemServico(numos: $numos, codprod: $codprod, produto: $produto, descricao: $descricao, enderecoOrigem: $enderecoOrigem, enderecoDestino: $enderecoDestino, quantidade: $quantidade, status: $status, podeExecutar: $podeExecutar, divergencia: $divergencia, dtinicio: $dtinicio, dtfim: $dtfim)';
   }
 
   @override
@@ -290,6 +307,8 @@ class _$OrdemServicoImpl implements _OrdemServico {
             (identical(other.quantidade, quantidade) ||
                 other.quantidade == quantidade) &&
             (identical(other.status, status) || other.status == status) &&
+            (identical(other.podeExecutar, podeExecutar) ||
+                other.podeExecutar == podeExecutar) &&
             (identical(other.divergencia, divergencia) ||
                 other.divergencia == divergencia) &&
             (identical(other.dtinicio, dtinicio) ||
@@ -309,6 +328,7 @@ class _$OrdemServicoImpl implements _OrdemServico {
       enderecoDestino,
       quantidade,
       status,
+      podeExecutar,
       divergencia,
       dtinicio,
       dtfim);
@@ -337,6 +357,7 @@ abstract class _OrdemServico implements OrdemServico {
       required final String enderecoDestino,
       required final double quantidade,
       required final String status,
+      final bool podeExecutar,
       final String? divergencia,
       final DateTime? dtinicio,
       final DateTime? dtfim}) = _$OrdemServicoImpl;
@@ -360,6 +381,8 @@ abstract class _OrdemServico implements OrdemServico {
   double get quantidade;
   @override
   String get status;
+  @override
+  bool get podeExecutar;
   @override
   String? get divergencia;
   @override

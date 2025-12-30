@@ -10,10 +10,6 @@ class RuaNotifier extends _$RuaNotifier {
   @override
   Future<List<Rua>> build(int fase) async {
     final result = await _loadRuasFromApi(fase);
-    
-    // Verifica se já está em uma rua e navega automaticamente
-    await _verificarRuaAtual(fase);
-    
     return result;
   }
 
@@ -22,22 +18,20 @@ class RuaNotifier extends _$RuaNotifier {
     final response = await apiService.get('/abastecimento/fase$fase/ruas');
     
     final ruasData = response['ruas'] as List;
+    final ruaAtual = response['rua_atual'] as String?;
+    
+    // Agenda atualização da rua atual para depois da build
+    if (ruaAtual != null && ruaAtual.isNotEmpty) {
+      Future.microtask(() {
+        ref.read(ruaAtualProvider.notifier).setRuaAtual(ruaAtual);
+      });
+    }
+    
     return ruasData.map((item) => Rua(
       codigo: item['rua'],
       nome: item['rua'], 
       quantidade: item['qtd_os'],
     )).toList();
-  }
-
-  Future<void> _verificarRuaAtual(int fase) async {
-    final apiService = ref.read(apiServiceProvider);
-    final response = await apiService.get('/abastecimento/fase$fase/ruas');
-    
-    final ruaAtual = response['rua_atual'] as String?;
-    if (ruaAtual != null) {
-      // Usuário já está em uma rua, deve navegar para lista de OSs
-      ref.read(ruaAtualProvider.notifier).setRuaAtual(ruaAtual);
-    }
   }
 
   void toggleRuaSelection(String codigoRua) {

@@ -14,6 +14,7 @@ class OrdemServico with _$OrdemServico {
     required String enderecoDestino,
     required double quantidade,
     required String status,
+    @Default(false) bool podeExecutar,
     String? divergencia,
     DateTime? dtinicio,
     DateTime? dtfim,
