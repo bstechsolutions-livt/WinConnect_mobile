@@ -50,16 +50,50 @@ class AuthNotifier extends _$AuthNotifier {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.login(email, password);
       
-      // Parse da resposta da API
-      final user = User.fromJson(response['user']);
-      final token = AuthToken.fromJson(response['token']);
+      // Parse da resposta da API com validação mais robusta
+      dynamic userData = response['user'];
+      if (userData == null) {
+        throw Exception('Dados do usuário não encontrados na resposta');
+      }
+      
+      // Garantir que userData é um Map
+      Map<String, dynamic> userMap;
+      if (userData is Map<String, dynamic>) {
+        userMap = userData;
+      } else if (userData is Map) {
+        userMap = userData.cast<String, dynamic>();
+      } else {
+        throw Exception('Formato de dados do usuário inválido: ${userData.runtimeType}');
+      }
+      
+      final user = User.fromJson(userMap);
+      
+      // Verificar se token existe na resposta
+      final tokenData = response['token'];
+      late AuthToken token;
+      
+      if (tokenData is String) {
+        // Token é string simples
+        token = AuthToken.fromString(tokenData);
+      } else if (tokenData is Map<String, dynamic>) {
+        // Token é objeto completo
+        token = AuthToken.fromJson(tokenData);
+      } else if (tokenData is Map) {
+        // Token é Map mas não tipado
+        token = AuthToken.fromJson(tokenData.cast<String, dynamic>());
+      } else if (response['access_token'] is String) {
+        // Algumas APIs usam access_token
+        token = AuthToken.fromString(response['access_token']);
+      } else {
+        throw Exception('Token não encontrado na resposta');
+      }
       
       // Salva no storage local
       await _saveToStorage(user, token);
       
       state = AsyncValue.data(user);
-    } catch (e) {
-      state = AsyncValue.error(e.toString(), StackTrace.current);
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e.toString(), stackTrace);
     }
   }
 

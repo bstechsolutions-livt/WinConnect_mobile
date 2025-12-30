@@ -32,7 +32,7 @@ Map<String, dynamic> _$$UserImplToJson(_$UserImpl instance) =>
 _$AuthTokenImpl _$$AuthTokenImplFromJson(Map<String, dynamic> json) =>
     _$AuthTokenImpl(
       token: json['token'] as String,
-      type: json['type'] as String,
+      type: json['type'] as String? ?? 'Bearer',
       expiresAt: DateTime.parse(json['expiresAt'] as String),
     );
 

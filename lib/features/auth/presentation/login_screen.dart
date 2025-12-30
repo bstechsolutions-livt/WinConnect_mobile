@@ -3,7 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../shared/providers/auth_provider.dart';
-import '../../../shared/providers/theme_provider.dart';
+import '../../../shared/widgets/theme_selector.dart';
 
 class LoginScreen extends HookConsumerWidget {
   const LoginScreen({super.key});
@@ -41,7 +41,7 @@ class LoginScreen extends HookConsumerWidget {
                         color: Colors.blue,
                       ),
                     ),
-                    _ThemeSelector(),
+                    const ThemeSelector(),
                   ],
                 ),
                 
@@ -113,7 +113,7 @@ class LoginScreen extends HookConsumerWidget {
                 
                 const SizedBox(height: 16),
                 
-                // Lembrar-me e Esqueceu senha
+                // Lembrar-me
                 Row(
                   children: [
                     Checkbox(
@@ -121,18 +121,6 @@ class LoginScreen extends HookConsumerWidget {
                       onChanged: (value) => rememberMe.value = value ?? false,
                     ),
                     const Text('Lembrar-me'),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: () {
-                        // TODO: Implementar esqueceu senha
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Funcionalidade em desenvolvimento'),
-                          ),
-                        );
-                      },
-                      child: const Text('Esqueceu a senha?'),
-                    ),
                   ],
                 ),
                 
@@ -186,105 +174,12 @@ class LoginScreen extends HookConsumerWidget {
                   ),
                 ],
                 
-                const SizedBox(height: 32),
-                
-                // Link para cadastro
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Não tem uma conta? '),
-                    TextButton(
-                      onPressed: () {
-                        // TODO: Navegar para tela de cadastro
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Tela de cadastro será implementada'),
-                          ),
-                        );
-                      },
-                      child: const Text('Cadastre-se'),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 60),
               ],
             ),
           ),
         ),
       ),
     );
-  }
-}
-
-class _ThemeSelector extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final themeState = ref.watch(themeNotifierProvider);
-    
-    return themeState.when(
-      data: (themeMode) => PopupMenuButton<ThemeMode>(
-        icon: Icon(_getThemeIcon(themeMode)),
-        tooltip: 'Aparência',
-        onSelected: (mode) {
-          ref.read(themeNotifierProvider.notifier).setThemeMode(mode);
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: ThemeMode.system,
-            child: Row(
-              children: [
-                const Icon(Icons.brightness_auto),
-                const SizedBox(width: 12),
-                const Text('Sistema'),
-                if (themeMode == ThemeMode.system) ...[
-                  const Spacer(),
-                  const Icon(Icons.check, color: Colors.blue),
-                ],
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: ThemeMode.light,
-            child: Row(
-              children: [
-                const Icon(Icons.light_mode),
-                const SizedBox(width: 12),
-                const Text('Claro'),
-                if (themeMode == ThemeMode.light) ...[
-                  const Spacer(),
-                  const Icon(Icons.check, color: Colors.blue),
-                ],
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: ThemeMode.dark,
-            child: Row(
-              children: [
-                const Icon(Icons.dark_mode),
-                const SizedBox(width: 12),
-                const Text('Escuro'),
-                if (themeMode == ThemeMode.dark) ...[
-                  const Spacer(),
-                  const Icon(Icons.check, color: Colors.blue),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-      loading: () => const Icon(Icons.brightness_auto),
-      error: (error, stackTrace) => const Icon(Icons.brightness_auto),
-    );
-  }
-  
-  IconData _getThemeIcon(ThemeMode mode) {
-    switch (mode) {
-      case ThemeMode.light:
-        return Icons.light_mode;
-      case ThemeMode.dark:
-        return Icons.dark_mode;
-      case ThemeMode.system:
-        return Icons.brightness_auto;
-    }
   }
 }

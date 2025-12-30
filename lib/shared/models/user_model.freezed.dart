@@ -358,7 +358,7 @@ class __$$AuthTokenImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$AuthTokenImpl implements _AuthToken {
   const _$AuthTokenImpl(
-      {required this.token, required this.type, required this.expiresAt});
+      {required this.token, this.type = 'Bearer', required this.expiresAt});
 
   factory _$AuthTokenImpl.fromJson(Map<String, dynamic> json) =>
       _$$AuthTokenImplFromJson(json);
@@ -366,6 +366,7 @@ class _$AuthTokenImpl implements _AuthToken {
   @override
   final String token;
   @override
+  @JsonKey()
   final String type;
   @override
   final DateTime expiresAt;
@@ -407,7 +408,7 @@ class _$AuthTokenImpl implements _AuthToken {
 abstract class _AuthToken implements AuthToken {
   const factory _AuthToken(
       {required final String token,
-      required final String type,
+      final String type,
       required final DateTime expiresAt}) = _$AuthTokenImpl;
 
   factory _AuthToken.fromJson(Map<String, dynamic> json) =
