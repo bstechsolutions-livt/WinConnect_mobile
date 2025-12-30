@@ -17,11 +17,15 @@ class ThemeSelector extends ConsumerWidget {
         icon: Icon(
           _getThemeIcon(themeMode),
           color: isAppBar ? Colors.white : null,
-          size: isAppBar ? 16 : 24,
+          size: isAppBar ? 12 : 24,
         ),
-        iconSize: isAppBar ? 16 : 24,
-        padding: isAppBar ? EdgeInsets.zero : const EdgeInsets.all(8.0),
-        splashRadius: isAppBar ? 16 : null,
+        iconSize: isAppBar ? 12 : 24,
+        padding: EdgeInsets.zero,
+        splashRadius: isAppBar ? 14 : null,
+        constraints: isAppBar ? const BoxConstraints(
+          minWidth: 28,
+          minHeight: 28,
+        ) : null,
         tooltip: 'Aparência',
         onSelected: (mode) {
           ref.read(themeNotifierProvider.notifier).setThemeMode(mode);

@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-class AbastecimentoScreen extends StatelessWidget {
+import 'rua_list_screen.dart';
+import '../../../shared/providers/api_service_provider.dart';
+import '../../../shared/providers/auth_provider.dart';
+
+class AbastecimentoScreen extends ConsumerStatefulWidget {
   const AbastecimentoScreen({super.key});
 
+  @override
+  ConsumerState<AbastecimentoScreen> createState() => _AbastecimentoScreenState();
+}
+
+class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,14 +41,53 @@ class AbastecimentoScreen extends StatelessWidget {
                         description: 'Empilhadeira',
                         icon: Icons.looks_one_rounded,
                         color: Colors.blue,
-                        onTap: () {
-                          // TODO: Implementar navegação para Fase 1
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Fase 1 - Empilhadeira - Em desenvolvimento'),
-                              backgroundColor: Colors.blue,
-                            ),
-                          );
+                        onTap: () async {
+                          // Captura referências antes do async
+                          final navigator = Navigator.of(context);
+                          final messenger = ScaffoldMessenger.of(context);
+                          
+                          // Verifica se usuário está autenticado
+                          final authState = ref.read(authNotifierProvider);
+                          final user = authState.value;
+                          
+                          if (user == null) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Usuário não autenticado. Faça login novamente.'),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                            return;
+                          }
+
+                          // Tenta verificar conectividade antes de navegar
+                          try {
+                            final apiService = ref.read(apiServiceProvider);
+                            await apiService.get('/abastecimento/fase1/ruas');
+                            
+                            navigator.push(
+                              MaterialPageRoute(
+                                builder: (context) => const RuaListScreen(
+                                  fase: 1,
+                                  faseNome: 'Empilhadeira',
+                                ),
+                              ),
+                            );
+                          } catch (e) {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Erro de conectividade: $e'),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 5),
+                                action: SnackBarAction(
+                                  label: 'Tentar novamente',
+                                  textColor: Colors.white,
+                                  onPressed: () {},
+                                ),
+                              ),
+                            );
+                          }
                         },
                       ),
                     ),
@@ -56,14 +105,53 @@ class AbastecimentoScreen extends StatelessWidget {
                         description: 'Auxiliar',
                         icon: Icons.looks_two_rounded,
                         color: Colors.green,
-                        onTap: () {
-                          // TODO: Implementar navegação para Fase 2
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Fase 2 - Auxiliar - Em desenvolvimento'),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
+                        onTap: () async {
+                          // Captura referências antes do async
+                          final navigator = Navigator.of(context);
+                          final messenger = ScaffoldMessenger.of(context);
+                          
+                          // Verifica se usuário está autenticado
+                          final authState = ref.read(authNotifierProvider);
+                          final user = authState.value;
+                          
+                          if (user == null) {
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Usuário não autenticado. Faça login novamente.'),
+                                backgroundColor: Colors.red,
+                                duration: Duration(seconds: 3),
+                              ),
+                            );
+                            return;
+                          }
+
+                          // Tenta verificar conectividade antes de navegar
+                          try {
+                            final apiService = ref.read(apiServiceProvider);
+                            await apiService.get('/abastecimento/fase2/ruas');
+                            
+                            navigator.push(
+                              MaterialPageRoute(
+                                builder: (context) => const RuaListScreen(
+                                  fase: 2,
+                                  faseNome: 'Auxiliar',
+                                ),
+                              ),
+                            );
+                          } catch (e) {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('Erro de conectividade: $e'),
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 5),
+                                action: SnackBarAction(
+                                  label: 'Tentar novamente',
+                                  textColor: Colors.white,
+                                  onPressed: () {},
+                                ),
+                              ),
+                            );
+                          }
                         },
                       ),
                     ),

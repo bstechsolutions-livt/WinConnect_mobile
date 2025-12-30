@@ -28,6 +28,7 @@ class AuthNotifier extends _$AuthNotifier {
         
         // Verifica se o token ainda é válido
         if (token.expiresAt.isAfter(DateTime.now())) {
+          // Token será adicionado automaticamente pelo interceptador
           return user;
         } else {
           // Token expirado, remove dados
@@ -91,6 +92,8 @@ class AuthNotifier extends _$AuthNotifier {
       // Salva no storage local
       await _saveToStorage(user, token);
       
+      // Token será adicionado automaticamente pelo interceptador
+      
       state = AsyncValue.data(user);
     } catch (e, stackTrace) {
       state = AsyncValue.error(e.toString(), stackTrace);
@@ -99,19 +102,12 @@ class AuthNotifier extends _$AuthNotifier {
 
   Future<void> logout() async {
     try {
-      final box = Hive.box('user_data');
-      final tokenData = box.get(_tokenKey);
-      
-      if (tokenData != null) {
-        final token = AuthToken.fromJson(Map<String, dynamic>.from(tokenData));
-        final apiService = ref.read(apiServiceProvider);
-        await apiService.logout(token.token);
-      }
-    } catch (e) {
-      // Ignora erro de logout na API
-    } finally {
+      // Limpa storage local
       await _clearStorage();
+      
       state = const AsyncValue.data(null);
+    } catch (e, stackTrace) {
+      state = AsyncValue.error(e.toString(), stackTrace);
     }
   }
 
