@@ -1,5 +1,5 @@
 name: winconnect_mobile
-description: "A new Flutter project."
+description: "A new Flutter project with modern stack"
 publish_to: 'none'
 version: 0.1.0
 
@@ -9,11 +9,60 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
+  
+  # Navigation
+  go_router: ^13.0.0
+  
+  # Code Generation
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+  
+  # Database
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  # HTTP Client
+  dio: ^5.4.0
+  
+  # UI & Utilities
+  flutter_hooks: ^0.20.3
+  hooks_riverpod: ^2.4.9
+  flex_color_scheme: ^7.3.1
+  flutter_animate: ^4.4.0
+  
+  # Utils
+  equatable: ^2.0.5
+  intl: ^0.18.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  
+  # Code Generation
+  build_runner: ^2.4.7
+  freezed: ^2.4.6
+  json_serializable: ^6.7.1
+  riverpod_generator: ^2.3.9
+  hive_generator: ^2.0.1
+  
+  # Testing
+  mocktail: ^1.0.3
 
 flutter:
   uses-material-design: true
+  
+  # Assets
+  # assets:
+  #   - images/
+  #   - icons/
+  
+  # Fonts
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
