@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/login_screen.dart';
+import 'features/abastecimento/presentation/abastecimento_screen.dart';
 import 'shared/providers/theme_provider.dart';
 import 'shared/providers/auth_provider.dart';
 import 'shared/widgets/theme_selector.dart';
@@ -256,16 +257,104 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
-      body: const Center(
+      body: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(Icons.dashboard, size: 100, color: Colors.blue),
-            SizedBox(height: 16),
-            Text('Bem-vindo ao WinConnect!', 
-                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            Text('Dashboard será implementado aqui'),
+            const SizedBox(height: 40),
+            
+            // Card de Abastecimento
+            _MenuCard(
+              icon: Icons.warehouse,
+              title: 'Abastecimento',
+              subtitle: 'Gerencie abastecimento de estoque',
+              color: Colors.blue,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AbastecimentoScreen(),
+                  ),
+                );
+              },
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _MenuCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  icon,
+                  size: 28,
+                  color: color,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
         ),
       ),
     );
