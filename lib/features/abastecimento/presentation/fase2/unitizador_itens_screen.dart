@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
 import 'conferencia_screen.dart';
+import 'picking_rota_screen.dart';
 
 /// Tela de itens de um unitizador para conferência (Fase 2)
 class UnitizadorItensScreen extends ConsumerStatefulWidget {
@@ -295,9 +296,19 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
   }
 
   Future<void> _abrirRotaAbastecer() async {
-    // TODO: Implementar tela de rota para abastecer picking
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Calculando rota... (em desenvolvimento)')),
+    final resultado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PickingRotaScreen(
+          codunitizador: widget.codunitizador,
+          rua: widget.rua,
+        ),
+      ),
     );
+    
+    if (resultado == true) {
+      // Recarrega itens ou volta para lista de unitizadores
+      Navigator.of(context).pop(true);
+    }
   }
 }
