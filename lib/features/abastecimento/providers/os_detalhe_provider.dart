@@ -260,6 +260,29 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     }
   }
 
+  // Finalizar OS com quantidade MENOR (requer autorização de supervisor)
+  Future<(bool, String?)> finalizarComQuantidadeMenor(
+    int qtConferida,
+    int caixas,
+    int unidades,
+    int autorizadorMatricula,
+    String autorizadorSenha,
+  ) async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.post('/wms/fase1/os/$numos/finalizar', {
+        'qt_conferida': qtConferida,
+        'caixas': caixas,
+        'unidades': unidades,
+        'autorizador_matricula': autorizadorMatricula,
+        'autorizador_senha': autorizadorSenha,
+      });
+      return (true, null);
+    } catch (e) {
+      return (false, _extrairMensagemErro(e));
+    }
+  }
+
   // Finalizar OS (versão antiga - mantida para compatibilidade)
   Future<(bool, String?)> finalizar(double quantidade) async {
     try {

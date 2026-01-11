@@ -1813,7 +1813,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
                       const SizedBox(height: 20),
 
-                      // Botão Finalizar (sem cancelar - produto já foi bipado)
+                      // Botão Finalizar (quantidade correta)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: SizedBox(
@@ -1862,6 +1862,56 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         ),
                       ),
 
+                      // Botão FINALIZAR COM MENOS (condicional - aparece só quando qtd < solicitada)
+                      if (totalDigitado > 0 && totalDigitado < qtSolicitada) ...[
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                _mostrarAutorizacaoQuantidadeMenor(
+                                  codigoBarras,
+                                  os,
+                                  caixasDigitadas,
+                                  unidadesDigitadas,
+                                  totalDigitado,
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.orange[700],
+                                side: BorderSide(color: Colors.orange[700]!),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.warning_amber_rounded,
+                                    size: 20,
+                                    color: Colors.orange[700],
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'FINALIZAR COM $totalDigitado UN (SUPERVISOR)',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -1872,6 +1922,312 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
         );
       },
     );
+  }
+
+  /// Mostra bottom sheet para autorização de quantidade menor
+  void _mostrarAutorizacaoQuantidadeMenor(
+    String codigoBarras,
+    OsDetalhe os,
+    int caixas,
+    int unidades,
+    int totalDigitado,
+  ) {
+    final matriculaController = TextEditingController();
+    final senhaController = TextEditingController();
+    bool isLoading = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                ),
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .outline
+                                .withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withValues(alpha: 0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.warning_amber_rounded,
+                                  size: 48,
+                                  color: Colors.orange[700],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'QUANTIDADE MENOR',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Você está finalizando com $totalDigitado UN\nde ${os.qtSolicitada.toInt()} UN solicitadas',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        // Aviso
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.orange.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.supervisor_account,
+                                color: Colors.orange[700],
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Requer autorização de um supervisor',
+                                  style: TextStyle(
+                                    color: Colors.orange[900],
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Campo Matrícula
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: TextField(
+                            controller: matriculaController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: 'Matrícula do Supervisor',
+                              prefixIcon: const Icon(Icons.badge),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Campo Senha
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: TextField(
+                            controller: senhaController,
+                            obscureText: true,
+                            decoration: InputDecoration(
+                              labelText: 'Senha do Supervisor',
+                              prefixIcon: const Icon(Icons.lock),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Botões
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () => Navigator.pop(ctx),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Text('CANCELAR'),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 2,
+                                child: FilledButton(
+                                  onPressed: isLoading
+                                      ? null
+                                      : () async {
+                                          final matricula = int.tryParse(
+                                            matriculaController.text.trim(),
+                                          );
+                                          final senha =
+                                              senhaController.text.trim();
+
+                                          if (matricula == null) {
+                                            _mostrarErro(
+                                              'Digite a matrícula do supervisor',
+                                            );
+                                            return;
+                                          }
+                                          if (senha.isEmpty) {
+                                            _mostrarErro(
+                                              'Digite a senha do supervisor',
+                                            );
+                                            return;
+                                          }
+
+                                          setModalState(() => isLoading = true);
+
+                                          Navigator.pop(ctx);
+                                          await _finalizarComQuantidadeMenor(
+                                            os,
+                                            caixas,
+                                            unidades,
+                                            totalDigitado,
+                                            matricula,
+                                            senha,
+                                          );
+                                        },
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: Colors.orange[700],
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: isLoading
+                                      ? const SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : const Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.check, size: 20),
+                                            SizedBox(width: 8),
+                                            Text(
+                                              'AUTORIZAR',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Finaliza a OS com quantidade menor (autorizada por supervisor)
+  Future<void> _finalizarComQuantidadeMenor(
+    OsDetalhe os,
+    int caixas,
+    int unidades,
+    int qtConferida,
+    int autorizadorMatricula,
+    String autorizadorSenha,
+  ) async {
+    setState(() => _isProcessing = true);
+
+    final (sucesso, erro) = await ref
+        .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
+        .finalizarComQuantidadeMenor(
+          qtConferida,
+          caixas,
+          unidades,
+          autorizadorMatricula,
+          autorizadorSenha,
+        );
+
+    setState(() => _isProcessing = false);
+
+    if (sucesso && mounted) {
+      _mostrarSucesso('Tarefa finalizada com sucesso!');
+      Navigator.of(context).pop(true);
+    } else {
+      _mostrarErro(erro ?? 'Erro ao finalizar!');
+    }
   }
 
   /// Finaliza a OS com a quantidade conferida
