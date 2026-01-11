@@ -568,174 +568,303 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
     bool isLoading = false;
     String? errorMessage;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.exit_to_app, color: Colors.red.shade700),
-              const SizedBox(width: 8),
-              const Text('Sair da OS'),
-            ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
           ),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Para sair desta OS é necessária autorização de um supervisor.',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.exit_to_app,
+                          color: Colors.red.shade700,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'SAIR DA OS',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              'Autorização necessária',
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: isLoading
+                            ? null
+                            : () => Navigator.pop(sheetContext),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: matriculaController,
-                  decoration: const InputDecoration(
-                    labelText: 'Matrícula do Supervisor',
-                    prefixIcon: Icon(Icons.badge),
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Informe a matrícula';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: senhaController,
-                  decoration: const InputDecoration(
-                    labelText: 'Senha',
-                    prefixIcon: Icon(Icons.lock),
-                    border: OutlineInputBorder(),
-                  ),
-                  obscureText: true,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Informe a senha';
-                    }
-                    return null;
-                  },
-                ),
-                if (errorMessage != null) ...[
-                  const SizedBox(height: 12),
+
+                  const SizedBox(height: 16),
+                  const Divider(),
+                  const SizedBox(height: 16),
+
+                  // Aviso
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
                         Icon(
-                          Icons.error_outline,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.onErrorContainer,
+                          Icons.warning_amber_rounded,
+                          color: Colors.orange[700],
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            errorMessage!,
+                            'Para sair desta OS é necessária autorização de um supervisor.',
                             style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onErrorContainer,
-                              fontSize: 12,
+                              color: Colors.orange[900],
+                              fontSize: 13,
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
+
+                  const SizedBox(height: 20),
+
+                  // Campo matrícula
+                  TextFormField(
+                    controller: matriculaController,
+                    decoration: InputDecoration(
+                      labelText: 'Matrícula do Supervisor',
+                      prefixIcon: const Icon(Icons.badge),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Informe a matrícula';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Campo senha
+                  TextFormField(
+                    controller: senhaController,
+                    decoration: InputDecoration(
+                      labelText: 'Senha',
+                      prefixIcon: const Icon(Icons.lock),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: true,
+                    ),
+                    obscureText: true,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Informe a senha';
+                      }
+                      return null;
+                    },
+                  ),
+
+                  // Erro
+                  if (errorMessage != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onErrorContainer,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              errorMessage!,
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+
+                  // Botões
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: isLoading
+                              ? null
+                              : () => Navigator.pop(sheetContext),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text('CANCELAR'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: FilledButton(
+                          onPressed: isLoading
+                              ? null
+                              : () async {
+                                  if (!formKey.currentState!.validate()) return;
+
+                                  setSheetState(() {
+                                    isLoading = true;
+                                    errorMessage = null;
+                                  });
+
+                                  try {
+                                    final (sucesso, erro) = await ref
+                                        .read(
+                                          osDetalheNotifierProvider(
+                                            widget.fase,
+                                            widget.numos,
+                                          ).notifier,
+                                        )
+                                        .sairDaOs(
+                                          int.parse(matriculaController.text),
+                                          senhaController.text,
+                                        );
+
+                                    if (sucesso) {
+                                      if (sheetContext.mounted) {
+                                        Navigator.pop(sheetContext);
+                                      }
+                                      if (mounted) {
+                                        Navigator.of(
+                                          context,
+                                        ).popUntil((route) => route.isFirst);
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Saída da OS autorizada com sucesso',
+                                            ),
+                                            backgroundColor: Colors.green,
+                                          ),
+                                        );
+                                      }
+                                    } else {
+                                      setSheetState(() {
+                                        isLoading = false;
+                                        errorMessage =
+                                            erro?.replaceAll(
+                                              'Exception: ',
+                                              '',
+                                            ) ??
+                                            'Erro ao sair da OS';
+                                      });
+                                    }
+                                  } catch (e) {
+                                    setSheetState(() {
+                                      isLoading = false;
+                                      errorMessage = e.toString().replaceAll(
+                                        'Exception: ',
+                                        '',
+                                      );
+                                    });
+                                  }
+                                },
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'SAIR DA OS',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
                 ],
-              ],
+              ),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: isLoading ? null : () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: isLoading
-                  ? null
-                  : () async {
-                      if (!formKey.currentState!.validate()) return;
-
-                      setDialogState(() {
-                        isLoading = true;
-                        errorMessage = null;
-                      });
-
-                      try {
-                        final (sucesso, erro) = await ref
-                            .read(
-                              osDetalheNotifierProvider(
-                                widget.fase,
-                                widget.numos,
-                              ).notifier,
-                            )
-                            .sairDaOs(
-                              int.parse(matriculaController.text),
-                              senhaController.text,
-                            );
-
-                        if (sucesso) {
-                          if (dialogContext.mounted) {
-                            Navigator.pop(dialogContext);
-                          }
-                          if (mounted) {
-                            // Volta para a tela inicial do abastecimento
-                            Navigator.of(
-                              context,
-                            ).popUntil((route) => route.isFirst);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Saída da OS autorizada com sucesso',
-                                ),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        } else {
-                          setDialogState(() {
-                            isLoading = false;
-                            errorMessage =
-                                erro?.replaceAll('Exception: ', '') ??
-                                'Erro ao sair da OS';
-                          });
-                        }
-                      } catch (e) {
-                        setDialogState(() {
-                          isLoading = false;
-                          errorMessage = e.toString().replaceAll(
-                            'Exception: ',
-                            '',
-                          );
-                        });
-                      }
-                    },
-              style: FilledButton.styleFrom(backgroundColor: Colors.red),
-              child: isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Text('Sair da OS'),
-            ),
-          ],
         ),
       ),
     );

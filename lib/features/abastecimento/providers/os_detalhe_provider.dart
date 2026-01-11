@@ -236,8 +236,11 @@ Future<List<EstoqueProduto>> consultaEstoque(ConsultaEstoqueRef ref, int codprod
   
   final estoques = response['estoques'] as List? ?? [];
   return estoques.map((item) => EstoqueProduto(
-    rua: item['rua'] ?? '',
-    endereco: item['endereco'] ?? '',
-    quantidade: (item['qtestger'] as num?)?.toDouble() ?? 0.0,
+    rua: item['rua']?.toString() ?? '',
+    endereco: item['endereco']?.toString() ?? '',
+    predio: item['predio'] ?? 0,
+    nivel: item['nivel'] ?? 0,
+    apto: item['apto'] ?? 0,
+    quantidade: double.tryParse(item['qt']?.toString() ?? '0') ?? 0.0,
   )).toList();
 }
