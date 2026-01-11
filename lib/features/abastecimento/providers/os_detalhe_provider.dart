@@ -117,7 +117,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     try {
       final apiService = ref.read(apiServiceProvider);
       await apiService.post('/wms/fase1/os/$numos/bipar-endereco', {
-        'endereco': codigoEndereco,
+        'codigo_endereco': codigoEndereco,
       });
       return (true, null);
     } catch (e) {
