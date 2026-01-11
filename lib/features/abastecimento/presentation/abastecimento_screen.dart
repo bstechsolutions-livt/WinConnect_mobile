@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'rua_list_screen.dart';
 import 'os_endereco_screen.dart';
-import 'os_bipar_screen.dart';
 import '../../../shared/providers/auth_provider.dart';
 import '../providers/os_ativa_provider.dart';
 
@@ -41,32 +40,17 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
       
       final faseNome = osAtiva.fase == 1 ? 'Empilhadeira' : 'Auxiliar';
       
-      // Decide para qual tela navegar baseado no estado da OS
-      if (osAtiva.enderecoBipado) {
-        // Já bipou endereço, vai para tela de bipar produto/finalizar
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OsBiparScreen(
-              fase: osAtiva.fase,
-              numos: osAtiva.numos,
-              faseNome: faseNome,
-            ),
+      // SEMPRE volta para tela de bipar endereço (recomeça do início)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OsEnderecoScreen(
+            fase: osAtiva.fase,
+            numos: osAtiva.numos,
+            faseNome: faseNome,
           ),
-        );
-      } else {
-        // Ainda não bipou endereço, vai para tela de endereço
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OsEnderecoScreen(
-              fase: osAtiva.fase,
-              numos: osAtiva.numos,
-              faseNome: faseNome,
-            ),
-          ),
-        );
-      }
+        ),
+      );
     } else {
       setState(() => _verificandoOsAtiva = false);
     }
