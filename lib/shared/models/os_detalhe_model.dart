@@ -45,9 +45,10 @@ class EnderecoOs with _$EnderecoOs {
 class EstoqueProduto with _$EstoqueProduto {
   const factory EstoqueProduto({
     required String rua,
-    required int predio,
-    required int nivel,
-    required int apto,
+    @Default('') String endereco,
+    @Default(0) int predio,
+    @Default(0) int nivel,
+    @Default(0) int apto,
     required double quantidade,
   }) = _EstoqueProduto;
 

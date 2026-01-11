@@ -708,6 +708,7 @@ EstoqueProduto _$EstoqueProdutoFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$EstoqueProduto {
   String get rua => throw _privateConstructorUsedError;
+  String get endereco => throw _privateConstructorUsedError;
   int get predio => throw _privateConstructorUsedError;
   int get nivel => throw _privateConstructorUsedError;
   int get apto => throw _privateConstructorUsedError;
@@ -725,7 +726,13 @@ abstract class $EstoqueProdutoCopyWith<$Res> {
           EstoqueProduto value, $Res Function(EstoqueProduto) then) =
       _$EstoqueProdutoCopyWithImpl<$Res, EstoqueProduto>;
   @useResult
-  $Res call({String rua, int predio, int nivel, int apto, double quantidade});
+  $Res call(
+      {String rua,
+      String endereco,
+      int predio,
+      int nivel,
+      int apto,
+      double quantidade});
 }
 
 /// @nodoc
@@ -742,6 +749,7 @@ class _$EstoqueProdutoCopyWithImpl<$Res, $Val extends EstoqueProduto>
   @override
   $Res call({
     Object? rua = null,
+    Object? endereco = null,
     Object? predio = null,
     Object? nivel = null,
     Object? apto = null,
@@ -751,6 +759,10 @@ class _$EstoqueProdutoCopyWithImpl<$Res, $Val extends EstoqueProduto>
       rua: null == rua
           ? _value.rua
           : rua // ignore: cast_nullable_to_non_nullable
+              as String,
+      endereco: null == endereco
+          ? _value.endereco
+          : endereco // ignore: cast_nullable_to_non_nullable
               as String,
       predio: null == predio
           ? _value.predio
@@ -780,7 +792,13 @@ abstract class _$$EstoqueProdutoImplCopyWith<$Res>
       __$$EstoqueProdutoImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String rua, int predio, int nivel, int apto, double quantidade});
+  $Res call(
+      {String rua,
+      String endereco,
+      int predio,
+      int nivel,
+      int apto,
+      double quantidade});
 }
 
 /// @nodoc
@@ -795,6 +813,7 @@ class __$$EstoqueProdutoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? rua = null,
+    Object? endereco = null,
     Object? predio = null,
     Object? nivel = null,
     Object? apto = null,
@@ -804,6 +823,10 @@ class __$$EstoqueProdutoImplCopyWithImpl<$Res>
       rua: null == rua
           ? _value.rua
           : rua // ignore: cast_nullable_to_non_nullable
+              as String,
+      endereco: null == endereco
+          ? _value.endereco
+          : endereco // ignore: cast_nullable_to_non_nullable
               as String,
       predio: null == predio
           ? _value.predio
@@ -830,9 +853,10 @@ class __$$EstoqueProdutoImplCopyWithImpl<$Res>
 class _$EstoqueProdutoImpl implements _EstoqueProduto {
   const _$EstoqueProdutoImpl(
       {required this.rua,
-      required this.predio,
-      required this.nivel,
-      required this.apto,
+      this.endereco = '',
+      this.predio = 0,
+      this.nivel = 0,
+      this.apto = 0,
       required this.quantidade});
 
   factory _$EstoqueProdutoImpl.fromJson(Map<String, dynamic> json) =>
@@ -841,17 +865,23 @@ class _$EstoqueProdutoImpl implements _EstoqueProduto {
   @override
   final String rua;
   @override
+  @JsonKey()
+  final String endereco;
+  @override
+  @JsonKey()
   final int predio;
   @override
+  @JsonKey()
   final int nivel;
   @override
+  @JsonKey()
   final int apto;
   @override
   final double quantidade;
 
   @override
   String toString() {
-    return 'EstoqueProduto(rua: $rua, predio: $predio, nivel: $nivel, apto: $apto, quantidade: $quantidade)';
+    return 'EstoqueProduto(rua: $rua, endereco: $endereco, predio: $predio, nivel: $nivel, apto: $apto, quantidade: $quantidade)';
   }
 
   @override
@@ -860,6 +890,8 @@ class _$EstoqueProdutoImpl implements _EstoqueProduto {
         (other.runtimeType == runtimeType &&
             other is _$EstoqueProdutoImpl &&
             (identical(other.rua, rua) || other.rua == rua) &&
+            (identical(other.endereco, endereco) ||
+                other.endereco == endereco) &&
             (identical(other.predio, predio) || other.predio == predio) &&
             (identical(other.nivel, nivel) || other.nivel == nivel) &&
             (identical(other.apto, apto) || other.apto == apto) &&
@@ -870,7 +902,7 @@ class _$EstoqueProdutoImpl implements _EstoqueProduto {
   @JsonKey(ignore: true)
   @override
   int get hashCode =>
-      Object.hash(runtimeType, rua, predio, nivel, apto, quantidade);
+      Object.hash(runtimeType, rua, endereco, predio, nivel, apto, quantidade);
 
   @JsonKey(ignore: true)
   @override
@@ -890,9 +922,10 @@ class _$EstoqueProdutoImpl implements _EstoqueProduto {
 abstract class _EstoqueProduto implements EstoqueProduto {
   const factory _EstoqueProduto(
       {required final String rua,
-      required final int predio,
-      required final int nivel,
-      required final int apto,
+      final String endereco,
+      final int predio,
+      final int nivel,
+      final int apto,
       required final double quantidade}) = _$EstoqueProdutoImpl;
 
   factory _EstoqueProduto.fromJson(Map<String, dynamic> json) =
@@ -900,6 +933,8 @@ abstract class _EstoqueProduto implements EstoqueProduto {
 
   @override
   String get rua;
+  @override
+  String get endereco;
   @override
   int get predio;
   @override

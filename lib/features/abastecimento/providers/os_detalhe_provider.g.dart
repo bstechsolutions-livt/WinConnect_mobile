@@ -6,7 +6,7 @@ part of 'os_detalhe_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$consultaEstoqueHash() => r'af7fc0b05803cb32bc672c0953c20f4003b072a3';
+String _$consultaEstoqueHash() => r'38fdd8aec6e0e3f6cb73b744592ca6eaeb5ae607';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -157,7 +157,7 @@ class _ConsultaEstoqueProviderElement
   int get codprod => (origin as ConsultaEstoqueProvider).codprod;
 }
 
-String _$osDetalheNotifierHash() => r'300bbc05eab9966eee7ef4abec1e679cbc8d653a';
+String _$osDetalheNotifierHash() => r'16b50ad72be4b6ab5622a71415e0e20683997c7b';
 
 abstract class _$OsDetalheNotifier
     extends BuildlessAutoDisposeAsyncNotifier<OsDetalhe> {

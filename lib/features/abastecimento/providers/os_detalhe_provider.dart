@@ -232,14 +232,12 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
 @Riverpod(keepAlive: false)
 Future<List<EstoqueProduto>> consultaEstoque(ConsultaEstoqueRef ref, int codprod) async {
   final apiService = ref.read(apiServiceProvider);
-  final response = await apiService.get('/abastecimento/consulta-estoque/$codprod');
+  final response = await apiService.get('/wms/consulta-estoque/$codprod');
   
-  final estoques = response['estoques'] as List? ?? response['data'] as List? ?? [];
+  final estoques = response['estoques'] as List? ?? [];
   return estoques.map((item) => EstoqueProduto(
     rua: item['rua'] ?? '',
-    predio: item['predio'] ?? 0,
-    nivel: item['nivel'] ?? 0,
-    apto: item['apto'] ?? 0,
-    quantidade: (item['quantidade'] as num?)?.toDouble() ?? 0.0,
+    endereco: item['endereco'] ?? '',
+    quantidade: (item['qtestger'] as num?)?.toDouble() ?? 0.0,
   )).toList();
 }
