@@ -15,22 +15,14 @@ class RuaNotifier extends _$RuaNotifier {
 
   Future<List<Rua>> _loadRuasFromApi(int fase) async {
     final apiService = ref.read(apiServiceProvider);
-    final response = await apiService.get('/abastecimento/fase$fase/ruas');
+    final response = await apiService.get('/wms/fase1/ruas');
     
-    final ruasData = response['ruas'] as List;
-    final ruaAtual = response['rua_atual'] as String?;
-    
-    // Agenda atualização da rua atual para depois da build
-    if (ruaAtual != null && ruaAtual.isNotEmpty) {
-      Future.microtask(() {
-        ref.read(ruaAtualProvider.notifier).setRuaAtual(ruaAtual);
-      });
-    }
+    final ruasData = response['ruas'] as List? ?? [];
     
     return ruasData.map((item) => Rua(
-      codigo: item['rua'],
-      nome: item['rua'], 
-      quantidade: item['qtd_os'],
+      codigo: item['rua']?.toString() ?? '',
+      nome: 'Rua ${item['rua']}', 
+      quantidade: item['qtd_os'] ?? 0,
     )).toList();
   }
 

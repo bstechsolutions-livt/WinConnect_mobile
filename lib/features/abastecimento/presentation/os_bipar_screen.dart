@@ -361,7 +361,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
   Future<void> _finalizarOs(OsDetalhe os) async {
     setState(() => _isProcessing = true);
-    final (sucesso, erro) = await ref.read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier).finalizar();
+    final (sucesso, erro) = await ref.read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier).finalizar(os.qtSolicitada);
     setState(() => _isProcessing = false);
 
     if (sucesso && mounted) {
@@ -415,7 +415,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           FilledButton(
             onPressed: () async {
               Navigator.of(ctx).pop();
-              final (sucesso, erro) = await ref.read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier).sinalizarDivergencia('Divergência sinalizada');
+              final (sucesso, erro) = await ref.read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier).sinalizarDivergencia('OUTRO', 'Divergência sinalizada pelo operador');
               if (sucesso && mounted) {
                 _mostrarSucesso('Divergência sinalizada!');
               } else {

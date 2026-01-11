@@ -14,7 +14,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
 
   Future<OsDetalhe> _loadOsDetalhe(int fase, int numos) async {
     final apiService = ref.read(apiServiceProvider);
-    final response = await apiService.get('/abastecimento/fase$fase/os/$numos');
+    final response = await apiService.get('/wms/fase1/os/$numos');
     
     // A API retorna: { os: {...}, produto: {...}, endereco_origem: {...}, estoque_atual: ... }
     final osData = response['os'] ?? {};
@@ -75,7 +75,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   Future<(bool, String?, int?)> iniciarOs() async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/abastecimento/fase$fase/os/$numos/iniciar', {});
+      await apiService.post('/wms/fase1/os/$numos/iniciar', {});
       return (true, null, null);
     } catch (e) {
       final errorStr = e.toString();
@@ -97,12 +97,40 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     }
   }
 
+  // Sair da OS (requer autorização de supervisor)
+  Future<(bool, String?)> sairDaOs(int autorizadorMatricula, String autorizadorSenha) async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.post('/wms/fase1/os/$numos/sair', {
+        'autorizador_matricula': autorizadorMatricula,
+        'autorizador_senha': autorizadorSenha,
+      });
+      return (true, null);
+    } catch (e) {
+      return (false, _extrairMensagemErro(e));
+    }
+  }
+
+  // Bipar endereço de origem
+  // Retorna (sucesso, mensagemErro)
+  Future<(bool, String?)> biparEndereco(String codigoEndereco) async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.post('/wms/fase1/os/$numos/bipar-endereco', {
+        'endereco': codigoEndereco,
+      });
+      return (true, null);
+    } catch (e) {
+      return (false, _extrairMensagemErro(e));
+    }
+  }
+
   // Bipar produto (validar código de barras)
   // Retorna (sucesso, mensagemErro)
   Future<(bool, String?)> biparProduto(String codigoBarras) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/abastecimento/fase$fase/os/$numos/bipar', {
+      await apiService.post('/wms/fase1/os/$numos/bipar', {
         'codigo_barras': codigoBarras,
       });
       
@@ -119,8 +147,8 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   Future<(bool, String?)> vincularUnitizador(String codigoBarrasUnitizador) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/abastecimento/fase$fase/os/$numos/vincular-unitizador', {
-        'codigo_barras_unitizador': codigoBarrasUnitizador,
+      await apiService.post('/wms/fase1/os/$numos/vincular-unitizador', {
+        'codigo_unitizador': codigoBarrasUnitizador,
       });
       
       // Atualiza estado local
@@ -135,10 +163,12 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   }
 
   // Finalizar OS
-  Future<(bool, String?)> finalizar() async {
+  Future<(bool, String?)> finalizar(double quantidade) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/abastecimento/fase$fase/os/$numos/finalizar', {});
+      await apiService.post('/wms/fase1/os/$numos/finalizar', {
+        'quantidade': quantidade,
+      });
       return (true, null);
     } catch (e) {
       return (false, _extrairMensagemErro(e));
@@ -149,7 +179,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   Future<(bool, String?)> bloquear(String motivo) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/abastecimento/fase$fase/os/$numos/bloquear', {
+      await apiService.post('/wms/fase1/os/$numos/bloquear', {
         'motivo': motivo,
       });
       return (true, null);
@@ -159,10 +189,11 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   }
 
   // Sinalizar divergência
-  Future<(bool, String?)> sinalizarDivergencia(String descricao) async {
+  Future<(bool, String?)> sinalizarDivergencia(String tipo, String descricao) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/abastecimento/fase$fase/os/$numos/divergencia', {
+      await apiService.post('/wms/fase1/os/$numos/divergencia', {
+        'tipo': tipo,
         'descricao': descricao,
       });
       

@@ -22,24 +22,20 @@ class OsNotifier extends _$OsNotifier {
 
   Future<OsListResult> _loadOsFromApi(int fase, String rua) async {
     final apiService = ref.read(apiServiceProvider);
-    final response = await apiService.get('/abastecimento/fase$fase/ruas/$rua/os');
+    final response = await apiService.get('/wms/fase1/ruas/$rua/os');
     
-    final osData = response['ordens'] as List? ?? response['os'] as List? ?? [];
+    final osData = response['ordens'] as List? ?? [];
     final osEmAndamento = response['os_em_andamento'] as int?;
     
     final ordens = osData.map((item) => OrdemServico(
-      numos: item['numos'],
-      codprod: item['codprod'],
-      produto: item['produto'] ?? 'Produto ${item['codprod']}',
-      descricao: item['descricao'] ?? 'Descrição não informada',
-      enderecoOrigem: item['endereco_origem'] ?? 'Origem',
-      enderecoDestino: item['endereco_destino'] ?? 'Destino',
+      numos: item['numos'] ?? 0,
+      ordem: item['ordem'] ?? 0,
+      codprod: item['codprod'] ?? 0,
+      descricao: item['descricao'] ?? 'Sem descrição',
+      enderecoOrigem: item['endereco_origem'] ?? '',
       quantidade: (item['qt'] as num?)?.toDouble() ?? 0.0,
       status: item['status'] ?? 'PENDENTE',
       podeExecutar: item['pode_executar'] ?? false,
-      divergencia: item['divergencia'],
-      dtinicio: item['dtinicio'] != null ? DateTime.parse(item['dtinicio']) : null,
-      dtfim: item['dtfim'] != null ? DateTime.parse(item['dtfim']) : null,
     )).toList();
     
     return OsListResult(ordens: ordens, osEmAndamento: osEmAndamento);

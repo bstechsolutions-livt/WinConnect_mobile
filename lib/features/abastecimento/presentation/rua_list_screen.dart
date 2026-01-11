@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/rua_provider.dart';
 import '../../../shared/models/rua_model.dart';
-import '../../../shared/providers/api_service_provider.dart';
 import 'os_list_screen.dart';
 import 'fase2/unitizador_list_screen.dart';
 
@@ -121,11 +120,8 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                 child: _RuaCard(
                   rua: rua,
                 onTap: () async {
-                  // Entra diretamente na rua selecionada
+                  // Navega diretamente para a lista de OSs da rua
                   try {
-                    final apiService = ref.read(apiServiceProvider);
-                    await apiService.post('/abastecimento/fase${widget.fase}/ruas/${rua.codigo}/entrar', {});
-                    
                     if (!context.mounted) return;
                     
                     // Atualiza rua atual e navega para tela correta da fase

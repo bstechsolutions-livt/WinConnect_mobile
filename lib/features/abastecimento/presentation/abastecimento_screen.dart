@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'rua_list_screen.dart';
-import '../../../shared/providers/api_service_provider.dart';
+import 'os_endereco_screen.dart';
 import '../../../shared/providers/auth_provider.dart';
+import '../providers/os_ativa_provider.dart';
 
 class AbastecimentoScreen extends ConsumerStatefulWidget {
   const AbastecimentoScreen({super.key});
@@ -13,8 +14,66 @@ class AbastecimentoScreen extends ConsumerStatefulWidget {
 }
 
 class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
+  bool _verificandoOsAtiva = true;
+  bool _navegouParaOsAtiva = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificarOsAtiva();
+  }
+
+  Future<void> _verificarOsAtiva() async {
+    final authState = ref.read(authNotifierProvider);
+    final user = authState.value;
+    
+    if (user?.matricula == null) {
+      setState(() => _verificandoOsAtiva = false);
+      return;
+    }
+
+    // Consulta se tem OS ativa
+    final osAtiva = await ref.read(osAtivaProvider(user!.matricula!).future);
+    
+    if (osAtiva != null && mounted && !_navegouParaOsAtiva) {
+      _navegouParaOsAtiva = true;
+      // Tem OS ativa, navega para tela de endereço
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OsEnderecoScreen(
+            fase: osAtiva.fase,
+            numos: osAtiva.numos,
+            faseNome: osAtiva.fase == 1 ? 'Empilhadeira' : 'Auxiliar',
+          ),
+        ),
+      );
+    } else {
+      setState(() => _verificandoOsAtiva = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_verificandoOsAtiva) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Abastecimento'),
+          centerTitle: true,
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Verificando OS em andamento...'),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Abastecimento'),
@@ -41,53 +100,15 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
                         description: 'Empilhadeira',
                         icon: Icons.looks_one_rounded,
                         color: Colors.blue,
-                        onTap: () async {
-                          // Captura referências antes do async
-                          final navigator = Navigator.of(context);
-                          final messenger = ScaffoldMessenger.of(context);
-                          
-                          // Verifica se usuário está autenticado
-                          final authState = ref.read(authNotifierProvider);
-                          final user = authState.value;
-                          
-                          if (user == null) {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Usuário não autenticado. Faça login novamente.'),
-                                backgroundColor: Colors.red,
-                                duration: Duration(seconds: 3),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const RuaListScreen(
+                                fase: 1,
+                                faseNome: 'Empilhadeira',
                               ),
-                            );
-                            return;
-                          }
-
-                          // Tenta verificar conectividade antes de navegar
-                          try {
-                            final apiService = ref.read(apiServiceProvider);
-                            await apiService.get('/abastecimento/fase1/ruas');
-                            
-                            navigator.push(
-                              MaterialPageRoute(
-                                builder: (context) => const RuaListScreen(
-                                  fase: 1,
-                                  faseNome: 'Empilhadeira',
-                                ),
-                              ),
-                            );
-                          } catch (e) {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text('Erro de conectividade: $e'),
-                                backgroundColor: Colors.red,
-                                duration: const Duration(seconds: 5),
-                                action: SnackBarAction(
-                                  label: 'Tentar novamente',
-                                  textColor: Colors.white,
-                                  onPressed: () {},
-                                ),
-                              ),
-                            );
-                          }
+                            ),
+                          );
                         },
                       ),
                     ),
@@ -105,53 +126,15 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
                         description: 'Auxiliar',
                         icon: Icons.looks_two_rounded,
                         color: Colors.green,
-                        onTap: () async {
-                          // Captura referências antes do async
-                          final navigator = Navigator.of(context);
-                          final messenger = ScaffoldMessenger.of(context);
-                          
-                          // Verifica se usuário está autenticado
-                          final authState = ref.read(authNotifierProvider);
-                          final user = authState.value;
-                          
-                          if (user == null) {
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text('Usuário não autenticado. Faça login novamente.'),
-                                backgroundColor: Colors.red,
-                                duration: Duration(seconds: 3),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const RuaListScreen(
+                                fase: 2,
+                                faseNome: 'Auxiliar',
                               ),
-                            );
-                            return;
-                          }
-
-                          // Tenta verificar conectividade antes de navegar
-                          try {
-                            final apiService = ref.read(apiServiceProvider);
-                            await apiService.get('/abastecimento/fase2/ruas');
-                            
-                            navigator.push(
-                              MaterialPageRoute(
-                                builder: (context) => const RuaListScreen(
-                                  fase: 2,
-                                  faseNome: 'Auxiliar',
-                                ),
-                              ),
-                            );
-                          } catch (e) {
-                            messenger.showSnackBar(
-                              SnackBar(
-                                content: Text('Erro de conectividade: $e'),
-                                backgroundColor: Colors.red,
-                                duration: const Duration(seconds: 5),
-                                action: SnackBarAction(
-                                  label: 'Tentar novamente',
-                                  textColor: Colors.white,
-                                  onPressed: () {},
-                                ),
-                              ),
-                            );
-                          }
+                            ),
+                          );
                         },
                       ),
                     ),

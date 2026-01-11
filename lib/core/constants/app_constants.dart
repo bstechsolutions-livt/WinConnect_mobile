@@ -3,8 +3,8 @@ class AppConstants {
   static const String appName = 'WinConnect Mobile';
   static const String appVersion = '1.0.0';
   
-  // API Configuration
-  static const String baseUrl = 'https://api.winconnect.com/v1';
+  // API Configuration - URL agora vem de ClientConfig
+  // Use: ClientConfig.current.apiBaseUrl
   static const Duration connectTimeout = Duration(seconds: 30);
   static const Duration receiveTimeout = Duration(seconds: 30);
   

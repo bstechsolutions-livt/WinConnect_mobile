@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
+import 'core/config/client_config.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/abastecimento/presentation/abastecimento_screen.dart';
@@ -34,7 +35,7 @@ class WinConnectApp extends ConsumerWidget {
     
     return themeAsync.when(
       data: (themeMode) => MaterialApp(
-        title: 'WinConnect Mobile',
+        title: ClientConfig.current.name,
         debugShowCheckedModeBanner: false,
         
         // Theme Configuration
@@ -127,28 +128,11 @@ class DashboardScreen extends ConsumerWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.widgets_rounded,
+                      Text(
+                        ClientConfig.current.name,
+                        style: const TextStyle(
                           color: Colors.white,
-                          size: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        'WinConnect',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.3,
                         ),

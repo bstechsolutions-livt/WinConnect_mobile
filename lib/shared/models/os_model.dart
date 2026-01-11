@@ -7,17 +7,13 @@ part 'os_model.g.dart';
 class OrdemServico with _$OrdemServico {
   const factory OrdemServico({
     required int numos,
+    @Default(0) int ordem,
     required int codprod,
-    required String produto,
     required String descricao,
     required String enderecoOrigem,
-    required String enderecoDestino,
-    required double quantidade,
-    required String status,
+    @Default(0.0) double quantidade,
+    @Default('PENDENTE') String status,
     @Default(false) bool podeExecutar,
-    String? divergencia,
-    DateTime? dtinicio,
-    DateTime? dtfim,
   }) = _OrdemServico;
 
   factory OrdemServico.fromJson(Map<String, dynamic> json) =>

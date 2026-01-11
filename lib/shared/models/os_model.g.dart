@@ -9,35 +9,23 @@ part of 'os_model.dart';
 _$OrdemServicoImpl _$$OrdemServicoImplFromJson(Map<String, dynamic> json) =>
     _$OrdemServicoImpl(
       numos: (json['numos'] as num).toInt(),
+      ordem: (json['ordem'] as num?)?.toInt() ?? 0,
       codprod: (json['codprod'] as num).toInt(),
-      produto: json['produto'] as String,
       descricao: json['descricao'] as String,
       enderecoOrigem: json['enderecoOrigem'] as String,
-      enderecoDestino: json['enderecoDestino'] as String,
-      quantidade: (json['quantidade'] as num).toDouble(),
-      status: json['status'] as String,
+      quantidade: (json['quantidade'] as num?)?.toDouble() ?? 0.0,
+      status: json['status'] as String? ?? 'PENDENTE',
       podeExecutar: json['podeExecutar'] as bool? ?? false,
-      divergencia: json['divergencia'] as String?,
-      dtinicio: json['dtinicio'] == null
-          ? null
-          : DateTime.parse(json['dtinicio'] as String),
-      dtfim: json['dtfim'] == null
-          ? null
-          : DateTime.parse(json['dtfim'] as String),
     );
 
 Map<String, dynamic> _$$OrdemServicoImplToJson(_$OrdemServicoImpl instance) =>
     <String, dynamic>{
       'numos': instance.numos,
+      'ordem': instance.ordem,
       'codprod': instance.codprod,
-      'produto': instance.produto,
       'descricao': instance.descricao,
       'enderecoOrigem': instance.enderecoOrigem,
-      'enderecoDestino': instance.enderecoDestino,
       'quantidade': instance.quantidade,
       'status': instance.status,
       'podeExecutar': instance.podeExecutar,
-      'divergencia': instance.divergencia,
-      'dtinicio': instance.dtinicio?.toIso8601String(),
-      'dtfim': instance.dtfim?.toIso8601String(),
     };

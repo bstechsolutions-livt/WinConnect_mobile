@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/os_provider.dart';
 import '../../../shared/models/os_model.dart';
+import '../../../shared/providers/api_service_provider.dart';
 import 'os_endereco_screen.dart';
 import 'os_bipar_screen.dart';
 
@@ -37,7 +38,9 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              ref.read(osNotifierProvider(widget.fase, widget.rua).notifier).refresh();
+              ref
+                  .read(osNotifierProvider(widget.fase, widget.rua).notifier)
+                  .refresh();
             },
           ),
         ],
@@ -65,7 +68,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
           if (result.ordens.isEmpty) {
             return _buildEmptyState(context);
           }
-          
+
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: result.ordens.length,
@@ -75,32 +78,27 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _OsCard(
                   os: os,
-                  onTap: os.podeExecutar ? () async {
-                    // Navega para tela de endereço (5ª tela)
-                    final resultado = await Navigator.push<bool>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => OsEnderecoScreen(
-                          fase: widget.fase,
-                          numos: os.numos,
-                          faseNome: widget.faseNome,
-                        ),
-                      ),
-                    );
-                    
-                    // Se retornou true, atualiza a lista
-                    if (resultado == true) {
-                      ref.read(osNotifierProvider(widget.fase, widget.rua).notifier).refresh();
+                  onTap: () async {
+                    if (os.podeExecutar) {
+                      // Pode executar normalmente
+                      _navegarParaOs(os);
+                    } else {
+                      // Precisa autorização de supervisor
+                      final autorizado = await _mostrarDialogAutorizacao(
+                        os.numos,
+                      );
+                      if (autorizado == true) {
+                        _navegarParaOs(os);
+                      }
                     }
-                  } : null,
+                  },
+                  podeExecutar: os.podeExecutar,
                 ),
               );
             },
           );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -124,12 +122,213 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
-                  ref.read(osNotifierProvider(widget.fase, widget.rua).notifier).refresh();
+                  ref
+                      .read(
+                        osNotifierProvider(widget.fase, widget.rua).notifier,
+                      )
+                      .refresh();
                 },
                 child: const Text('Tentar novamente'),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _navegarParaOs(OrdemServico os) async {
+    // Primeiro inicia a OS (se podeExecutar, não precisa autorização)
+    if (os.podeExecutar) {
+      try {
+        final apiService = ref.read(apiServiceProvider);
+        await apiService.post('/wms/fase1/os/${os.numos}/iniciar', {});
+      } catch (e) {
+        // Se já está em andamento, pode continuar
+        final errorStr = e.toString();
+        if (!errorStr.contains('andamento')) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(e.toString().replaceAll('Exception: ', '')),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
+        }
+      }
+    }
+    // Se não podeExecutar, o iniciar já foi chamado no dialog de autorização
+
+    if (!mounted) return;
+
+    final resultado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OsEnderecoScreen(
+          fase: widget.fase,
+          numos: os.numos,
+          faseNome: widget.faseNome,
+        ),
+      ),
+    );
+
+    // Se retornou true, atualiza a lista
+    if (resultado == true) {
+      ref.read(osNotifierProvider(widget.fase, widget.rua).notifier).refresh();
+    }
+  }
+
+  Future<bool?> _mostrarDialogAutorizacao(int numos) async {
+    final matriculaController = TextEditingController();
+    final senhaController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+    String? errorMessage;
+
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Row(
+            children: [
+              Icon(
+                Icons.admin_panel_settings,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              const Text('Autorização'),
+            ],
+          ),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Esta OS está fora da ordem de execução.\nÉ necessária autorização de um supervisor.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: matriculaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Matrícula do Supervisor',
+                    prefixIcon: Icon(Icons.badge),
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Informe a matrícula';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: senhaController,
+                  decoration: const InputDecoration(
+                    labelText: 'Senha',
+                    prefixIcon: Icon(Icons.lock),
+                    border: OutlineInputBorder(),
+                  ),
+                  obscureText: true,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Informe a senha';
+                    }
+                    return null;
+                  },
+                ),
+                if (errorMessage != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            errorMessage!,
+                            style: TextStyle(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onErrorContainer,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading
+                  ? null
+                  : () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+
+                      setDialogState(() {
+                        isLoading = true;
+                        errorMessage = null;
+                      });
+
+                      try {
+                        final apiService = ref.read(apiServiceProvider);
+                        await apiService.post('/wms/fase1/os/$numos/iniciar', {
+                          'autorizador_matricula': int.parse(
+                            matriculaController.text,
+                          ),
+                          'autorizador_senha': senhaController.text,
+                        });
+
+                        if (dialogContext.mounted) {
+                          Navigator.pop(dialogContext, true);
+                        }
+                      } catch (e) {
+                        setDialogState(() {
+                          isLoading = false;
+                          errorMessage = e.toString().replaceAll(
+                            'Exception: ',
+                            '',
+                          );
+                        });
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Autorizar'),
+            ),
+          ],
         ),
       ),
     );
@@ -166,24 +365,31 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
 
 class _OsCard extends StatelessWidget {
   final OrdemServico os;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
+  final bool podeExecutar;
 
   const _OsCard({
     required this.os,
     required this.onTap,
+    required this.podeExecutar,
   });
 
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor(context, os.status);
-    final podeExecutar = onTap != null;
-    
+
     return Opacity(
-      opacity: podeExecutar ? 1.0 : 0.5,
+      opacity: podeExecutar ? 1.0 : 0.6,
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
+          side: !podeExecutar
+              ? BorderSide(
+                  color: Colors.orange.withValues(alpha: 0.5),
+                  width: 1,
+                )
+              : BorderSide.none,
         ),
         child: InkWell(
           onTap: onTap,
@@ -199,31 +405,15 @@ class _OsCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         'OS ${os.numos}',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
-                    if (!podeExecutar) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'BLOQUEADA',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: statusColor.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
@@ -239,9 +429,44 @@ class _OsCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
+                // Ordem de execução
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '#${os.ordem}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Cód: ${os.codprod}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
                 // Informações do produto
                 Row(
                   children: [
@@ -253,7 +478,7 @@ class _OsCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        os.produto,
+                        os.descricao,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
@@ -261,79 +486,48 @@ class _OsCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 // Quantidade
                 Row(
                   children: [
                     Icon(
                       Icons.straighten,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Quantidade: ${os.quantidade.toStringAsFixed(0)} un',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 8),
-              
-              // Endereços
-              Row(
-                children: [
-                  Icon(
-                    Icons.route,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${os.enderecoOrigem} → ${os.enderecoDestino}',
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Quantidade: ${os.quantidade.toStringAsFixed(0)} un',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                  ),
-                ],
-              ),
-              
-              // Divergência (se houver)
-              if (os.divergencia != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.errorContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.warning,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.onErrorContainer,
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+
+                // Endereço origem
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on_outlined,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Origem: ${os.enderecoOrigem}',
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          os.divergencia!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onErrorContainer,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
-            ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }

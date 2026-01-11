@@ -2,17 +2,20 @@ import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/config/client_config.dart';
+
 // Provider usando sintaxe clássica do Riverpod
 final dioProvider = Provider<Dio>((ref) {
   final dio = Dio();
   
-  // Base URL
-  dio.options.baseUrl = 'https://winconnect.bstechsolutions.com/api';
+  // Base URL - vem da configuração do cliente
+  dio.options.baseUrl = ClientConfig.current.apiBaseUrl;
   
   // Headers padrão
   dio.options.headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'ngrok-skip-browser-warning': 'true', // Pula aviso do ngrok free
   };
   
   // Timeout

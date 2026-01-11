@@ -21,17 +21,13 @@ OrdemServico _$OrdemServicoFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$OrdemServico {
   int get numos => throw _privateConstructorUsedError;
+  int get ordem => throw _privateConstructorUsedError;
   int get codprod => throw _privateConstructorUsedError;
-  String get produto => throw _privateConstructorUsedError;
   String get descricao => throw _privateConstructorUsedError;
   String get enderecoOrigem => throw _privateConstructorUsedError;
-  String get enderecoDestino => throw _privateConstructorUsedError;
   double get quantidade => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
   bool get podeExecutar => throw _privateConstructorUsedError;
-  String? get divergencia => throw _privateConstructorUsedError;
-  DateTime? get dtinicio => throw _privateConstructorUsedError;
-  DateTime? get dtfim => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -47,17 +43,13 @@ abstract class $OrdemServicoCopyWith<$Res> {
   @useResult
   $Res call(
       {int numos,
+      int ordem,
       int codprod,
-      String produto,
       String descricao,
       String enderecoOrigem,
-      String enderecoDestino,
       double quantidade,
       String status,
-      bool podeExecutar,
-      String? divergencia,
-      DateTime? dtinicio,
-      DateTime? dtfim});
+      bool podeExecutar});
 }
 
 /// @nodoc
@@ -74,31 +66,27 @@ class _$OrdemServicoCopyWithImpl<$Res, $Val extends OrdemServico>
   @override
   $Res call({
     Object? numos = null,
+    Object? ordem = null,
     Object? codprod = null,
-    Object? produto = null,
     Object? descricao = null,
     Object? enderecoOrigem = null,
-    Object? enderecoDestino = null,
     Object? quantidade = null,
     Object? status = null,
     Object? podeExecutar = null,
-    Object? divergencia = freezed,
-    Object? dtinicio = freezed,
-    Object? dtfim = freezed,
   }) {
     return _then(_value.copyWith(
       numos: null == numos
           ? _value.numos
           : numos // ignore: cast_nullable_to_non_nullable
               as int,
+      ordem: null == ordem
+          ? _value.ordem
+          : ordem // ignore: cast_nullable_to_non_nullable
+              as int,
       codprod: null == codprod
           ? _value.codprod
           : codprod // ignore: cast_nullable_to_non_nullable
               as int,
-      produto: null == produto
-          ? _value.produto
-          : produto // ignore: cast_nullable_to_non_nullable
-              as String,
       descricao: null == descricao
           ? _value.descricao
           : descricao // ignore: cast_nullable_to_non_nullable
@@ -106,10 +94,6 @@ class _$OrdemServicoCopyWithImpl<$Res, $Val extends OrdemServico>
       enderecoOrigem: null == enderecoOrigem
           ? _value.enderecoOrigem
           : enderecoOrigem // ignore: cast_nullable_to_non_nullable
-              as String,
-      enderecoDestino: null == enderecoDestino
-          ? _value.enderecoDestino
-          : enderecoDestino // ignore: cast_nullable_to_non_nullable
               as String,
       quantidade: null == quantidade
           ? _value.quantidade
@@ -123,18 +107,6 @@ class _$OrdemServicoCopyWithImpl<$Res, $Val extends OrdemServico>
           ? _value.podeExecutar
           : podeExecutar // ignore: cast_nullable_to_non_nullable
               as bool,
-      divergencia: freezed == divergencia
-          ? _value.divergencia
-          : divergencia // ignore: cast_nullable_to_non_nullable
-              as String?,
-      dtinicio: freezed == dtinicio
-          ? _value.dtinicio
-          : dtinicio // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      dtfim: freezed == dtfim
-          ? _value.dtfim
-          : dtfim // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
     ) as $Val);
   }
 }
@@ -149,17 +121,13 @@ abstract class _$$OrdemServicoImplCopyWith<$Res>
   @useResult
   $Res call(
       {int numos,
+      int ordem,
       int codprod,
-      String produto,
       String descricao,
       String enderecoOrigem,
-      String enderecoDestino,
       double quantidade,
       String status,
-      bool podeExecutar,
-      String? divergencia,
-      DateTime? dtinicio,
-      DateTime? dtfim});
+      bool podeExecutar});
 }
 
 /// @nodoc
@@ -174,31 +142,27 @@ class __$$OrdemServicoImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? numos = null,
+    Object? ordem = null,
     Object? codprod = null,
-    Object? produto = null,
     Object? descricao = null,
     Object? enderecoOrigem = null,
-    Object? enderecoDestino = null,
     Object? quantidade = null,
     Object? status = null,
     Object? podeExecutar = null,
-    Object? divergencia = freezed,
-    Object? dtinicio = freezed,
-    Object? dtfim = freezed,
   }) {
     return _then(_$OrdemServicoImpl(
       numos: null == numos
           ? _value.numos
           : numos // ignore: cast_nullable_to_non_nullable
               as int,
+      ordem: null == ordem
+          ? _value.ordem
+          : ordem // ignore: cast_nullable_to_non_nullable
+              as int,
       codprod: null == codprod
           ? _value.codprod
           : codprod // ignore: cast_nullable_to_non_nullable
               as int,
-      produto: null == produto
-          ? _value.produto
-          : produto // ignore: cast_nullable_to_non_nullable
-              as String,
       descricao: null == descricao
           ? _value.descricao
           : descricao // ignore: cast_nullable_to_non_nullable
@@ -206,10 +170,6 @@ class __$$OrdemServicoImplCopyWithImpl<$Res>
       enderecoOrigem: null == enderecoOrigem
           ? _value.enderecoOrigem
           : enderecoOrigem // ignore: cast_nullable_to_non_nullable
-              as String,
-      enderecoDestino: null == enderecoDestino
-          ? _value.enderecoDestino
-          : enderecoDestino // ignore: cast_nullable_to_non_nullable
               as String,
       quantidade: null == quantidade
           ? _value.quantidade
@@ -223,18 +183,6 @@ class __$$OrdemServicoImplCopyWithImpl<$Res>
           ? _value.podeExecutar
           : podeExecutar // ignore: cast_nullable_to_non_nullable
               as bool,
-      divergencia: freezed == divergencia
-          ? _value.divergencia
-          : divergencia // ignore: cast_nullable_to_non_nullable
-              as String?,
-      dtinicio: freezed == dtinicio
-          ? _value.dtinicio
-          : dtinicio // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
-      dtfim: freezed == dtfim
-          ? _value.dtfim
-          : dtfim // ignore: cast_nullable_to_non_nullable
-              as DateTime?,
     ));
   }
 }
@@ -244,17 +192,13 @@ class __$$OrdemServicoImplCopyWithImpl<$Res>
 class _$OrdemServicoImpl implements _OrdemServico {
   const _$OrdemServicoImpl(
       {required this.numos,
+      this.ordem = 0,
       required this.codprod,
-      required this.produto,
       required this.descricao,
       required this.enderecoOrigem,
-      required this.enderecoDestino,
-      required this.quantidade,
-      required this.status,
-      this.podeExecutar = false,
-      this.divergencia,
-      this.dtinicio,
-      this.dtfim});
+      this.quantidade = 0.0,
+      this.status = 'PENDENTE',
+      this.podeExecutar = false});
 
   factory _$OrdemServicoImpl.fromJson(Map<String, dynamic> json) =>
       _$$OrdemServicoImplFromJson(json);
@@ -262,32 +206,27 @@ class _$OrdemServicoImpl implements _OrdemServico {
   @override
   final int numos;
   @override
-  final int codprod;
+  @JsonKey()
+  final int ordem;
   @override
-  final String produto;
+  final int codprod;
   @override
   final String descricao;
   @override
   final String enderecoOrigem;
   @override
-  final String enderecoDestino;
-  @override
+  @JsonKey()
   final double quantidade;
   @override
+  @JsonKey()
   final String status;
   @override
   @JsonKey()
   final bool podeExecutar;
-  @override
-  final String? divergencia;
-  @override
-  final DateTime? dtinicio;
-  @override
-  final DateTime? dtfim;
 
   @override
   String toString() {
-    return 'OrdemServico(numos: $numos, codprod: $codprod, produto: $produto, descricao: $descricao, enderecoOrigem: $enderecoOrigem, enderecoDestino: $enderecoDestino, quantidade: $quantidade, status: $status, podeExecutar: $podeExecutar, divergencia: $divergencia, dtinicio: $dtinicio, dtfim: $dtfim)';
+    return 'OrdemServico(numos: $numos, ordem: $ordem, codprod: $codprod, descricao: $descricao, enderecoOrigem: $enderecoOrigem, quantidade: $quantidade, status: $status, podeExecutar: $podeExecutar)';
   }
 
   @override
@@ -296,42 +235,23 @@ class _$OrdemServicoImpl implements _OrdemServico {
         (other.runtimeType == runtimeType &&
             other is _$OrdemServicoImpl &&
             (identical(other.numos, numos) || other.numos == numos) &&
+            (identical(other.ordem, ordem) || other.ordem == ordem) &&
             (identical(other.codprod, codprod) || other.codprod == codprod) &&
-            (identical(other.produto, produto) || other.produto == produto) &&
             (identical(other.descricao, descricao) ||
                 other.descricao == descricao) &&
             (identical(other.enderecoOrigem, enderecoOrigem) ||
                 other.enderecoOrigem == enderecoOrigem) &&
-            (identical(other.enderecoDestino, enderecoDestino) ||
-                other.enderecoDestino == enderecoDestino) &&
             (identical(other.quantidade, quantidade) ||
                 other.quantidade == quantidade) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.podeExecutar, podeExecutar) ||
-                other.podeExecutar == podeExecutar) &&
-            (identical(other.divergencia, divergencia) ||
-                other.divergencia == divergencia) &&
-            (identical(other.dtinicio, dtinicio) ||
-                other.dtinicio == dtinicio) &&
-            (identical(other.dtfim, dtfim) || other.dtfim == dtfim));
+                other.podeExecutar == podeExecutar));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      numos,
-      codprod,
-      produto,
-      descricao,
-      enderecoOrigem,
-      enderecoDestino,
-      quantidade,
-      status,
-      podeExecutar,
-      divergencia,
-      dtinicio,
-      dtfim);
+  int get hashCode => Object.hash(runtimeType, numos, ordem, codprod, descricao,
+      enderecoOrigem, quantidade, status, podeExecutar);
 
   @JsonKey(ignore: true)
   @override
@@ -350,17 +270,13 @@ class _$OrdemServicoImpl implements _OrdemServico {
 abstract class _OrdemServico implements OrdemServico {
   const factory _OrdemServico(
       {required final int numos,
+      final int ordem,
       required final int codprod,
-      required final String produto,
       required final String descricao,
       required final String enderecoOrigem,
-      required final String enderecoDestino,
-      required final double quantidade,
-      required final String status,
-      final bool podeExecutar,
-      final String? divergencia,
-      final DateTime? dtinicio,
-      final DateTime? dtfim}) = _$OrdemServicoImpl;
+      final double quantidade,
+      final String status,
+      final bool podeExecutar}) = _$OrdemServicoImpl;
 
   factory _OrdemServico.fromJson(Map<String, dynamic> json) =
       _$OrdemServicoImpl.fromJson;
@@ -368,27 +284,19 @@ abstract class _OrdemServico implements OrdemServico {
   @override
   int get numos;
   @override
-  int get codprod;
+  int get ordem;
   @override
-  String get produto;
+  int get codprod;
   @override
   String get descricao;
   @override
   String get enderecoOrigem;
-  @override
-  String get enderecoDestino;
   @override
   double get quantidade;
   @override
   String get status;
   @override
   bool get podeExecutar;
-  @override
-  String? get divergencia;
-  @override
-  DateTime? get dtinicio;
-  @override
-  DateTime? get dtfim;
   @override
   @JsonKey(ignore: true)
   _$$OrdemServicoImplCopyWith<_$OrdemServicoImpl> get copyWith =>
