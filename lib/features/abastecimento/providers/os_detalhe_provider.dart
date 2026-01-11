@@ -192,7 +192,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     try {
       final apiService = ref.read(apiServiceProvider);
       await apiService.post('/wms/fase1/os/$numos/vincular-unitizador', {
-        'codigo_unitizador': codigoBarrasUnitizador,
+        'codigo_barras_unitizador': codigoBarrasUnitizador,
       });
 
       // Atualiza estado local
