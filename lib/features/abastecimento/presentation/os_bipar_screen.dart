@@ -1247,8 +1247,21 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       return;
     }
 
-    // Abre bottom sheet para conferência de quantidade
-    _mostrarConferenciaQuantidade(ean, os);
+    // Primeiro valida o código de barras na API
+    setState(() => _isProcessing = true);
+    
+    final (sucesso, erro) = await ref
+        .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
+        .biparProduto(ean);
+    
+    setState(() => _isProcessing = false);
+
+    if (sucesso) {
+      // Produto válido, abre bottom sheet para conferência de quantidade
+      _mostrarConferenciaQuantidade(ean, os);
+    } else {
+      _mostrarErro(erro ?? 'Código de barras inválido!');
+    }
   }
 
   /// Mostra bottom sheet para conferência de quantidade
@@ -1888,7 +1901,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     );
   }
 
-  /// Confirma a bipagem após validação de quantidade e já finaliza a OS
+  /// Finaliza a OS com a quantidade conferida
   Future<void> _confirmarBipagem(
     String codigoBarras,
     OsDetalhe os,
@@ -1897,9 +1910,13 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   ) async {
     setState(() => _isProcessing = true);
 
+    // Calcula quantidade total
+    final qtConferida = (caixas * os.multiplo) + unidades;
+
+    // Produto já foi validado, agora só finaliza
     final (sucesso, erro) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .biparProdutoEFinalizar(codigoBarras, caixas, unidades, os.multiplo);
+        .finalizarComQuantidade(qtConferida, caixas, unidades);
 
     setState(() => _isProcessing = false);
 

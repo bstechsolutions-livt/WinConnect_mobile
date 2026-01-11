@@ -240,7 +240,26 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     }
   }
 
-  // Finalizar OS
+  // Finalizar OS com quantidade conferida
+  Future<(bool, String?)> finalizarComQuantidade(
+    int qtConferida,
+    int caixas,
+    int unidades,
+  ) async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.post('/wms/fase1/os/$numos/finalizar', {
+        'qt_conferida': qtConferida,
+        'caixas': caixas,
+        'unidades': unidades,
+      });
+      return (true, null);
+    } catch (e) {
+      return (false, _extrairMensagemErro(e));
+    }
+  }
+
+  // Finalizar OS (versão antiga - mantida para compatibilidade)
   Future<(bool, String?)> finalizar(double quantidade) async {
     try {
       final apiService = ref.read(apiServiceProvider);
