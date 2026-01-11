@@ -156,6 +156,12 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     }
   }
 
+  // Marca produto como bipado (apenas atualiza estado local)
+  // Chamado após conferência de quantidade, antes de vincular unitizador
+  Future<void> marcarProdutoBipado() async {
+    state = AsyncValue.data(state.value!.copyWith(produtoBipado: true));
+  }
+
   // Bipar produto COM conferência de quantidade
   // Retorna (sucesso, mensagemErro)
   Future<(bool, String?)> biparProdutoComQuantidade(

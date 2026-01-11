@@ -30,6 +30,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   final FocusNode _unitizadorFocusNode = FocusNode();
   bool _isProcessing = false;
 
+  // Cache da quantidade conferida (usado após vincular unitizador)
+  int? _caixasConferidas;
+  int? _unidadesConferidas;
+  int? _qtConferida;
+  bool _quantidadeMenor = false;
+  int? _autorizadorMatricula;
+  String? _autorizadorSenha;
+
   @override
   void initState() {
     super.initState();
@@ -1249,11 +1257,11 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     // Primeiro valida o código de barras na API
     setState(() => _isProcessing = true);
-    
+
     final (sucesso, erro) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
         .biparProduto(ean);
-    
+
     setState(() => _isProcessing = false);
 
     if (sucesso) {
@@ -1266,8 +1274,18 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
   /// Mostra bottom sheet para conferência de quantidade
   void _mostrarConferenciaQuantidade(String codigoBarras, OsDetalhe os) {
-    final caixasController = TextEditingController(text: '0');
-    final unidadesController = TextEditingController(text: '0');
+    _mostrarConferenciaQuantidadeComValores(codigoBarras, os, 0, 0);
+  }
+
+  /// Mostra bottom sheet para conferência de quantidade COM valores iniciais
+  void _mostrarConferenciaQuantidadeComValores(
+    String codigoBarras,
+    OsDetalhe os,
+    int caixasIniciais,
+    int unidadesIniciais,
+  ) {
+    final caixasController = TextEditingController(text: '$caixasIniciais');
+    final unidadesController = TextEditingController(text: '$unidadesIniciais');
 
     final multiplo = os.multiplo;
     final qtSolicitada = os.qtSolicitada.toInt();
@@ -1302,6 +1320,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
               child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.85,
+                ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: const BorderRadius.vertical(
@@ -1309,580 +1330,532 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                   ),
                 ),
                 child: SafeArea(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Handle bar
-                      Container(
-                        margin: const EdgeInsets.only(top: 12),
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.outline.withValues(alpha: 0.4),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-
-                      // Header
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.inventory_2,
-                              size: 48,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              'CONFERÊNCIA DE QUANTIDADE',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Digite a quantidade que você pegou',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      // Quantidade Esperada
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.blue[700],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'QUANTIDADE ESPERADA',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '$qtSolicitada',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 36,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'UN',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (multiplo > 1) ...[
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  unidadesEsperadas > 0
-                                      ? '$caixasEsperadas CX + $unidadesEsperadas UN'
-                                      : '$caixasEsperadas CX',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Informação do múltiplo
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: Colors.amber.withValues(alpha: 0.5),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Handle bar
+                        Container(
+                          margin: const EdgeInsets.only(top: 12),
+                          width: 40,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              color: Colors.amber[700],
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '1 CAIXA = $multiplo UNIDADES',
-                              style: TextStyle(
-                                color: Colors.amber[900],
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
 
-                      const SizedBox(height: 20),
-
-                      // Campos de entrada
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Row(
-                          children: [
-                            // Campo Caixas
-                            Expanded(
-                              child: Column(
-                                children: [
-                                  Text(
-                                    'CAIXAS',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.green[50],
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.green,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        IconButton(
-                                          onPressed: () {
-                                            final atual =
-                                                int.tryParse(
-                                                  caixasController.text,
-                                                ) ??
-                                                0;
-                                            if (atual > 0) {
-                                              caixasController.text =
-                                                  '${atual - 1}';
-                                              setModalState(() {});
-                                            }
-                                          },
-                                          icon: const Icon(Icons.remove),
-                                          color: Colors.green[700],
-                                        ),
-                                        Expanded(
-                                          child: TextField(
-                                            controller: caixasController,
-                                            textAlign: TextAlign.center,
-                                            keyboardType: TextInputType.number,
-                                            style: const TextStyle(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            decoration: const InputDecoration(
-                                              border: InputBorder.none,
-                                              contentPadding: EdgeInsets.zero,
-                                            ),
-                                            inputFormatters: [
-                                              FilteringTextInputFormatter
-                                                  .digitsOnly,
-                                            ],
-                                            onChanged: (_) =>
-                                                setModalState(() {}),
-                                          ),
-                                        ),
-                                        IconButton(
-                                          onPressed: () {
-                                            final atual =
-                                                int.tryParse(
-                                                  caixasController.text,
-                                                ) ??
-                                                0;
-                                            caixasController.text =
-                                                '${atual + 1}';
-                                            setModalState(() {});
-                                          },
-                                          icon: const Icon(Icons.add),
-                                          color: Colors.green[700],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${caixasDigitadas * multiplo} un',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.green[700],
-                                    ),
-                                  ),
-                                ],
+                        // Header
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.inventory_2,
+                                size: 40,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
-                            ),
-
-                            // Separador "+"
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              child: Text(
-                                '+',
+                              const SizedBox(height: 8),
+                              const Text(
+                                'CONFERÊNCIA DE QUANTIDADE',
                                 style: TextStyle(
-                                  fontSize: 24,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Digite a quantidade que você pegou',
+                                style: TextStyle(
+                                  fontSize: 13,
                                   color: Theme.of(
                                     context,
                                   ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
-                            ),
+                            ],
+                          ),
+                        ),
 
-                            // Campo Unidades
-                            Expanded(
-                              child: Column(
+                        // Quantidade Esperada
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[700],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: [
+                              Text(
+                                'QUANTIDADE ESPERADA',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    'UNIDADES',
-                                    style: TextStyle(
-                                      fontSize: 12,
+                                    '$qtSolicitada',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 36,
                                       fontWeight: FontWeight.bold,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue[50],
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: Colors.blue,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        IconButton(
-                                          onPressed: () {
-                                            final atual =
-                                                int.tryParse(
-                                                  unidadesController.text,
-                                                ) ??
-                                                0;
-                                            if (atual > 0) {
-                                              unidadesController.text =
-                                                  '${atual - 1}';
-                                              setModalState(() {});
-                                            }
-                                          },
-                                          icon: const Icon(Icons.remove),
-                                          color: Colors.blue[700],
-                                        ),
-                                        Expanded(
-                                          child: TextField(
-                                            controller: unidadesController,
-                                            textAlign: TextAlign.center,
-                                            keyboardType: TextInputType.number,
-                                            style: const TextStyle(
-                                              fontSize: 24,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                            decoration: const InputDecoration(
-                                              border: InputBorder.none,
-                                              contentPadding: EdgeInsets.zero,
-                                            ),
-                                            inputFormatters: [
-                                              FilteringTextInputFormatter
-                                                  .digitsOnly,
-                                            ],
-                                            onChanged: (_) =>
-                                                setModalState(() {}),
-                                          ),
-                                        ),
-                                        IconButton(
-                                          onPressed: () {
-                                            final atual =
-                                                int.tryParse(
-                                                  unidadesController.text,
-                                                ) ??
-                                                0;
-                                            unidadesController.text =
-                                                '${atual + 1}';
-                                            setModalState(() {});
-                                          },
-                                          icon: const Icon(Icons.add),
-                                          color: Colors.blue[700],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'avulsas',
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'UN',
                                     style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue[700],
+                                      color: Colors.white70,
+                                      fontSize: 18,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
+                              if (multiplo > 1) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    unidadesEsperadas > 0
+                                        ? '$caixasEsperadas CX + $unidadesEsperadas UN'
+                                        : '$caixasEsperadas CX',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                      ),
 
-                      const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                      // Total digitado
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 20),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: quantidadeCorreta
-                              ? Colors.green[50]
-                              : temDiferenca
-                              ? Colors.red[50]
-                              : Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
+                        // Informação do múltiplo
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.amber.withValues(alpha: 0.5),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: Colors.amber[700],
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '1 CAIXA = $multiplo UNIDADES',
+                                style: TextStyle(
+                                  color: Colors.amber[900],
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Campos de entrada
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            children: [
+                              // Campo Caixas
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'CAIXAS',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.green[50],
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.green,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          IconButton(
+                                            onPressed: () {
+                                              final atual =
+                                                  int.tryParse(
+                                                    caixasController.text,
+                                                  ) ??
+                                                  0;
+                                              if (atual > 0) {
+                                                caixasController.text =
+                                                    '${atual - 1}';
+                                                setModalState(() {});
+                                              }
+                                            },
+                                            icon: const Icon(Icons.remove),
+                                            color: Colors.green[700],
+                                          ),
+                                          Expanded(
+                                            child: TextField(
+                                              controller: caixasController,
+                                              textAlign: TextAlign.center,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              style: const TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                contentPadding: EdgeInsets.zero,
+                                              ),
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter
+                                                    .digitsOnly,
+                                              ],
+                                              onChanged: (_) =>
+                                                  setModalState(() {}),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () {
+                                              final atual =
+                                                  int.tryParse(
+                                                    caixasController.text,
+                                                  ) ??
+                                                  0;
+                                              caixasController.text =
+                                                  '${atual + 1}';
+                                              setModalState(() {});
+                                            },
+                                            icon: const Icon(Icons.add),
+                                            color: Colors.green[700],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${caixasDigitadas * multiplo} un',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.green[700],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Separador "+"
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                child: Text(
+                                  '+',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+
+                              // Campo Unidades
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'UNIDADES',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue[50],
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.blue,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          IconButton(
+                                            onPressed: () {
+                                              final atual =
+                                                  int.tryParse(
+                                                    unidadesController.text,
+                                                  ) ??
+                                                  0;
+                                              if (atual > 0) {
+                                                unidadesController.text =
+                                                    '${atual - 1}';
+                                                setModalState(() {});
+                                              }
+                                            },
+                                            icon: const Icon(Icons.remove),
+                                            color: Colors.blue[700],
+                                          ),
+                                          Expanded(
+                                            child: TextField(
+                                              controller: unidadesController,
+                                              textAlign: TextAlign.center,
+                                              keyboardType:
+                                                  TextInputType.number,
+                                              style: const TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              decoration: const InputDecoration(
+                                                border: InputBorder.none,
+                                                contentPadding: EdgeInsets.zero,
+                                              ),
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter
+                                                    .digitsOnly,
+                                              ],
+                                              onChanged: (_) =>
+                                                  setModalState(() {}),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () {
+                                              final atual =
+                                                  int.tryParse(
+                                                    unidadesController.text,
+                                                  ) ??
+                                                  0;
+                                              unidadesController.text =
+                                                  '${atual + 1}';
+                                              setModalState(() {});
+                                            },
+                                            icon: const Icon(Icons.add),
+                                            color: Colors.blue[700],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'avulsas',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.blue[700],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Total digitado
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
                             color: quantidadeCorreta
-                                ? Colors.green
+                                ? Colors.green[50]
                                 : temDiferenca
-                                ? Colors.red
+                                ? Colors.red[50]
                                 : Theme.of(
                                     context,
-                                  ).colorScheme.outline.withValues(alpha: 0.3),
-                            width: 2,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                if (quantidadeCorreta)
-                                  Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green[700],
-                                    size: 20,
-                                  ),
-                                if (temDiferenca)
-                                  Icon(
-                                    Icons.error,
-                                    color: Colors.red[700],
-                                    size: 20,
-                                  ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'TOTAL DIGITADO',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: quantidadeCorreta
-                                        ? Colors.green[700]
-                                        : temDiferenca
-                                        ? Colors.red[700]
-                                        : Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '$totalDigitado',
-                                  style: TextStyle(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.bold,
-                                    color: quantidadeCorreta
-                                        ? Colors.green[700]
-                                        : temDiferenca
-                                        ? Colors.red[700]
-                                        : Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'UN',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: quantidadeCorreta
-                                        ? Colors.green[700]
-                                        : temDiferenca
-                                        ? Colors.red[700]
-                                        : Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (temDiferenca) ...[
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.red[100],
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  diferenca > 0
-                                      ? '+$diferenca UN (sobra)'
-                                      : '$diferenca UN (falta)',
-                                  style: TextStyle(
-                                    color: Colors.red[700],
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            if (quantidadeCorreta) ...[
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.green[100],
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  '✓ Quantidade correta!',
-                                  style: TextStyle(
-                                    color: Colors.green[700],
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Botão Finalizar (quantidade correta)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: quantidadeCorreta
-                                ? () async {
-                                    Navigator.pop(ctx);
-                                    await _confirmarBipagem(
-                                      codigoBarras,
-                                      os,
-                                      caixasDigitadas,
-                                      unidadesDigitadas,
-                                    );
-                                  }
-                                : null,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              disabledBackgroundColor: Colors.grey[400],
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 16,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  quantidadeCorreta
-                                      ? Icons.check_circle
-                                      : Icons.block,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'FINALIZAR TAREFA',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                                  ).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: quantidadeCorreta
+                                  ? Colors.green
+                                  : temDiferenca
+                                  ? Colors.red
+                                  : Theme.of(context).colorScheme.outline
+                                        .withValues(alpha: 0.3),
+                              width: 2,
                             ),
                           ),
+                          child: Column(
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (quantidadeCorreta)
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: Colors.green[700],
+                                      size: 20,
+                                    ),
+                                  if (temDiferenca)
+                                    Icon(
+                                      Icons.error,
+                                      color: Colors.red[700],
+                                      size: 20,
+                                    ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'TOTAL DIGITADO',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: quantidadeCorreta
+                                          ? Colors.green[700]
+                                          : temDiferenca
+                                          ? Colors.red[700]
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '$totalDigitado',
+                                    style: TextStyle(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: quantidadeCorreta
+                                          ? Colors.green[700]
+                                          : temDiferenca
+                                          ? Colors.red[700]
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'UN',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: quantidadeCorreta
+                                          ? Colors.green[700]
+                                          : temDiferenca
+                                          ? Colors.red[700]
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (temDiferenca) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red[100],
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    diferenca > 0
+                                        ? '+$diferenca UN (sobra)'
+                                        : '$diferenca UN (falta)',
+                                    style: TextStyle(
+                                      color: Colors.red[700],
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              if (quantidadeCorreta) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green[100],
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    '✓ Quantidade correta!',
+                                    style: TextStyle(
+                                      color: Colors.green[700],
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                      ),
 
-                      // Botão FINALIZAR COM MENOS (condicional - aparece só quando qtd < solicitada)
-                      if (totalDigitado > 0 && totalDigitado < qtSolicitada) ...[
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 20),
+
+                        // Botão Finalizar (quantidade correta)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: SizedBox(
                             width: double.infinity,
-                            child: OutlinedButton(
-                              onPressed: () {
-                                Navigator.pop(ctx);
-                                _mostrarAutorizacaoQuantidadeMenor(
-                                  codigoBarras,
-                                  os,
-                                  caixasDigitadas,
-                                  unidadesDigitadas,
-                                  totalDigitado,
-                                );
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.orange[700],
-                                side: BorderSide(color: Colors.orange[700]!),
+                            child: FilledButton(
+                              onPressed: quantidadeCorreta
+                                  ? () async {
+                                      Navigator.pop(ctx);
+                                      await _confirmarBipagem(
+                                        codigoBarras,
+                                        os,
+                                        caixasDigitadas,
+                                        unidadesDigitadas,
+                                      );
+                                    }
+                                  : null,
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                disabledBackgroundColor: Colors.grey[400],
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 16,
                                 ),
@@ -1894,14 +1867,15 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                    Icons.warning_amber_rounded,
+                                    quantidadeCorreta
+                                        ? Icons.check_circle
+                                        : Icons.block,
                                     size: 20,
-                                    color: Colors.orange[700],
                                   ),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    'FINALIZAR COM $totalDigitado UN (SUPERVISOR)',
-                                    style: const TextStyle(
+                                  const Text(
+                                    'FINALIZAR TAREFA',
+                                    style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -1910,10 +1884,62 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                             ),
                           ),
                         ),
-                      ],
 
-                      const SizedBox(height: 20),
-                    ],
+                        // Botão único que muda conforme situação
+                        // Se quantidade menor que solicitada, abre tela de autorização
+                        if (totalDigitado > 0 &&
+                            totalDigitado < qtSolicitada) ...[
+                          const SizedBox(height: 12),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: FilledButton(
+                                onPressed: () {
+                                  // Abre bottom sheet de autorização
+                                  Navigator.pop(ctx);
+                                  _mostrarAutorizacaoSupervisor(
+                                    codigoBarras,
+                                    os,
+                                    caixasDigitadas,
+                                    unidadesDigitadas,
+                                    totalDigitado,
+                                  );
+                                },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.orange[700],
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.warning_amber_rounded,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'FINALIZAR COM $totalDigitado UN',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1924,8 +1950,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     );
   }
 
-  /// Mostra bottom sheet para autorização de quantidade menor
-  void _mostrarAutorizacaoQuantidadeMenor(
+  /// Mostra bottom sheet para autorização de supervisor (quantidade menor)
+  void _mostrarAutorizacaoSupervisor(
     String codigoBarras,
     OsDetalhe os,
     int caixas,
@@ -1940,8 +1966,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      isDismissible: true,
-      enableDrag: true,
+      isDismissible: false,
+      enableDrag: false,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -1967,48 +1993,46 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           width: 40,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .outline
-                                .withValues(alpha: 0.4),
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.outline.withValues(alpha: 0.4),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
 
                         // Header
                         Padding(
-                          padding: const EdgeInsets.all(20),
+                          padding: const EdgeInsets.all(16),
                           child: Column(
                             children: [
                               Container(
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
                                   color: Colors.orange.withValues(alpha: 0.15),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  Icons.warning_amber_rounded,
-                                  size: 48,
+                                  Icons.supervisor_account,
+                                  size: 40,
                                   color: Colors.orange[700],
                                 ),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 12),
                               const Text(
-                                'QUANTIDADE MENOR',
+                                'AUTORIZAÇÃO NECESSÁRIA',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 4),
                               Text(
-                                'Você está finalizando com $totalDigitado UN\nde ${os.qtSolicitada.toInt()} UN solicitadas',
-                                textAlign: TextAlign.center,
+                                'Finalizando com $totalDigitado de ${os.qtSolicitada.toInt()} UN',
                                 style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
+                                  fontSize: 13,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -2029,14 +2053,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           child: Row(
                             children: [
                               Icon(
-                                Icons.supervisor_account,
+                                Icons.warning_amber_rounded,
                                 color: Colors.orange[700],
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Requer autorização de um supervisor',
+                                  'Faltam ${os.qtSolicitada.toInt() - totalDigitado} unidades',
                                   style: TextStyle(
                                     color: Colors.orange[900],
                                     fontSize: 14,
@@ -2048,7 +2072,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
 
                         // Campo Matrícula
                         Padding(
@@ -2069,7 +2093,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
 
                         // Campo Senha
                         Padding(
@@ -2087,7 +2111,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
 
                         // Botões
                         Padding(
@@ -2098,16 +2122,25 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                 child: OutlinedButton(
                                   onPressed: isLoading
                                       ? null
-                                      : () => Navigator.pop(ctx),
+                                      : () {
+                                          // Fecha este bottom sheet e reabre o de quantidade
+                                          Navigator.pop(ctx);
+                                          _mostrarConferenciaQuantidadeComValores(
+                                            codigoBarras,
+                                            os,
+                                            caixas,
+                                            unidades,
+                                          );
+                                        },
                                   style: OutlinedButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
+                                      vertical: 14,
                                     ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                  child: const Text('CANCELAR'),
+                                  child: const Text('VOLTAR'),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -2120,26 +2153,24 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                           final matricula = int.tryParse(
                                             matriculaController.text.trim(),
                                           );
-                                          final senha =
-                                              senhaController.text.trim();
+                                          final senha = senhaController.text
+                                              .trim();
 
                                           if (matricula == null) {
-                                            _mostrarErro(
-                                              'Digite a matrícula do supervisor',
-                                            );
+                                            _mostrarErro('Digite a matrícula');
                                             return;
                                           }
                                           if (senha.isEmpty) {
-                                            _mostrarErro(
-                                              'Digite a senha do supervisor',
-                                            );
+                                            _mostrarErro('Digite a senha');
                                             return;
                                           }
 
                                           setModalState(() => isLoading = true);
 
-                                          Navigator.pop(ctx);
-                                          await _finalizarComQuantidadeMenor(
+                                          // Apenas guarda em cache e marca como bipado
+                                          // A finalização só acontece após vincular unitizador
+                                          await _confirmarBipagemQuantidadeMenor(
+                                            codigoBarras,
                                             os,
                                             caixas,
                                             unidades,
@@ -2147,11 +2178,19 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                             matricula,
                                             senha,
                                           );
+
+                                          setModalState(
+                                            () => isLoading = false,
+                                          );
+
+                                          if (mounted) {
+                                            Navigator.pop(ctx);
+                                          }
                                         },
                                   style: FilledButton.styleFrom(
                                     backgroundColor: Colors.orange[700],
                                     padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
+                                      vertical: 14,
                                     ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
@@ -2166,19 +2205,11 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                             color: Colors.white,
                                           ),
                                         )
-                                      : const Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.check, size: 20),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              'AUTORIZAR',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
+                                      : const Text(
+                                          'AUTORIZAR E FINALIZAR',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                 ),
                               ),
@@ -2186,7 +2217,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -2199,63 +2230,68 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     );
   }
 
-  /// Finaliza a OS com quantidade menor (autorizada por supervisor)
-  Future<void> _finalizarComQuantidadeMenor(
-    OsDetalhe os,
-    int caixas,
-    int unidades,
-    int qtConferida,
-    int autorizadorMatricula,
-    String autorizadorSenha,
-  ) async {
-    setState(() => _isProcessing = true);
-
-    final (sucesso, erro) = await ref
-        .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .finalizarComQuantidadeMenor(
-          qtConferida,
-          caixas,
-          unidades,
-          autorizadorMatricula,
-          autorizadorSenha,
-        );
-
-    setState(() => _isProcessing = false);
-
-    if (sucesso && mounted) {
-      _mostrarSucesso('Tarefa finalizada com sucesso!');
-      Navigator.of(context).pop(true);
-    } else {
-      _mostrarErro(erro ?? 'Erro ao finalizar!');
-    }
-  }
-
-  /// Finaliza a OS com a quantidade conferida
+  /// Confirma a bipagem e guarda quantidade em cache (não finaliza ainda!)
+  /// A finalização só acontece após vincular o unitizador
   Future<void> _confirmarBipagem(
     String codigoBarras,
     OsDetalhe os,
     int caixas,
     int unidades,
   ) async {
-    setState(() => _isProcessing = true);
-
     // Calcula quantidade total
     final qtConferida = (caixas * os.multiplo) + unidades;
 
-    // Produto já foi validado, agora só finaliza
-    final (sucesso, erro) = await ref
+    // Guarda em cache para usar depois de vincular unitizador
+    setState(() {
+      _caixasConferidas = caixas;
+      _unidadesConferidas = unidades;
+      _qtConferida = qtConferida;
+      _quantidadeMenor = false;
+      _autorizadorMatricula = null;
+      _autorizadorSenha = null;
+    });
+
+    // Marca produto como bipado no provider (atualiza estado local)
+    await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .finalizarComQuantidade(qtConferida, caixas, unidades);
+        .marcarProdutoBipado();
 
-    setState(() => _isProcessing = false);
+    _mostrarSucesso('Quantidade conferida: $qtConferida UN');
 
-    if (sucesso && mounted) {
-      _mostrarSucesso('Tarefa finalizada com sucesso!');
-      // Volta para tela anterior (lista de OS ou seleção de rua)
-      Navigator.of(context).pop(true);
-    } else {
-      _mostrarErro(erro ?? 'Erro ao finalizar!');
-    }
+    // Foca no campo de unitizador
+    _unitizadorFocusNode.requestFocus();
+  }
+
+  /// Confirma bipagem com quantidade menor (requer autorização)
+  /// Guarda em cache incluindo dados do autorizador
+  Future<void> _confirmarBipagemQuantidadeMenor(
+    String codigoBarras,
+    OsDetalhe os,
+    int caixas,
+    int unidades,
+    int totalDigitado,
+    int matricula,
+    String senha,
+  ) async {
+    // Guarda em cache para usar depois de vincular unitizador
+    setState(() {
+      _caixasConferidas = caixas;
+      _unidadesConferidas = unidades;
+      _qtConferida = totalDigitado;
+      _quantidadeMenor = true;
+      _autorizadorMatricula = matricula;
+      _autorizadorSenha = senha;
+    });
+
+    // Marca produto como bipado no provider
+    await ref
+        .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
+        .marcarProdutoBipado();
+
+    _mostrarSucesso('Quantidade conferida: $totalDigitado UN (autorizado)');
+
+    // Foca no campo de unitizador
+    _unitizadorFocusNode.requestFocus();
   }
 
   Future<void> _vincularUnitizador(OsDetalhe os) async {
@@ -2269,23 +2305,57 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     final (sucesso, erro) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
         .vincularUnitizador(codigo);
-    setState(() => _isProcessing = false);
 
     if (sucesso) {
       _unitizadorController.clear();
-      _mostrarSucesso('Unitizador vinculado!');
+      // Vinculou unitizador, agora finaliza automaticamente!
+      await _finalizarOs(os);
     } else {
+      setState(() => _isProcessing = false);
       _mostrarErro(erro ?? 'Erro ao vincular unitizador');
     }
   }
 
   Future<void> _finalizarOs(OsDetalhe os) async {
+    // Usa os dados em cache da conferência de quantidade
+    if (_qtConferida == null ||
+        _caixasConferidas == null ||
+        _unidadesConferidas == null) {
+      _mostrarErro('Erro: quantidade não conferida');
+      return;
+    }
+
     setState(() => _isProcessing = true);
-    final (sucesso, erro) = await ref
-        .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .finalizar(os.qtSolicitada);
+
+    (bool, String?) resultado;
+
+    if (_quantidadeMenor &&
+        _autorizadorMatricula != null &&
+        _autorizadorSenha != null) {
+      // Finaliza com quantidade menor (já autorizado)
+      resultado = await ref
+          .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
+          .finalizarComQuantidadeMenor(
+            _qtConferida!,
+            _caixasConferidas!,
+            _unidadesConferidas!,
+            _autorizadorMatricula!,
+            _autorizadorSenha!,
+          );
+    } else {
+      // Finaliza com quantidade normal
+      resultado = await ref
+          .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
+          .finalizarComQuantidade(
+            _qtConferida!,
+            _caixasConferidas!,
+            _unidadesConferidas!,
+          );
+    }
+
     setState(() => _isProcessing = false);
 
+    final (sucesso, erro) = resultado;
     if (sucesso && mounted) {
       _mostrarSucesso('Tarefa finalizada!');
       Navigator.of(context).pop(true);
