@@ -1813,79 +1813,52 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
                       const SizedBox(height: 20),
 
-                      // Botões
+                      // Botão Finalizar (sem cancelar - produto já foi bipado)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: () {
-                                  Navigator.pop(ctx);
-                                  _eanController.clear();
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                  side: const BorderSide(color: Colors.red),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'CANCELAR',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: FilledButton(
+                            onPressed: quantidadeCorreta
+                                ? () async {
+                                    Navigator.pop(ctx);
+                                    await _confirmarBipagem(
+                                      codigoBarras,
+                                      os,
+                                      caixasDigitadas,
+                                      unidadesDigitadas,
+                                    );
+                                  }
+                                : null,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              disabledBackgroundColor: Colors.grey[400],
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 16,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              flex: 2,
-                              child: FilledButton(
-                                onPressed: quantidadeCorreta
-                                    ? () async {
-                                        Navigator.pop(ctx);
-                                        await _confirmarBipagem(
-                                          codigoBarras,
-                                          os,
-                                          caixasDigitadas,
-                                          unidadesDigitadas,
-                                        );
-                                      }
-                                    : null,
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  disabledBackgroundColor: Colors.grey[400],
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  quantidadeCorreta
+                                      ? Icons.check_circle
+                                      : Icons.block,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'FINALIZAR TAREFA',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      quantidadeCorreta
-                                          ? Icons.check_circle
-                                          : Icons.block,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      'FINALIZAR TAREFA',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
 
