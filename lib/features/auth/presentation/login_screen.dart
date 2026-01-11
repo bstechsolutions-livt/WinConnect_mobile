@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../core/config/client_config.dart';
 import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/widgets/theme_selector.dart';
 
@@ -17,6 +18,7 @@ class LoginScreen extends HookConsumerWidget {
     final rememberMe = useState(false);
     
     final authState = ref.watch(authNotifierProvider);
+    final config = ClientConfig.current;
 
     return Scaffold(
       body: SafeArea(
@@ -27,25 +29,20 @@ class LoginScreen extends HookConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 60),
+                const SizedBox(height: 40),
                 
                 // Header com logo e seletor de tema
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text(
-                      'WinConnect',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
+                    // Logo do cliente
+                    _buildLogo(context, config),
                     const ThemeSelector(),
                   ],
                 ),
                 
-                const SizedBox(height: 60),
+                const SizedBox(height: 40),
                 
                 // Título
                 Text(
@@ -178,5 +175,52 @@ class LoginScreen extends HookConsumerWidget {
         ),
       ),
     );
+  }
+
+  /// Constrói a logo do cliente com suporte a dark mode
+  Widget _buildLogo(BuildContext context, ClientConfig config) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    Widget logo = Image.asset(
+      config.logoPath,
+      height: 60,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        // Fallback para texto caso a imagem não carregue
+        return Text(
+          config.name,
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: Color(config.primaryColorHex),
+          ),
+        );
+      },
+    );
+
+    if (isDark) {
+      // Primeiro converte para escala de cinza
+      logo = ColorFiltered(
+        colorFilter: const ColorFilter.matrix(<double>[
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0, 0, 0, 1, 0,
+        ]),
+        child: logo,
+      );
+      // Depois inverte (preto vira branco)
+      logo = ColorFiltered(
+        colorFilter: const ColorFilter.matrix(<double>[
+          -1, 0, 0, 0, 255,
+          0, -1, 0, 0, 255,
+          0, 0, -1, 0, 255,
+          0, 0, 0, 1, 0,
+        ]),
+        child: logo,
+      );
+    }
+
+    return logo;
   }
 }

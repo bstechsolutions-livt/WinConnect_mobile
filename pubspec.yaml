@@ -58,10 +58,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   
-  # Assets
-  # assets:
-  #   - images/
-  #   - icons/
+  # Assets por cliente (white-label)
+  assets:
+    - assets/clients/bstech/
+    - assets/clients/rofe/
   
   # Fonts
   # fonts:

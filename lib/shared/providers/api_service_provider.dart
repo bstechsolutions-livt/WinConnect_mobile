@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:hive/hive.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../core/config/client_config.dart';
+
 part 'api_service_provider.g.dart';
 
 @Riverpod(keepAlive: true)
@@ -11,7 +13,9 @@ ApiService apiService(ApiServiceRef ref) {
 
 class ApiService {
   late final Dio _dio;
-  static const String baseUrl = 'https://winconnect.bstechsolutions.com/api';
+  
+  /// URL base da API - vem da configuração do cliente
+  static String get baseUrl => ClientConfig.current.apiBaseUrl;
 
   ApiService() {
     _dio = Dio(BaseOptions(
