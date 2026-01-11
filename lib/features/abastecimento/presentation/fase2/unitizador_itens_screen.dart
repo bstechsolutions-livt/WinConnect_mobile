@@ -306,7 +306,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
       ),
     );
     
-    if (resultado == true) {
+    if (resultado == true && mounted) {
       // Recarrega itens ou volta para lista de unitizadores
       Navigator.of(context).pop(true);
     }

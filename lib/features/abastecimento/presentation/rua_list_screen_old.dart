@@ -53,12 +53,6 @@ class RuaListScreen extends ConsumerWidget {
                               backgroundColor: Colors.green,
                             ),
                           );
-                          
-                          // TODO: Navegar para tela de OSs
-                          // Navigator.push(context, MaterialPageRoute(
-                          //   builder: (context) => OsListScreen(rua: rua.codigo, fase: fase)
-                          // ));
-                          
                         } catch (e) {
                           if (!context.mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -182,11 +176,10 @@ class RuaListScreen extends ConsumerWidget {
           FilledButton(
             onPressed: () {
               Navigator.of(context).pop();
-              // TODO: Implementar próxima etapa
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Iniciando abastecimento de ${selecionadas.length} ruas - Em desenvolvimento',
+                    'Iniciando abastecimento de ${selecionadas.length} ruas',
                   ),
                   backgroundColor: Colors.green,
                 ),

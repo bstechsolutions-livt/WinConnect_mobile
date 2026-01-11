@@ -23,6 +23,7 @@ mixin _$User {
   int get id => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   String get email => throw _privateConstructorUsedError;
+  int? get matricula => throw _privateConstructorUsedError;
   String? get emailVerifiedAt => throw _privateConstructorUsedError;
   DateTime? get createdAt => throw _privateConstructorUsedError;
   DateTime? get updatedAt => throw _privateConstructorUsedError;
@@ -41,6 +42,7 @@ abstract class $UserCopyWith<$Res> {
       {int id,
       String name,
       String email,
+      int? matricula,
       String? emailVerifiedAt,
       DateTime? createdAt,
       DateTime? updatedAt});
@@ -62,6 +64,7 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
     Object? id = null,
     Object? name = null,
     Object? email = null,
+    Object? matricula = freezed,
     Object? emailVerifiedAt = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -79,6 +82,10 @@ class _$UserCopyWithImpl<$Res, $Val extends User>
           ? _value.email
           : email // ignore: cast_nullable_to_non_nullable
               as String,
+      matricula: freezed == matricula
+          ? _value.matricula
+          : matricula // ignore: cast_nullable_to_non_nullable
+              as int?,
       emailVerifiedAt: freezed == emailVerifiedAt
           ? _value.emailVerifiedAt
           : emailVerifiedAt // ignore: cast_nullable_to_non_nullable
@@ -106,6 +113,7 @@ abstract class _$$UserImplCopyWith<$Res> implements $UserCopyWith<$Res> {
       {int id,
       String name,
       String email,
+      int? matricula,
       String? emailVerifiedAt,
       DateTime? createdAt,
       DateTime? updatedAt});
@@ -124,6 +132,7 @@ class __$$UserImplCopyWithImpl<$Res>
     Object? id = null,
     Object? name = null,
     Object? email = null,
+    Object? matricula = freezed,
     Object? emailVerifiedAt = freezed,
     Object? createdAt = freezed,
     Object? updatedAt = freezed,
@@ -141,6 +150,10 @@ class __$$UserImplCopyWithImpl<$Res>
           ? _value.email
           : email // ignore: cast_nullable_to_non_nullable
               as String,
+      matricula: freezed == matricula
+          ? _value.matricula
+          : matricula // ignore: cast_nullable_to_non_nullable
+              as int?,
       emailVerifiedAt: freezed == emailVerifiedAt
           ? _value.emailVerifiedAt
           : emailVerifiedAt // ignore: cast_nullable_to_non_nullable
@@ -164,6 +177,7 @@ class _$UserImpl implements _User {
       {required this.id,
       required this.name,
       required this.email,
+      this.matricula,
       this.emailVerifiedAt,
       this.createdAt,
       this.updatedAt});
@@ -178,6 +192,8 @@ class _$UserImpl implements _User {
   @override
   final String email;
   @override
+  final int? matricula;
+  @override
   final String? emailVerifiedAt;
   @override
   final DateTime? createdAt;
@@ -186,7 +202,7 @@ class _$UserImpl implements _User {
 
   @override
   String toString() {
-    return 'User(id: $id, name: $name, email: $email, emailVerifiedAt: $emailVerifiedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'User(id: $id, name: $name, email: $email, matricula: $matricula, emailVerifiedAt: $emailVerifiedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -197,6 +213,8 @@ class _$UserImpl implements _User {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.name, name) || other.name == name) &&
             (identical(other.email, email) || other.email == email) &&
+            (identical(other.matricula, matricula) ||
+                other.matricula == matricula) &&
             (identical(other.emailVerifiedAt, emailVerifiedAt) ||
                 other.emailVerifiedAt == emailVerifiedAt) &&
             (identical(other.createdAt, createdAt) ||
@@ -207,8 +225,8 @@ class _$UserImpl implements _User {
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, id, name, email, emailVerifiedAt, createdAt, updatedAt);
+  int get hashCode => Object.hash(runtimeType, id, name, email, matricula,
+      emailVerifiedAt, createdAt, updatedAt);
 
   @JsonKey(ignore: true)
   @override
@@ -229,6 +247,7 @@ abstract class _User implements User {
       {required final int id,
       required final String name,
       required final String email,
+      final int? matricula,
       final String? emailVerifiedAt,
       final DateTime? createdAt,
       final DateTime? updatedAt}) = _$UserImpl;
@@ -241,6 +260,8 @@ abstract class _User implements User {
   String get name;
   @override
   String get email;
+  @override
+  int? get matricula;
   @override
   String? get emailVerifiedAt;
   @override

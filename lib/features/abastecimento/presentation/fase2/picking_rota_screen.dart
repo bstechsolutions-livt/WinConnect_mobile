@@ -134,7 +134,7 @@ class _PickingRotaScreenState extends ConsumerState<PickingRotaScreen> {
                       ),
                     ),
                     Text(
-                      '${_itemAtual}/${_rota.length} itens guardados',
+                      '$_itemAtual/${_rota.length} itens guardados',
                       style: TextStyle(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.8),

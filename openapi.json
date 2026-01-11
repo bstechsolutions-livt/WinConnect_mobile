@@ -1,0 +1,1435 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "WinConnect - API",
+        "description": "API para integração com o sistema WinConnect. Permite autenticação, consulta de produtos, pedidos e operações WMS.",
+        "version": "1.0.0",
+        "contact": {
+            "name": "Suporte",
+            "email": "suporte@bstech.com.br"
+        }
+    },
+    "servers": [
+        {
+            "url": "https://slipperier-burbly-nena.ngrok-free.dev/api",
+            "description": "Servidor Principal"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "Token",
+                "description": "Token obtido via POST /login"
+            }
+        }
+    },
+    "paths": {
+        "/login": {
+            "post": {
+                "tags": [
+                    "Autenticação"
+                ],
+                "summary": "Login",
+                "description": "Autentica um usuário e retorna um token de acesso. Aceita e-mail ou matrícula Winthor. Requer matrícula vinculada para acesso à API.",
+                "operationId": "login",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "description": "E-mail ou matrícula Winthor do usuário"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "description": "Senha do usuário"
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "description": "Nome do dispositivo (opcional)"
+                                    }
+                                },
+                                "required": [
+                                    "email",
+                                    "password"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "token": "seu-token-aqui",
+                                    "user": {
+                                        "id": 1,
+                                        "name": "Nome do Usuário",
+                                        "email": "email@exemplo.com",
+                                        "matricula": 12345
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Erro",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "message": "As credenciais informadas estão incorretas."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user": {
+            "get": {
+                "tags": [
+                    "Autenticação"
+                ],
+                "summary": "Obter Usuário Autenticado",
+                "description": "Retorna os dados do usuário autenticado.",
+                "operationId": "obterUsuárioAutenticado",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "id": 1,
+                                    "name": "Nome do Usuário",
+                                    "email": "email@exemplo.com",
+                                    "email_verified_at": "2024-01-01T00:00:00.000000Z",
+                                    "created_at": "2024-01-01T00:00:00.000000Z",
+                                    "updated_at": "2024-01-01T00:00:00.000000Z"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "post": {
+                "tags": [
+                    "Autenticação"
+                ],
+                "summary": "Logout",
+                "description": "Revoga o token atual do usuário.",
+                "operationId": "logout",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Logout realizado com sucesso."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/logout-all": {
+            "post": {
+                "tags": [
+                    "Autenticação"
+                ],
+                "summary": "Logout de Todos os Dispositivos",
+                "description": "Revoga todos os tokens do usuário.",
+                "operationId": "logoutDeTodosOsDispositivos",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Logout realizado em todos os dispositivos."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/ruas": {
+            "get": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Listar Ruas (Fase 1)",
+                "description": "Lista ruas com OSs pendentes para WMS.",
+                "operationId": "listarRuas(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "ruas": [
+                                        {
+                                            "rua": "A",
+                                            "qtd_os": 5
+                                        },
+                                        {
+                                            "rua": "B",
+                                            "qtd_os": 3
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/ruas/{rua}/os": {
+            "get": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Listar OSs da Rua (Fase 1)",
+                "description": "Lista OSs pendentes de uma rua, ordenadas por rota inteligente (endereço de origem: rua → prédio → nível → apto). O operador deve seguir esta ordem.",
+                "operationId": "listarOSsDaRua(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "rua",
+                        "in": "path",
+                        "required": true,
+                        "description": "Identificação da rua",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "rua": "A",
+                                    "ordens": [
+                                        {
+                                            "numos": 1001,
+                                            "ordem": 1,
+                                            "codprod": 12345,
+                                            "descricao": "COCA-COLA 2L",
+                                            "endereco_origem": "A.01.01.01",
+                                            "status": "PENDENTE",
+                                            "pode_executar": true
+                                        }
+                                    ],
+                                    "os_em_andamento": null
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/operador/{matricula}/os-ativa": {
+            "get": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Consultar OS Ativa do Operador",
+                "description": "Verifica se o operador possui uma OS em andamento. Útil para retomar trabalho após reconexão ou verificar estado atual.",
+                "operationId": "consultarOSAtivaDoOperador",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "matricula",
+                        "in": "path",
+                        "required": true,
+                        "description": "Matrícula do operador",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": [
+                ]
+            }
+        },
+        "/wms/fase1/os/{numos}": {
+            "get": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Detalhes da OS (Fase 1)",
+                "description": "Retorna detalhes completos de uma OS incluindo produto, endereços e estoque.",
+                "operationId": "detalhesDaOS(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "os": {
+                                        "numos": 1001,
+                                        "status": "PENDENTE",
+                                        "rua": "A",
+                                        "qt": 100,
+                                        "qt_conferida": 0,
+                                        "codunitizador": null
+                                    },
+                                    "produto": {
+                                        "codprod": 12345,
+                                        "codauxiliar": "7891000100103",
+                                        "descricao": "COCA-COLA 2L",
+                                        "unidade": "UN"
+                                    },
+                                    "endereco_origem": {
+                                        "codendereco": 1,
+                                        "endereco": "A.01.02.03",
+                                        "rua": "A"
+                                    },
+                                    "estoque_atual": 500
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/os/{numos}/iniciar": {
+            "post": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Iniciar OS (Fase 1)",
+                "description": "Inicia a execução de uma OS. Deve seguir a ordem da rota. Não permite iniciar se: já possui outra OS em andamento, OS está bloqueada, ou não é a próxima da fila (requer autorização de supervisor).",
+                "operationId": "iniciarOS(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "autorizador_matricula": {
+                                        "type": "integer",
+                                        "description": "Matrícula do supervisor (obrigatório se fora da ordem)"
+                                    },
+                                    "autorizador_senha": {
+                                        "type": "string",
+                                        "description": "Senha do supervisor (obrigatório se fora da ordem)"
+                                    }
+                                },
+                                "required": [
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "OS iniciada com sucesso.",
+                                    "os": {
+                                        "numos": 1001,
+                                        "status": "PENDENTE"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/os/{numos}/sair": {
+            "post": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Sair da OS (Fase 1)",
+                "description": "Permite abandonar uma OS em andamento. Requer autorização de um supervisor com permissão.",
+                "operationId": "sairDaOS(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "autorizador_matricula": {
+                                        "type": "integer",
+                                        "description": "Matrícula do supervisor que autoriza a saída"
+                                    },
+                                    "autorizador_senha": {
+                                        "type": "string",
+                                        "description": "Senha do supervisor"
+                                    }
+                                },
+                                "required": [
+                                    "autorizador_matricula",
+                                    "autorizador_senha"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Saída da OS autorizada com sucesso."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/os/{numos}/bipar-endereco": {
+            "post": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Bipar Endereço de Origem (Fase 1)",
+                "description": "Registra a chegada do operador no endereço de origem. Aceita código interno (100101) ou endereço formatado (1.01.01.01).",
+                "operationId": "biparEndereçoDeOrigem(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "codigo_endereco": {
+                                        "type": "string",
+                                        "description": "Código do endereço (interno ou formatado RUA.PREDIO.NIVEL.APTO)"
+                                    }
+                                },
+                                "required": [
+                                    "codigo_endereco"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Endereço de origem confirmado.",
+                                    "endereco_validado": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/os/{numos}/bipar": {
+            "post": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Bipar Produto (Fase 1)",
+                "description": "Valida o código de barras do produto. Deve corresponder ao produto da OS.",
+                "operationId": "biparProduto(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "codigo_barras": {
+                                        "type": "string",
+                                        "description": "Código de barras/EAN lido do produto"
+                                    }
+                                },
+                                "required": [
+                                    "codigo_barras"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Produto bipado com sucesso.",
+                                    "produto_validado": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/os/{numos}/vincular-unitizador": {
+            "post": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Vincular Unitizador (Fase 1)",
+                "description": "Vincula um unitizador (palete/gaiola) à OS.",
+                "operationId": "vincularUnitizador(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "codigo_barras_unitizador": {
+                                        "type": "string",
+                                        "description": "Código de barras do unitizador"
+                                    }
+                                },
+                                "required": [
+                                    "codigo_barras_unitizador"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unitizador PAL001 vinculado à OS 1001.",
+                                    "unitizador": {
+                                        "codigo": "PAL001",
+                                        "tipo": "PALETE"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/os/{numos}/finalizar": {
+            "post": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Finalizar OS (Fase 1)",
+                "description": "Finaliza a Fase 1 da OS. Valida que endereço foi bipado, produto foi bipado e unitizador foi vinculado. Registra quantidade conferida. Não altera a OS no Winthor.",
+                "operationId": "finalizarOS(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "qt_conferida": {
+                                        "type": "string",
+                                        "description": "Quantidade conferida/coletada pelo operador"
+                                    }
+                                },
+                                "required": [
+                                    "qt_conferida"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Fase 1 finalizada com sucesso. OS disponível para Fase 2.",
+                                    "tracking": {
+                                        "fase1_fim": "2026-01-10 16:00:00",
+                                        "qt_conferida": 10,
+                                        "qt_esperada": 10
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/os/{numos}/bloquear": {
+            "post": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Bloquear OS (Fase 1)",
+                "description": "Bloqueia uma OS por algum problema. Libera automaticamente o operador para iniciar outra OS. A OS bloqueada aguarda análise do supervisor.",
+                "operationId": "bloquearOS(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "motivo": {
+                                        "type": "string",
+                                        "description": "Motivo do bloqueio"
+                                    }
+                                },
+                                "required": [
+                                    "motivo"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "OS bloqueada. Você pode iniciar outra OS.",
+                                    "bloqueio": {
+                                        "id": 1,
+                                        "motivo": "Produto danificado"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase1/os/{numos}/divergencia": {
+            "post": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Registrar Divergência (Fase 1)",
+                "description": "Registra uma divergência na OS (quantidade diferente, produto errado, etc). A OS continua normalmente, a divergência fica registrada para análise posterior.",
+                "operationId": "registrarDivergência(Fase1)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "tipo": {
+                                        "type": "string",
+                                        "description": "Tipo: quantidade_menor, quantidade_maior, produto_errado, nao_encontrado, outro"
+                                    },
+                                    "qt_encontrada": {
+                                        "type": "string",
+                                        "description": "Quantidade encontrada (quando aplicável)"
+                                    },
+                                    "observacao": {
+                                        "type": "string",
+                                        "description": "Observações adicionais"
+                                    }
+                                },
+                                "required": [
+                                    "tipo"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Divergência registrada. Continue a execução da OS.",
+                                    "divergencia": {
+                                        "id": 1,
+                                        "tipo": "quantidade_menor",
+                                        "tipo_label": "Quantidade Menor"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/consulta-estoque/{codprod}": {
+            "get": {
+                "tags": [
+                    "WMS Fase 1 (Empilhadeira)"
+                ],
+                "summary": "Consulta Estoque por Endereço",
+                "description": "Consulta estoque de um produto em todos os endereços do armazém.",
+                "operationId": "consultaEstoquePorEndereço",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "codprod",
+                        "in": "path",
+                        "required": true,
+                        "description": "Código do produto",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "produto": {
+                                        "codprod": 12345,
+                                        "descricao": "COCA-COLA 2L"
+                                    },
+                                    "estoques": [
+                                        {
+                                            "rua": "A",
+                                            "endereco": "A.01.02.03",
+                                            "qtestger": 500
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase2/ruas": {
+            "get": {
+                "tags": [
+                    "WMS Fase 2 (Auxiliar de Chão)"
+                ],
+                "summary": "Listar Ruas (Fase 2)",
+                "description": "Lista ruas com OSs prontas para Fase 2 (unitizadores com itens vinculados na Fase 1).",
+                "operationId": "listarRuas(Fase2)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "ruas": [
+                                        {
+                                            "rua": "A",
+                                            "total_unitizadores": 3,
+                                            "total_itens": 12
+                                        },
+                                        {
+                                            "rua": "C",
+                                            "total_unitizadores": 2,
+                                            "total_itens": 8
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase2/ruas/{rua}/unitizadores": {
+            "get": {
+                "tags": [
+                    "WMS Fase 2 (Auxiliar de Chão)"
+                ],
+                "summary": "Listar Unitizadores da Rua",
+                "description": "Lista unitizadores disponíveis na rua com seus itens e status de conferência.",
+                "operationId": "listarUnitizadoresDaRua",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "rua",
+                        "in": "path",
+                        "required": true,
+                        "description": "Identificação da rua (ex: A, B, C)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "rua": "C",
+                                    "unitizadores": [
+                                        {
+                                            "id": 1,
+                                            "codigo": "PAL001",
+                                            "codigo_barras": "PAL001",
+                                            "status": "em_uso",
+                                            "total_itens": 3,
+                                            "itens_conferidos": 1,
+                                            "itens_entregues": 0
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase2/unitizador/bipar": {
+            "post": {
+                "tags": [
+                    "WMS Fase 2 (Auxiliar de Chão)"
+                ],
+                "summary": "Bipar Unitizador",
+                "description": "Seleciona um unitizador pelo código de barras para iniciar a conferência. Retorna lista de itens (OSs) vinculados.",
+                "operationId": "biparUnitizador",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "codigo_barras": {
+                                        "type": "string",
+                                        "description": "Código de barras do unitizador (ex: PAL001)"
+                                    }
+                                },
+                                "required": [
+                                    "codigo_barras"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Unitizador selecionado.",
+                                    "unitizador": {
+                                        "id": 1,
+                                        "codigo": "PAL001",
+                                        "codigo_barras": "PAL001"
+                                    },
+                                    "itens": [
+                                        {
+                                            "numos": 105576,
+                                            "codprod": 5,
+                                            "descricao": "PRODUTO TESTE 005",
+                                            "codauxiliar": "7890000000005",
+                                            "embalagem": "UN",
+                                            "unidade": "UN",
+                                            "qt": 38,
+                                            "conferido": false,
+                                            "bloqueado": false,
+                                            "tentativas": 0
+                                        }
+                                    ],
+                                    "total_itens": 1,
+                                    "total_conferidos": 0
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Erro",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "message": "Unitizador não encontrado."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase2/os/{numos}/conferir-produto": {
+            "post": {
+                "tags": [
+                    "WMS Fase 2 (Auxiliar de Chão)"
+                ],
+                "summary": "Conferir Produto (Conferência Cega)",
+                "description": "Conferência cega: operador bipa o código de barras do produto e digita a quantidade. A OS permanece com posição \"P\" no Winthor. Após X tentativas incorretas (configurável), a OS é bloqueada.",
+                "operationId": "conferirProduto(ConferênciaCega)",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "codigo_barras": {
+                                        "type": "string",
+                                        "description": "Código de barras/EAN do produto (codauxiliar)"
+                                    },
+                                    "quantidade": {
+                                        "type": "string",
+                                        "description": "Quantidade conferida pelo operador"
+                                    }
+                                },
+                                "required": [
+                                    "codigo_barras",
+                                    "quantidade"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Produto conferido com sucesso! OS adicionada ao seu carrinho.",
+                                    "conferido": true,
+                                    "os": {
+                                        "numos": 105576,
+                                        "codprod": 5,
+                                        "descricao": "PRODUTO TESTE 005",
+                                        "qt": 38
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase2/meu-carrinho": {
+            "get": {
+                "tags": [
+                    "WMS Fase 2 (Auxiliar de Chão)"
+                ],
+                "summary": "Meu Carrinho",
+                "description": "Lista OSs conferidas pelo operador (no carrinho) que ainda não foram entregues.",
+                "operationId": "meuCarrinho",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "matricula": 5826,
+                                    "total_itens": 2,
+                                    "itens": [
+                                        {
+                                            "numos": 105576,
+                                            "codprod": 5,
+                                            "descricao": "PRODUTO TESTE 005",
+                                            "qt": 38,
+                                            "endereco_destino": "C.05.01.02",
+                                            "conferido_em": "2026-01-10T20:30:00Z"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase2/calcular-rota": {
+            "post": {
+                "tags": [
+                    "WMS Fase 2 (Auxiliar de Chão)"
+                ],
+                "summary": "Calcular Rota",
+                "description": "Calcula rota otimizada para entrega das OSs conferidas pelo operador. Ordena por rua → prédio → nível → apto.",
+                "operationId": "calcularRota",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Rota calculada com sucesso.",
+                                    "total_itens": 2,
+                                    "rota": [
+                                        {
+                                            "ordem": 1,
+                                            "numos": 105576,
+                                            "codprod": 5,
+                                            "descricao": "PRODUTO TESTE 005",
+                                            "qt": 38,
+                                            "endereco": {
+                                                "codendereco": 10,
+                                                "endereco": "C.05.01.02",
+                                                "rua": "C",
+                                                "predio": 5,
+                                                "nivel": 1,
+                                                "apto": 2
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Erro",
+                        "content": {
+                            "application/json": {
+                                "example": {
+                                    "message": "Você não possui OSs conferidas para calcular rota."
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase2/proxima-entrega": {
+            "get": {
+                "tags": [
+                    "WMS Fase 2 (Auxiliar de Chão)"
+                ],
+                "summary": "Próxima Entrega",
+                "description": "Retorna a próxima OS a ser entregue na rota do operador.",
+                "operationId": "próximaEntrega",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "numos": 105576,
+                                    "codprod": 5,
+                                    "descricao": "PRODUTO TESTE 005",
+                                    "qt": 38,
+                                    "endereco": {
+                                        "codendereco": 10,
+                                        "endereco": "C.05.01.02",
+                                        "rua": "C",
+                                        "predio": 5,
+                                        "nivel": 1,
+                                        "apto": 2
+                                    },
+                                    "itens_restantes": 1
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/wms/fase2/os/{numos}/confirmar-entrega": {
+            "post": {
+                "tags": [
+                    "WMS Fase 2 (Auxiliar de Chão)"
+                ],
+                "summary": "Confirmar Entrega",
+                "description": "Confirma a entrega da OS no endereço destino. IMPORTANTE: Esta é a única ação que altera a posição no Winthor de \"P\" para \"C\".",
+                "operationId": "confirmarEntrega",
+                "security": [
+                    {
+                        "bearerAuth": [
+                        ]
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "numos",
+                        "in": "path",
+                        "required": true,
+                        "description": "Número da OS",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "endereco_confirmado": {
+                                        "type": "string",
+                                        "description": "Endereço confirmado pelo operador (bipado ou digitado)"
+                                    }
+                                },
+                                "required": [
+                                    "endereco_confirmado"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Sucesso",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                },
+                                "example": {
+                                    "message": "Entrega confirmada com sucesso!",
+                                    "entregue": true,
+                                    "os": {
+                                        "numos": 105576,
+                                        "posicao": "C"
+                                    },
+                                    "itens_restantes": 0
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Autenticação",
+            "description": "Endpoints de Autenticação"
+        },
+        {
+            "name": "WMS Fase 1 (Empilhadeira)",
+            "description": "Endpoints de WMS Fase 1 (Empilhadeira)"
+        },
+        {
+            "name": "WMS Fase 2 (Auxiliar de Chão)",
+            "description": "Endpoints de WMS Fase 2 (Auxiliar de Chão)"
+        }
+    ]
+}

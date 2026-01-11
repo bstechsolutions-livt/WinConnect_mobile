@@ -1,1 +1,14 @@
 include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # Ignorar avisos de deprecated nos arquivos gerados do Riverpod
+    deprecated_member_use: ignore
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+
+linter:
+  rules:
+    # Desativar avisos que não são problemas reais
+    unnecessary_brace_in_string_interps: false

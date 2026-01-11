@@ -9,6 +9,7 @@ class User with _$User {
     required int id,
     required String name,
     required String email,
+    int? matricula,
     String? emailVerifiedAt,
     DateTime? createdAt,
     DateTime? updatedAt,
