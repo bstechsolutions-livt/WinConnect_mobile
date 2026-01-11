@@ -58,7 +58,7 @@ class LoginScreen extends HookConsumerWidget {
                 const SizedBox(height: 8),
                 
                 Text(
-                  'Digite seu e-mail e senha abaixo para entrar',
+                  'Digite sua matrícula ou e-mail para entrar',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -66,20 +66,17 @@ class LoginScreen extends HookConsumerWidget {
                 
                 const SizedBox(height: 40),
                 
-                // Campo Email
+                // Campo Email/Matrícula
                 TextFormField(
                   controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  keyboardType: TextInputType.text,
                   decoration: const InputDecoration(
-                    labelText: 'E-mail',
-                    prefixIcon: Icon(Icons.email_outlined),
+                    labelText: 'Matrícula ou E-mail',
+                    prefixIcon: Icon(Icons.person_outline),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Por favor, digite seu e-mail';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Por favor, digite um e-mail válido';
+                      return 'Por favor, digite sua matrícula ou e-mail';
                     }
                     return null;
                   },
