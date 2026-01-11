@@ -138,7 +138,8 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     }
   }
 
-  // Bipar produto (validar código de barras) - versão simples (mantida para compatibilidade)
+  // Bipar produto (validar código de barras)
+  // APENAS valida, NÃO atualiza estado local (o estado só muda ao finalizar)
   // Retorna (sucesso, mensagemErro)
   Future<(bool, String?)> biparProduto(String codigoBarras) async {
     try {
@@ -147,8 +148,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
         'codigo_barras': codigoBarras,
       });
 
-      // Atualiza estado local
-      state = AsyncValue.data(state.value!.copyWith(produtoBipado: true));
+      // NÃO atualiza estado local - só valida se o código está correto
       return (true, null);
     } catch (e) {
       return (false, _extrairMensagemErro(e));
