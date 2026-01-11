@@ -184,6 +184,38 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     }
   }
 
+  // Bipar produto e já finalizar a OS em uma única operação
+  // Retorna (sucesso, mensagemErro)
+  Future<(bool, String?)> biparProdutoEFinalizar(
+    String codigoBarras,
+    int caixas,
+    int unidades,
+    int multiplo,
+  ) async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+
+      // Calcula a quantidade total em unidades
+      final quantidadeTotal = (caixas * multiplo) + unidades;
+
+      // Primeiro valida o produto
+      await apiService.post('/wms/fase1/os/$numos/bipar', {
+        'codigo_barras': codigoBarras,
+      });
+
+      // Produto válido, agora finaliza com a quantidade conferida
+      await apiService.post('/wms/fase1/os/$numos/finalizar', {
+        'qt_conferida': quantidadeTotal,
+        'caixas': caixas,
+        'unidades': unidades,
+      });
+
+      return (true, null);
+    } catch (e) {
+      return (false, _extrairMensagemErro(e));
+    }
+  }
+
   // Vincular unitizador
   // Retorna (sucesso, mensagemErro)
   Future<(bool, String?)> vincularUnitizador(

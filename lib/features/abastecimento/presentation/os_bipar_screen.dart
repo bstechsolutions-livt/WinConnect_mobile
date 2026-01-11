@@ -1857,13 +1857,13 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                   children: [
                                     Icon(
                                       quantidadeCorreta
-                                          ? Icons.check
+                                          ? Icons.check_circle
                                           : Icons.block,
                                       size: 20,
                                     ),
                                     const SizedBox(width: 8),
                                     const Text(
-                                      'CONFIRMAR',
+                                      'FINALIZAR TAREFA',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -1888,7 +1888,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     );
   }
 
-  /// Confirma a bipagem após validação de quantidade
+  /// Confirma a bipagem após validação de quantidade e já finaliza a OS
   Future<void> _confirmarBipagem(
     String codigoBarras,
     OsDetalhe os,
@@ -1899,17 +1899,16 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     final (sucesso, erro) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .biparProdutoComQuantidade(codigoBarras, caixas, unidades, os.multiplo);
+        .biparProdutoEFinalizar(codigoBarras, caixas, unidades, os.multiplo);
 
     setState(() => _isProcessing = false);
 
-    if (sucesso) {
-      _eanController.clear();
-      _mostrarSucesso('Produto confirmado!');
-      // Foca no próximo campo
-      _unitizadorFocusNode.requestFocus();
+    if (sucesso && mounted) {
+      _mostrarSucesso('Tarefa finalizada com sucesso!');
+      // Volta para tela anterior (lista de OS ou seleção de rua)
+      Navigator.of(context).pop(true);
     } else {
-      _mostrarErro(erro ?? 'Código inválido!');
+      _mostrarErro(erro ?? 'Erro ao finalizar!');
     }
   }
 
