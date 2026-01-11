@@ -53,9 +53,10 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
         enderecoFormatado: enderecoDestinoData['endereco']?.toString() ?? '',
       ),
       status: osData['status']?.toString() ?? 'PENDENTE',
-      produtoBipado: osData['produto_bipado'] == true,
-      unitizadorVinculado: osData['codunitizador'] != null,
-      codunitizador: osData['codunitizador']?.toString(),
+      // SEMPRE inicia com produtoBipado: false - operador recomeça do zero
+      produtoBipado: false,
+      unitizadorVinculado: false,
+      codunitizador: null,
     );
   }
 
