@@ -6,7 +6,7 @@ part of 'os_ativa_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$osAtivaHash() => r'8a5b13d53119c1a07409b73118d7de6ddba7e410';
+String _$osAtivaHash() => r'87aa21bb757f8709e80f2d046a464c0d4d9620a3';
 
 /// Copied from Dart SDK
 class _SystemHash {

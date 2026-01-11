@@ -8,11 +8,19 @@ class OsAtiva {
   final int numos;
   final int fase;
   final String status;
+  final bool enderecoBipado;
+  final bool produtoBipado;
+  final bool unitizadorVinculado;
+  final String? codunitizador;
 
   OsAtiva({
     required this.numos,
     required this.fase,
     required this.status,
+    this.enderecoBipado = false,
+    this.produtoBipado = false,
+    this.unitizadorVinculado = false,
+    this.codunitizador,
   });
 }
 
@@ -30,6 +38,10 @@ Future<OsAtiva?> osAtiva(OsAtivaRef ref, int matricula) async {
         numos: osData['numos'] ?? 0,
         fase: 1, // Por enquanto só temos fase 1
         status: osData['status'] ?? '',
+        enderecoBipado: osData['endereco_bipado'] == true,
+        produtoBipado: osData['produto_bipado'] == true,
+        unitizadorVinculado: osData['unitizador_vinculado'] == true,
+        codunitizador: osData['codunitizador']?.toString(),
       );
     }
     
