@@ -1247,10 +1247,660 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       return;
     }
 
+    // Abre bottom sheet para conferência de quantidade
+    _mostrarConferenciaQuantidade(ean, os);
+  }
+
+  /// Mostra bottom sheet para conferência de quantidade
+  void _mostrarConferenciaQuantidade(String codigoBarras, OsDetalhe os) {
+    final caixasController = TextEditingController(text: '0');
+    final unidadesController = TextEditingController(text: '0');
+
+    final multiplo = os.multiplo;
+    final qtSolicitada = os.qtSolicitada.toInt();
+
+    // Calcula caixas e unidades esperadas
+    final caixasEsperadas = qtSolicitada ~/ multiplo;
+    final unidadesEsperadas = qtSolicitada % multiplo;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            // Calcula total digitado
+            final caixasDigitadas = int.tryParse(caixasController.text) ?? 0;
+            final unidadesDigitadas =
+                int.tryParse(unidadesController.text) ?? 0;
+            final totalDigitado =
+                (caixasDigitadas * multiplo) + unidadesDigitadas;
+
+            // Verifica se quantidade está correta
+            final quantidadeCorreta = totalDigitado == qtSolicitada;
+            final temDiferenca = totalDigitado != 0 && !quantidadeCorreta;
+            final diferenca = totalDigitado - qtSolicitada;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
+                ),
+                child: SafeArea(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Handle bar
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+
+                      // Header
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          children: [
+                            Icon(
+                              Icons.inventory_2,
+                              size: 48,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'CONFERÊNCIA DE QUANTIDADE',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Digite a quantidade que você pegou',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Quantidade Esperada
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[700],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'QUANTIDADE ESPERADA',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.8),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '$qtSolicitada',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 36,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'UN',
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (multiplo > 1) ...[
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  unidadesEsperadas > 0
+                                      ? '$caixasEsperadas CX + $unidadesEsperadas UN'
+                                      : '$caixasEsperadas CX',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Informação do múltiplo
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.amber.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.amber[700],
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '1 CAIXA = $multiplo UNIDADES',
+                              style: TextStyle(
+                                color: Colors.amber[900],
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Campos de entrada
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            // Campo Caixas
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'CAIXAS',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.green[50],
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.green,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        IconButton(
+                                          onPressed: () {
+                                            final atual =
+                                                int.tryParse(
+                                                  caixasController.text,
+                                                ) ??
+                                                0;
+                                            if (atual > 0) {
+                                              caixasController.text =
+                                                  '${atual - 1}';
+                                              setModalState(() {});
+                                            }
+                                          },
+                                          icon: const Icon(Icons.remove),
+                                          color: Colors.green[700],
+                                        ),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: caixasController,
+                                            textAlign: TextAlign.center,
+                                            keyboardType: TextInputType.number,
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              contentPadding: EdgeInsets.zero,
+                                            ),
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter
+                                                  .digitsOnly,
+                                            ],
+                                            onChanged: (_) =>
+                                                setModalState(() {}),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          onPressed: () {
+                                            final atual =
+                                                int.tryParse(
+                                                  caixasController.text,
+                                                ) ??
+                                                0;
+                                            caixasController.text =
+                                                '${atual + 1}';
+                                            setModalState(() {});
+                                          },
+                                          icon: const Icon(Icons.add),
+                                          color: Colors.green[700],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${caixasDigitadas * multiplo} un',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.green[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Separador "+"
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              child: Text(
+                                '+',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ),
+
+                            // Campo Unidades
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'UNIDADES',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[50],
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.blue,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        IconButton(
+                                          onPressed: () {
+                                            final atual =
+                                                int.tryParse(
+                                                  unidadesController.text,
+                                                ) ??
+                                                0;
+                                            if (atual > 0) {
+                                              unidadesController.text =
+                                                  '${atual - 1}';
+                                              setModalState(() {});
+                                            }
+                                          },
+                                          icon: const Icon(Icons.remove),
+                                          color: Colors.blue[700],
+                                        ),
+                                        Expanded(
+                                          child: TextField(
+                                            controller: unidadesController,
+                                            textAlign: TextAlign.center,
+                                            keyboardType: TextInputType.number,
+                                            style: const TextStyle(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                            decoration: const InputDecoration(
+                                              border: InputBorder.none,
+                                              contentPadding: EdgeInsets.zero,
+                                            ),
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter
+                                                  .digitsOnly,
+                                            ],
+                                            onChanged: (_) =>
+                                                setModalState(() {}),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          onPressed: () {
+                                            final atual =
+                                                int.tryParse(
+                                                  unidadesController.text,
+                                                ) ??
+                                                0;
+                                            unidadesController.text =
+                                                '${atual + 1}';
+                                            setModalState(() {});
+                                          },
+                                          icon: const Icon(Icons.add),
+                                          color: Colors.blue[700],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'avulsas',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.blue[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Total digitado
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: quantidadeCorreta
+                              ? Colors.green[50]
+                              : temDiferenca
+                              ? Colors.red[50]
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: quantidadeCorreta
+                                ? Colors.green
+                                : temDiferenca
+                                ? Colors.red
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.outline.withValues(alpha: 0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (quantidadeCorreta)
+                                  Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green[700],
+                                    size: 20,
+                                  ),
+                                if (temDiferenca)
+                                  Icon(
+                                    Icons.error,
+                                    color: Colors.red[700],
+                                    size: 20,
+                                  ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'TOTAL DIGITADO',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: quantidadeCorreta
+                                        ? Colors.green[700]
+                                        : temDiferenca
+                                        ? Colors.red[700]
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '$totalDigitado',
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    color: quantidadeCorreta
+                                        ? Colors.green[700]
+                                        : temDiferenca
+                                        ? Colors.red[700]
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'UN',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: quantidadeCorreta
+                                        ? Colors.green[700]
+                                        : temDiferenca
+                                        ? Colors.red[700]
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (temDiferenca) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.red[100],
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  diferenca > 0
+                                      ? '+$diferenca UN (sobra)'
+                                      : '$diferenca UN (falta)',
+                                  style: TextStyle(
+                                    color: Colors.red[700],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (quantidadeCorreta) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green[100],
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  '✓ Quantidade correta!',
+                                  style: TextStyle(
+                                    color: Colors.green[700],
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Botões
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  _eanController.clear();
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                  side: const BorderSide(color: Colors.red),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'CANCELAR',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: FilledButton(
+                                onPressed: quantidadeCorreta
+                                    ? () async {
+                                        Navigator.pop(ctx);
+                                        await _confirmarBipagem(
+                                          codigoBarras,
+                                          os,
+                                          caixasDigitadas,
+                                          unidadesDigitadas,
+                                        );
+                                      }
+                                    : null,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  disabledBackgroundColor: Colors.grey[400],
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      quantidadeCorreta
+                                          ? Icons.check
+                                          : Icons.block,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'CONFIRMAR',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Confirma a bipagem após validação de quantidade
+  Future<void> _confirmarBipagem(
+    String codigoBarras,
+    OsDetalhe os,
+    int caixas,
+    int unidades,
+  ) async {
     setState(() => _isProcessing = true);
+
     final (sucesso, erro) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .biparProduto(ean);
+        .biparProdutoComQuantidade(codigoBarras, caixas, unidades, os.multiplo);
+
     setState(() => _isProcessing = false);
 
     if (sucesso) {
