@@ -120,11 +120,18 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                 ),
               );
               // Se retornou (bloqueou ou finalizou), atualiza a lista
-              if (resultado == true && mounted) {
-                _navegouParaOsEmAndamento = false; // Permite nova navegação
-                ref
-                    .read(osNotifierProvider(widget.fase, widget.rua).notifier)
-                    .refresh();
+              if (mounted) {
+                // Aguarda um pouco para garantir que o backend atualizou
+                await Future.delayed(const Duration(milliseconds: 500));
+                if (mounted) {
+                  _navegouParaOsEmAndamento =
+                      false; // Permite nova navegação APÓS refresh
+                  ref
+                      .read(
+                        osNotifierProvider(widget.fase, widget.rua).notifier,
+                      )
+                      .refresh();
+                }
               }
             });
             return const Center(child: CircularProgressIndicator());
