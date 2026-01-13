@@ -8,7 +8,6 @@ import 'features/auth/presentation/login_screen.dart';
 import 'features/abastecimento/presentation/abastecimento_screen.dart';
 import 'shared/providers/theme_provider.dart';
 import 'shared/providers/auth_provider.dart';
-import 'shared/widgets/theme_selector.dart';
 import 'shared/models/user_model.dart';
 
 void main() async {
@@ -64,218 +63,265 @@ class WinConnectApp extends ConsumerWidget {
   }
 }
 
-// Placeholder dashboard
+// Dashboard moderno
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
-
-  String _getUserDisplayName(User user) {
-    // Mostrar nome ou email
-    String displayName = user.name.isNotEmpty ? user.name : user.email;
-    
-    // Se for nome completo, pegar primeiro e último
-    if (user.name.isNotEmpty && user.name.contains(' ')) {
-      final nameParts = user.name.split(' ');
-      displayName = '${nameParts.first} ${nameParts.last}';
-    }
-    
-    return displayName;
-  }
-
-  String _getUserInitials(User user) {
-    if (user.name.isNotEmpty) {
-      final nameParts = user.name.split(' ');
-      if (nameParts.length >= 2) {
-        return '${nameParts.first[0]}${nameParts.last[0]}'.toUpperCase();
-      } else {
-        return user.name.substring(0, 1).toUpperCase();
-      }
-    } else {
-      return user.email.substring(0, 1).toUpperCase();
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60), // Diminuído de 70 para 60
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF1E88E5), // Azul mais suave
-                const Color(0xFF1976D2), // Azul mais escuro
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.15),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  // Logo/Título à esquerda
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        ClientConfig.current.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  const Spacer(),
-                  
-                  // Nome do usuário (se couber)
-                  authState.when(
-                    data: (user) => user != null
-                        ? Flexible(
-                            child: Container(
-                              margin: const EdgeInsets.only(right: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.2),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CircleAvatar(
-                                    radius: 8,
-                                    backgroundColor: Colors.white,
-                                    child: Text(
-                                      _getUserInitials(user),
-                                      style: const TextStyle(
-                                        color: Color(0xFF1976D2),
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      _getUserDisplayName(user),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                    loading: () => const SizedBox.shrink(),
-                    error: (error, stackTrace) => const SizedBox.shrink(),
-                  ),
-                  
-                  // Botões fixados à direita
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: const ThemeSelector(isAppBar: true),
-                      ),
-                      const SizedBox(width: 4),
-                      Consumer(
-                        builder: (context, ref, child) {
-                          return Container(
-                            width: 28,
-                            height: 28,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.3),
-                                width: 1,
-                              ),
-                            ),
-                            child: IconButton(
-                              iconSize: 12,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                minWidth: 28,
-                                minHeight: 28,
-                              ),
-                              icon: const Icon(
-                                Icons.logout_rounded,
-                                color: Colors.white,
-                              ),
-                              tooltip: 'Sair',
-                              onPressed: () => ref.read(authNotifierProvider.notifier).logout(),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+      backgroundColor: isDark ? const Color(0xFF0D1117) : const Color(0xFFF5F7FA),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
-              
-              // Card de Abastecimento
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: _MenuCard(
-                  icon: Icons.warehouse,
-                  title: 'Abastecimento',
-                  subtitle: 'Gerencie abastecimento de estoque',
-                  color: Colors.blue,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AbastecimentoScreen(),
+        child: Column(
+          children: [
+            // Header moderno
+            _buildHeader(context, ref, authState, isDark),
+            
+            // Conteúdo
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Saudação
+                    authState.when(
+                      data: (user) => user != null
+                          ? _buildGreeting(context, user, isDark)
+                          : const SizedBox.shrink(),
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Título da seção
+                    Text(
+                      'Módulos',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white54 : Colors.grey.shade600,
+                        letterSpacing: 0.5,
                       ),
-                    );
-                  },
+                    ),
+                    
+                    const SizedBox(height: 12),
+                    
+                    // Card de Abastecimento
+                    _ModernMenuCard(
+                      icon: Icons.inventory_2_rounded,
+                      title: 'Abastecimento',
+                      subtitle: 'Gestão de estoque WMS',
+                      gradientColors: const [Color(0xFF667EEA), Color(0xFF764BA2)],
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AbastecimentoScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, WidgetRef ref, AsyncValue<User?> authState, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161B22) : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Logo da empresa
+          _buildLogo(context, isDark),
+          
+          const Spacer(),
+          
+          // Botões de ação
+          Row(
+            children: [
+              _HeaderIconButton(
+                icon: Icons.brightness_6_rounded,
+                isDark: isDark,
+                onTap: () {
+                  ref.read(themeNotifierProvider.notifier).toggleTheme();
+                },
+              ),
+              const SizedBox(width: 8),
+              _HeaderIconButton(
+                icon: Icons.logout_rounded,
+                isDark: isDark,
+                isDestructive: true,
+                onTap: () => ref.read(authNotifierProvider.notifier).logout(),
+              ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGreeting(BuildContext context, User user, bool isDark) {
+    final hour = DateTime.now().hour;
+    String greeting;
+    IconData greetingIcon;
+    
+    if (hour < 12) {
+      greeting = 'Bom dia';
+      greetingIcon = Icons.wb_sunny_rounded;
+    } else if (hour < 18) {
+      greeting = 'Boa tarde';
+      greetingIcon = Icons.wb_cloudy_rounded;
+    } else {
+      greeting = 'Boa noite';
+      greetingIcon = Icons.nightlight_round;
+    }
+    
+    final firstName = user.name.isNotEmpty 
+        ? user.name.split(' ').first 
+        : user.email.split('@').first;
+    
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isDark 
+                ? Colors.amber.withValues(alpha: 0.15) 
+                : Colors.amber.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            greetingIcon,
+            color: Colors.amber.shade700,
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '$greeting,',
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white54 : Colors.grey.shade600,
+              ),
+            ),
+            Text(
+              firstName,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.grey.shade900,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  /// Constrói a logo do cliente com suporte a dark mode
+  Widget _buildLogo(BuildContext context, bool isDark) {
+    final config = ClientConfig.current;
+    
+    Widget logo = Image.asset(
+      config.logoPath,
+      height: 36,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        // Fallback para texto caso a imagem não carregue
+        return Text(
+          config.name,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(config.primaryColorHex),
+          ),
+        );
+      },
+    );
+
+    if (isDark) {
+      // Converte para escala de cinza e inverte para ficar branco
+      logo = ColorFiltered(
+        colorFilter: const ColorFilter.matrix(<double>[
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0.2126, 0.7152, 0.0722, 0, 0,
+          0, 0, 0, 1, 0,
+        ]),
+        child: logo,
+      );
+      logo = ColorFiltered(
+        colorFilter: const ColorFilter.matrix(<double>[
+          -1, 0, 0, 0, 255,
+          0, -1, 0, 0, 255,
+          0, 0, -1, 0, 255,
+          0, 0, 0, 1, 0,
+        ]),
+        child: logo,
+      );
+    }
+
+    return logo;
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final bool isDark;
+  final bool isDestructive;
+  final VoidCallback onTap;
+
+  const _HeaderIconButton({
+    required this.icon,
+    required this.isDark,
+    this.isDestructive = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: isDark 
+                ? Colors.white.withValues(alpha: 0.08) 
+                : Colors.grey.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            size: 20,
+            color: isDestructive 
+                ? Colors.red.shade400
+                : (isDark ? Colors.white70 : Colors.grey.shade700),
           ),
         ),
       ),
@@ -283,74 +329,145 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _MenuCard extends StatelessWidget {
+class _ModernMenuCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-  final Color color;
+  final List<Color> gradientColors;
   final VoidCallback onTap;
 
-  const _MenuCard({
+  const _ModernMenuCard({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.color,
+    required this.gradientColors,
     required this.onTap,
   });
 
   @override
+  State<_ModernMenuCard> createState() => _ModernMenuCardState();
+}
+
+class _ModernMenuCardState extends State<_ModernMenuCard> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF161B22) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: widget.gradientColors.first.withValues(alpha: _isPressed ? 0.3 : 0.15),
+              blurRadius: _isPressed ? 20 : 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: Stack(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  size: 24,
-                  color: color,
+              // Decoração de fundo
+              Positioned(
+                top: -30,
+                right: -30,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: widget.gradientColors.map((c) => c.withValues(alpha: 0.1)).toList(),
+                    ),
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              
+              // Conteúdo
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
                   children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    // Ícone com gradiente
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: widget.gradientColors,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.gradientColors.first.withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        widget.icon,
+                        size: 26,
+                        color: Colors.white,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    
+                    const SizedBox(width: 16),
+                    
+                    // Textos
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.title,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.grey.shade900,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.subtitle,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: isDark ? Colors.white54 : Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    ),
+                    
+                    // Seta
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: widget.gradientColors.first.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        size: 18,
+                        color: widget.gradientColors.first,
+                      ),
                     ),
                   ],
                 ),
-              ),
-              Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ],
           ),

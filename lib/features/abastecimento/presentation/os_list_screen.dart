@@ -29,19 +29,75 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
   @override
   Widget build(BuildContext context) {
     final osAsync = ref.watch(osNotifierProvider(widget.fase, widget.rua));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0D1117) : const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('${widget.rua} - ${widget.faseNome}'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: isDark ? Colors.white : Colors.grey.shade800,
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          children: [
+            Text(
+              'Rua ${widget.rua}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.blue,
+              ),
+            ),
+            Text(
+              widget.faseNome,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.grey.shade900,
+              ),
+            ),
+          ],
+        ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              ref
-                  .read(osNotifierProvider(widget.fase, widget.rua).notifier)
-                  .refresh();
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () {
+                ref
+                    .read(osNotifierProvider(widget.fase, widget.rua).notifier)
+                    .refresh();
+              },
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.black.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.refresh_rounded,
+                  size: 20,
+                  color: isDark ? Colors.white70 : Colors.grey.shade700,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -65,72 +121,238 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (result.ordens.isEmpty) {
-            return _buildEmptyState(context);
+          // Filtra OSs - considera podeExecutar E status (BLOQUEADA = não pode)
+          final osExecutaveis = result.ordens.where((os) => 
+            os.podeExecutar && os.status.toUpperCase() != 'BLOQUEADA'
+          ).toList();
+          final osBloqueadas = result.ordens.where((os) => 
+            !os.podeExecutar || os.status.toUpperCase() == 'BLOQUEADA'
+          ).toList();
+
+          if (osExecutaveis.isEmpty && osBloqueadas.isEmpty) {
+            return _buildEmptyState(context, isDark);
           }
 
+          // Adiciona +1 no final para o espaço da barra inferior
+          final totalBloqueadas = osBloqueadas.isNotEmpty ? 1 + osBloqueadas.length : 0;
+          final itemCount = osExecutaveis.length + 1 + totalBloqueadas + 1; // +1 final para padding
+
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: result.ordens.length,
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            // +1 header executáveis, +1 header bloqueadas, + cards bloqueadas, +1 bottom padding
+            itemCount: itemCount,
             itemBuilder: (context, index) {
-              final os = result.ordens[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _OsCard(
-                  os: os,
-                  onTap: () async {
-                    if (os.podeExecutar) {
-                      // Pode executar normalmente
-                      _navegarParaOs(os);
-                    } else {
-                      // Precisa autorização de supervisor
-                      final autorizado = await _mostrarDialogAutorizacao(
-                        os.numos,
-                      );
-                      if (autorizado == true) {
-                        _navegarParaOs(os);
-                      }
-                    }
-                  },
-                  podeExecutar: os.podeExecutar,
-                ),
-              );
+              // Último item = espaço para barra inferior
+              if (index == itemCount - 1) {
+                return SizedBox(height: MediaQuery.of(context).padding.bottom + 20);
+              }
+              // Header das OSs disponíveis
+              if (index == 0) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Ordens de Serviço',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white54 : Colors.grey.shade600,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (osExecutaveis.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${osExecutaveis.length} disponíveis',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }
+              
+              // Cards de OS executáveis
+              if (index <= osExecutaveis.length && osExecutaveis.isNotEmpty) {
+                final os = osExecutaveis[index - 1];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _OsCard(
+                    os: os,
+                    isDark: isDark,
+                    onTap: () => _navegarParaOs(os),
+                    podeExecutar: true,
+                  ),
+                );
+              }
+              
+              // Se não tem OSs executáveis, mostra mensagem
+              if (osExecutaveis.isEmpty && index == 1 && osBloqueadas.isNotEmpty) {
+                // Será tratado no próximo bloco
+              }
+              
+              // Header das OSs bloqueadas
+              final bloqueadasHeaderIndex = osExecutaveis.length + 1;
+              if (index == bloqueadasHeaderIndex && osBloqueadas.isNotEmpty) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    top: osExecutaveis.isNotEmpty ? 24 : 0,
+                    bottom: 12,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.lock_outline_rounded,
+                              size: 16,
+                              color: Colors.orange,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            '${osBloqueadas.length} OSs aguardando',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white70 : Colors.grey.shade700,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Toque para solicitar autorização do supervisor',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white38 : Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              // Cards de OSs bloqueadas
+              if (index > bloqueadasHeaderIndex && osBloqueadas.isNotEmpty) {
+                final bloqueadaIndex = index - bloqueadasHeaderIndex - 1;
+                if (bloqueadaIndex < osBloqueadas.length) {
+                  final os = osBloqueadas[bloqueadaIndex];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _OsCardBloqueada(
+                      os: os,
+                      isDark: isDark,
+                      onTap: () async {
+                        final autorizado = await _mostrarDialogAutorizacao(os.numos);
+                        if (autorizado == true) {
+                          _navegarParaOs(os);
+                        }
+                      },
+                    ),
+                  );
+                }
+              }
+              
+              return const SizedBox.shrink();
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
+        loading: () => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Theme.of(context).colorScheme.error,
+              CircularProgressIndicator(
+                color: Colors.blue,
               ),
               const SizedBox(height: 16),
               Text(
-                'Erro ao carregar OSs',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  ref
-                      .read(
-                        osNotifierProvider(widget.fase, widget.rua).notifier,
-                      )
-                      .refresh();
-                },
-                child: const Text('Tentar novamente'),
+                'Carregando OSs...',
+                style: TextStyle(
+                  color: isDark ? Colors.white54 : Colors.grey.shade600,
+                ),
               ),
             ],
+          ),
+        ),
+        error: (error, stack) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    size: 48,
+                    color: Colors.red.shade400,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Erro ao carregar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.grey.shade800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  error.toString(),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: isDark ? Colors.white54 : Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                GestureDetector(
+                  onTap: () {
+                    ref
+                        .read(osNotifierProvider(widget.fase, widget.rua).notifier)
+                        .refresh();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Tentar novamente',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -463,205 +685,71 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
     );
   }
 
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context, bool isDark) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.inbox_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nenhuma OS pendente',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Todas as ordens de serviço desta rua foram concluídas.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_circle_outline_rounded,
+                size: 56,
+                color: Colors.green,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Text(
+              'Tudo pronto!',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Todas as OSs desta rua foram concluídas',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white54 : Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _OsCard extends StatelessWidget {
+class _OsCard extends StatefulWidget {
   final OrdemServico os;
   final VoidCallback onTap;
   final bool podeExecutar;
+  final bool isDark;
 
   const _OsCard({
     required this.os,
     required this.onTap,
     required this.podeExecutar,
+    required this.isDark,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final statusColor = _getStatusColor(context, os.status);
+  State<_OsCard> createState() => _OsCardState();
+}
 
-    return Opacity(
-      opacity: podeExecutar ? 1.0 : 0.6,
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: !podeExecutar
-              ? BorderSide(
-                  color: Colors.orange.withValues(alpha: 0.5),
-                  width: 1,
-                )
-              : BorderSide.none,
-        ),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Cabeçalho: OS + Status
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'OS ${os.numos}',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusColor.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        _getStatusText(os.status),
-                        style: TextStyle(
-                          color: statusColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+class _OsCardState extends State<_OsCard> {
+  bool _isPressed = false;
 
-                const SizedBox(height: 12),
-
-                // Ordem de execução
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '#${os.ordem}',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Cód: ${os.codprod}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 8),
-
-                // Informações do produto
-                Row(
-                  children: [
-                    Icon(
-                      Icons.inventory_2_outlined,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        os.descricao,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 8),
-
-                // Quantidade
-                Row(
-                  children: [
-                    Icon(
-                      Icons.straighten,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Quantidade: ${os.quantidade.toStringAsFixed(0)} un',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 8),
-
-                // Endereço origem
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_on_outlined,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Origem: ${os.enderecoOrigem}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _getStatusColor(BuildContext context, String status) {
+  Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
       case 'PENDENTE':
         return Colors.orange;
@@ -673,7 +761,7 @@ class _OsCard extends StatelessWidget {
       case 'BLOQUEADA':
         return Colors.red;
       default:
-        return Theme.of(context).colorScheme.outline;
+        return Colors.grey;
     }
   }
 
@@ -682,7 +770,6 @@ class _OsCard extends StatelessWidget {
       case 'PENDENTE':
         return 'PENDENTE';
       case 'FASE1_ANDAMENTO':
-        return 'EM ANDAMENTO';
       case 'FASE2_ANDAMENTO':
         return 'EM ANDAMENTO';
       case 'CONCLUIDA':
@@ -692,5 +779,308 @@ class _OsCard extends StatelessWidget {
       default:
         return status;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final statusColor = _getStatusColor(widget.os.status);
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+        decoration: BoxDecoration(
+          color: widget.isDark ? const Color(0xFF161B22) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isPressed
+                ? statusColor.withValues(alpha: 0.5)
+                : (widget.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15)),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _isPressed
+                  ? statusColor.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: widget.isDark ? 0.3 : 0.08),
+              blurRadius: _isPressed ? 16 : 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Cabeçalho: OS + Status
+              Row(
+                children: [
+                  Text(
+                    'OS ${widget.os.numos}',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: widget.isDark ? Colors.white : Colors.grey.shade900,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: statusColor.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      _getStatusText(widget.os.status),
+                      style: TextStyle(
+                        color: statusColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              // Ordem + Código
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue, Colors.blue.shade700],
+                      ),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      '#${widget.os.ordem}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Cód: ${widget.os.codprod}',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: widget.isDark ? Colors.white54 : Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Informações do produto
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: widget.isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : Colors.grey.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.inventory_2_rounded,
+                      size: 16,
+                      color: widget.isDark ? Colors.white54 : Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      widget.os.descricao,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: widget.isDark ? Colors.white : Colors.grey.shade800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 12),
+
+              // Quantidade e Origem
+              Row(
+                children: [
+                  // Quantidade
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.straighten_rounded,
+                          size: 14,
+                          color: widget.isDark ? Colors.white38 : Colors.grey.shade400,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Quantidade: ${widget.os.quantidade.toStringAsFixed(0)} un',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: widget.isDark ? Colors.white54 : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 8),
+
+              // Endereço origem
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on_rounded,
+                    size: 14,
+                    color: widget.isDark ? Colors.white38 : Colors.grey.shade400,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Origem: ${widget.os.enderecoOrigem}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: widget.isDark ? Colors.white54 : Colors.grey.shade600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Card compacto para OSs bloqueadas
+class _OsCardBloqueada extends StatelessWidget {
+  final OrdemServico os;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _OsCardBloqueada({
+    required this.os,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark 
+              ? Colors.orange.withValues(alpha: 0.08) 
+              : Colors.orange.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.orange.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            // Ícone de cadeado
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.lock_rounded,
+                size: 16,
+                color: Colors.orange,
+              ),
+            ),
+            
+            const SizedBox(width: 12),
+            
+            // Informações
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'OS ${os.numos}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white70 : Colors.grey.shade800,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '#${os.ordem}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    os.descricao,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white38 : Colors.grey.shade600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            
+            // Seta indicando que pode clicar
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: Colors.orange.withValues(alpha: 0.7),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

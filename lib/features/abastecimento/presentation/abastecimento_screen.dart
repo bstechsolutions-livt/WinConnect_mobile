@@ -82,77 +82,61 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
         title: const Text('Abastecimento'),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 20),
-            
-            // Opções de Fase
-            Expanded(
-              child: Column(
-                children: [
-                  // Fase 1
-                  Expanded(
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: _FaseCard(
-                        faseNumber: 1,
-                        title: 'Fase 1',
-                        description: 'Empilhadeira',
-                        icon: Icons.looks_one_rounded,
-                        color: Colors.blue,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const RuaListScreen(
-                                fase: 1,
-                                faseNome: 'Empilhadeira',
-                              ),
-                            ),
-                          );
-                        },
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Fase 1
+              _FaseCard(
+                faseNumber: 1,
+                title: 'Fase 1',
+                description: 'Empilhadeira',
+                icon: Icons.looks_one_rounded,
+                color: Colors.blue,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const RuaListScreen(
+                        fase: 1,
+                        faseNome: 'Empilhadeira',
                       ),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Fase 2
-                  Expanded(
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: _FaseCard(
-                        faseNumber: 2,
-                        title: 'Fase 2',
-                        description: 'Auxiliar',
-                        icon: Icons.looks_two_rounded,
-                        color: Colors.green,
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const RuaListScreen(
-                                fase: 2,
-                                faseNome: 'Auxiliar',
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
+                  );
+                },
               ),
-            ),
-          ],
+              
+              const SizedBox(height: 16),
+              
+              // Fase 2
+              _FaseCard(
+                faseNumber: 2,
+                title: 'Fase 2',
+                description: 'Auxiliar',
+                icon: Icons.looks_two_rounded,
+                color: Colors.green,
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const RuaListScreen(
+                        fase: 2,
+                        faseNome: 'Auxiliar',
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _FaseCard extends StatelessWidget {
+class _FaseCard extends StatefulWidget {
   final int faseNumber;
   final String title;
   final String description;
@@ -170,81 +154,205 @@ class _FaseCard extends StatelessWidget {
   });
 
   @override
+  State<_FaseCard> createState() => _FaseCardState();
+}
+
+class _FaseCardState extends State<_FaseCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) => Transform.scale(
+        scale: _scaleAnimation.value,
+        child: child,
       ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+      child: GestureDetector(
+        onTapDown: (_) {
+          setState(() => _isPressed = true);
+          _controller.forward();
+        },
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          _controller.reverse();
+          widget.onTap();
+        },
+        onTapCancel: () {
+          setState(() => _isPressed = false);
+          _controller.reverse();
+        },
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
-              colors: [
-                color.withValues(alpha: 0.1),
-                color.withValues(alpha: 0.05),
-              ],
+              colors: isDark
+                  ? [
+                      widget.color.withValues(alpha: 0.25),
+                      widget.color.withValues(alpha: 0.08),
+                    ]
+                  : [
+                      widget.color.withValues(alpha: 0.15),
+                      widget.color.withValues(alpha: 0.05),
+                    ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
+            border: Border.all(
+              color: widget.color.withValues(alpha: _isPressed ? 0.6 : 0.3),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withValues(alpha: _isPressed ? 0.25 : 0.12),
+                blurRadius: _isPressed ? 16 : 8,
+                spreadRadius: _isPressed ? 1 : 0,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
             children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.3),
-                      blurRadius: 15,
-                      spreadRadius: 2,
+              // Decoração de fundo
+              Positioned(
+                top: -20,
+                right: -20,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: widget.color.withValues(alpha: 0.08),
+                  ),
+                ),
+              ),
+              
+              // Conteúdo principal
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                child: Row(
+                  children: [
+                    // Ícone à esquerda
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            widget.color,
+                            widget.color.withValues(alpha: 0.8),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: widget.color.withValues(alpha: 0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${widget.faseNumber}',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 16),
+                    
+                    // Textos
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.title,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: widget.color,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.description,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark 
+                                  ? Colors.white70 
+                                  : Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    // Botão Iniciar à direita
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: widget.color,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Iniciar',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                ),
-                child: Icon(
-                  icon,
-                  size: 40,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Tocar para continuar',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
                 ),
               ),
             ],
