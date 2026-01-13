@@ -672,92 +672,127 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                       Expanded(
                         child: InkWell(
                           onTap: () => _mostrarCalculadora(context, os),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           child: Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 12,
+                            ),
                             decoration: BoxDecoration(
-                              color: Colors.green[700],
-                              borderRadius: BorderRadius.circular(12),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.green[600]!,
+                                  Colors.green[700]!,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.green.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Column(
                               children: [
-                                const Icon(
-                                  Icons.inventory_2,
-                                  color: Colors.white,
-                                  size: 24,
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.inventory_2_rounded,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 10),
                                 const Text(
                                   'POR CAIXAS',
                                   style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white70,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 6),
                                 if (temCaixaQuebrada) ...[
-                                  // Caixa quebrada: mostra CX + UN
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                  // Caixa quebrada: mostra CX + UN em coluna
+                                  Column(
                                     children: [
-                                      Text(
-                                        '$caixasInteiras',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.baseline,
+                                        textBaseline: TextBaseline.alphabetic,
+                                        children: [
+                                          Text(
+                                            '$caixasInteiras',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 26,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const Text(
+                                            ' CX',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          const Text(
+                                            ' + ',
+                                            style: TextStyle(
+                                              color: Colors.white60,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                          Text(
+                                            '$unidadesRestantes',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 26,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const Text(
+                                            ' UN',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const Text(
-                                        ' CX',
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 14,
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
                                         ),
-                                      ),
-                                      const Text(
-                                        ' + ',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                         ),
-                                      ),
-                                      Text(
-                                        '$unidadesRestantes',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const Text(
-                                        ' UN',
-                                        style: TextStyle(
-                                          color: Colors.white70,
-                                          fontSize: 14,
+                                        child: const Text(
+                                          'CAIXA QUEBRADA',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
                                     ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: const Text(
-                                      'CAIXA QUEBRADA',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
                                   ),
                                 ] else ...[
                                   // Caixas completas
@@ -771,7 +806,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                         '$caixasInteiras',
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 32,
+                                          fontSize: 30,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -780,7 +815,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                         'CX',
                                         style: TextStyle(
                                           color: Colors.white70,
-                                          fontSize: 16,
+                                          fontSize: 14,
                                         ),
                                       ),
                                     ],
@@ -792,56 +827,72 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         ),
                       ),
 
-                      const SizedBox(width: 8),
-
                       // Separador "OU"
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 16,
-                        ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           'OU',
                           style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant
+                                .withValues(alpha: 0.6),
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                            fontSize: 11,
                           ),
                         ),
                       ),
-
-                      const SizedBox(width: 8),
 
                       // Opção por UNIDADES
                       Expanded(
                         child: InkWell(
                           onTap: () => _mostrarCalculadora(context, os),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                           child: Container(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 12,
+                            ),
                             decoration: BoxDecoration(
-                              color: Colors.blue[600],
-                              borderRadius: BorderRadius.circular(12),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Colors.blue[500]!, Colors.blue[700]!],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.blue.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Column(
                               children: [
-                                const Icon(
-                                  Icons.straighten,
-                                  color: Colors.white,
-                                  size: 24,
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(
+                                    Icons.straighten_rounded,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 10),
                                 const Text(
                                   'POR UNIDADES',
                                   style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white70,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
+                                const SizedBox(height: 6),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment:
@@ -852,7 +903,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                       os.qtSolicitada.toStringAsFixed(0),
                                       style: const TextStyle(
                                         color: Colors.white,
-                                        fontSize: 32,
+                                        fontSize: 30,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -861,7 +912,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                       'UN',
                                       style: TextStyle(
                                         color: Colors.white70,
-                                        fontSize: 16,
+                                        fontSize: 14,
                                       ),
                                     ),
                                   ],
