@@ -62,6 +62,7 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
@@ -576,6 +577,7 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       isDismissible: false,
       enableDrag: false,

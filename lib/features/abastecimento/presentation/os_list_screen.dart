@@ -447,6 +447,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       isDismissible: false,
       enableDrag: false,

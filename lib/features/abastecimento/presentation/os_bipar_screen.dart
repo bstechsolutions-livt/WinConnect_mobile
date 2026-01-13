@@ -72,6 +72,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
@@ -145,6 +146,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.7,
@@ -1297,6 +1299,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       isDismissible: false,
       enableDrag: false,
@@ -1965,6 +1968,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       isDismissible: false,
       enableDrag: false,
@@ -2371,6 +2375,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useSafeArea: true,
       isDismissible: true,
       enableDrag: true,
       builder: (ctx) {
@@ -2570,6 +2575,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      useSafeArea: true,
       builder: (ctx) => Container(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         decoration: BoxDecoration(
@@ -2719,6 +2725,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         height: MediaQuery.of(context).size.height * 0.6,
@@ -3056,6 +3063,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
@@ -3271,6 +3279,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       isDismissible: false,
       enableDrag: false,
