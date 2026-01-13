@@ -3116,19 +3116,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final keyboardHeight = MediaQuery.of(ctx).viewInsets.bottom;
-        final screenHeight = MediaQuery.of(ctx).size.height;
-        // Se teclado aberto, ocupa quase tudo. Se fechado, só o necessário
-        final sheetHeight = keyboardHeight > 0 
-            ? screenHeight - keyboardHeight - MediaQuery.of(ctx).padding.top - 50
-            : null;
-        
-        return Container(
-          height: sheetHeight,
-          constraints: sheetHeight == null 
-              ? BoxConstraints(maxHeight: screenHeight * 0.5)
-              : null,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -3136,13 +3126,13 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Row(
-                children: [
-                  Icon(Icons.calculate, color: Colors.amber[700], size: 28),
-                  const SizedBox(width: 12),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    Icon(Icons.calculate, color: Colors.amber[700], size: 28),
+                    const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
                       'CALCULADORA',
