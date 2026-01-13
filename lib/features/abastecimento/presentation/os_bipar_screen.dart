@@ -3116,33 +3116,28 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final keyboardHeight = MediaQuery.of(ctx).viewInsets.bottom;
-        final screenHeight = MediaQuery.of(ctx).size.height;
-        final topPadding = MediaQuery.of(ctx).padding.top;
-
-        // Calcula altura disponível (tela - teclado - status bar - margem)
-        final availableHeight = screenHeight - keyboardHeight - topPadding - 20;
-
-        return Container(
-          height: keyboardHeight > 0 ? availableHeight : null,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.9,
+        expand: false,
+        builder: (_, scrollController) => Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          child: SingleChildScrollView(
+          child: ListView(
+            controller: scrollController,
             padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header
-                Row(
-                  children: [
-                    Icon(Icons.calculate, color: Colors.amber[700], size: 28),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'CALCULADORA',
+            children: [
+              // Header
+              Row(
+                children: [
+                  Icon(Icons.calculate, color: Colors.amber[700], size: 28),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'CALCULADORA',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -3317,8 +3312,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
