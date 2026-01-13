@@ -6,7 +6,7 @@ part of 'os_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$osNotifierHash() => r'f7109cfcb3e030c185a9fb2dcda99ab4047aa749';
+String _$osNotifierHash() => r'096851de97486a8b6464357441bed95264224c82';
 
 /// Copied from Dart SDK
 class _SystemHash {

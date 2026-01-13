@@ -14,7 +14,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
 
   Future<OsDetalhe> _loadOsDetalhe(int fase, int numos) async {
     final apiService = ref.read(apiServiceProvider);
-    final response = await apiService.get('/wms/fase1/os/$numos');
+    final response = await apiService.get('/wms/fase$fase/os/$numos');
 
     // A API retorna: { os: {...}, produto: {...}, endereco_origem: {...}, estoque_atual: ... }
     final osData = response['os'] ?? {};
@@ -83,7 +83,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   Future<(bool, String?, int?)> iniciarOs() async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase1/os/$numos/iniciar', {});
+      await apiService.post('/wms/fase$fase/os/$numos/iniciar', {});
       return (true, null, null);
     } catch (e) {
       final errorStr = e.toString();
@@ -115,7 +115,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   ) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase1/os/$numos/sair', {
+      await apiService.post('/wms/fase$fase/os/$numos/sair', {
         'autorizador_matricula': autorizadorMatricula,
         'autorizador_senha': autorizadorSenha,
       });
@@ -130,7 +130,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   Future<(bool, String?)> biparEndereco(String codigoEndereco) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase1/os/$numos/bipar-endereco', {
+      await apiService.post('/wms/fase$fase/os/$numos/bipar-endereco', {
         'codigo_endereco': codigoEndereco,
       });
       return (true, null);
@@ -145,7 +145,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   Future<(bool, String?)> biparProduto(String codigoBarras) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase1/os/$numos/bipar', {
+      await apiService.post('/wms/fase$fase/os/$numos/bipar', {
         'codigo_barras': codigoBarras,
       });
 
@@ -176,7 +176,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
       // Calcula a quantidade total em unidades
       final quantidadeTotal = (caixas * multiplo) + unidades;
 
-      await apiService.post('/wms/fase1/os/$numos/bipar', {
+      await apiService.post('/wms/fase$fase/os/$numos/bipar', {
         'codigo_barras': codigoBarras,
         'caixas': caixas,
         'unidades': unidades,
@@ -206,12 +206,12 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
       final quantidadeTotal = (caixas * multiplo) + unidades;
 
       // Primeiro valida o produto
-      await apiService.post('/wms/fase1/os/$numos/bipar', {
+      await apiService.post('/wms/fase$fase/os/$numos/bipar', {
         'codigo_barras': codigoBarras,
       });
 
       // Produto válido, agora finaliza com a quantidade conferida
-      await apiService.post('/wms/fase1/os/$numos/finalizar', {
+      await apiService.post('/wms/fase$fase/os/$numos/finalizar', {
         'qt_conferida': quantidadeTotal,
         'caixas': caixas,
         'unidades': unidades,
@@ -230,7 +230,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   ) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase1/os/$numos/vincular-unitizador', {
+      await apiService.post('/wms/fase$fase/os/$numos/vincular-unitizador', {
         'codigo_barras_unitizador': codigoBarrasUnitizador,
       });
 
@@ -255,7 +255,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   ) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase1/os/$numos/finalizar', {
+      await apiService.post('/wms/fase$fase/os/$numos/finalizar', {
         'qt_conferida': qtConferida,
         'caixas': caixas,
         'unidades': unidades,
@@ -276,7 +276,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   ) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase1/os/$numos/finalizar', {
+      await apiService.post('/wms/fase$fase/os/$numos/finalizar', {
         'qt_conferida': qtConferida,
         'caixas': caixas,
         'unidades': unidades,
@@ -293,7 +293,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   Future<(bool, String?)> finalizar(double quantidade) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase1/os/$numos/finalizar', {
+      await apiService.post('/wms/fase$fase/os/$numos/finalizar', {
         'quantidade': quantidade,
       });
       return (true, null);
@@ -306,7 +306,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   Future<(bool, String?)> bloquear(String motivo) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase1/os/$numos/bloquear', {
+      await apiService.post('/wms/fase$fase/os/$numos/bloquear', {
         'motivo': motivo,
       });
       return (true, null);
@@ -322,7 +322,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   ) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase1/os/$numos/divergencia', {
+      await apiService.post('/wms/fase$fase/os/$numos/divergencia', {
         'tipo': tipo,
         'descricao': descricao,
       });

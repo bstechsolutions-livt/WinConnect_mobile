@@ -22,7 +22,7 @@ class OsNotifier extends _$OsNotifier {
 
   Future<OsListResult> _loadOsFromApi(int fase, String rua) async {
     final apiService = ref.read(apiServiceProvider);
-    final response = await apiService.get('/wms/fase1/ruas/$rua/os');
+    final response = await apiService.get('/wms/fase$fase/ruas/$rua/os');
 
     final osData = response['ordens'] as List? ?? [];
     final osEmAndamento = response['os_em_andamento'] as int?;

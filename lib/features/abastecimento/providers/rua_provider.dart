@@ -15,7 +15,7 @@ class RuaNotifier extends _$RuaNotifier {
 
   Future<List<Rua>> _loadRuasFromApi(int fase) async {
     final apiService = ref.read(apiServiceProvider);
-    final response = await apiService.get('/wms/fase1/ruas');
+    final response = await apiService.get('/wms/fase$fase/ruas');
     
     final ruasData = response['ruas'] as List? ?? [];
     

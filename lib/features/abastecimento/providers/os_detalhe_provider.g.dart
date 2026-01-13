@@ -157,7 +157,7 @@ class _ConsultaEstoqueProviderElement
   int get codprod => (origin as ConsultaEstoqueProvider).codprod;
 }
 
-String _$osDetalheNotifierHash() => r'b1fd28c47b55e0c66128666a3ece5f92bf711954';
+String _$osDetalheNotifierHash() => r'b21873d5a978230a7d1e72e99cf653f5841a7c7f';
 
 abstract class _$OsDetalheNotifier
     extends BuildlessAutoDisposeAsyncNotifier<OsDetalhe> {

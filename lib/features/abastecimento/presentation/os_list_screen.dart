@@ -408,12 +408,12 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
     if (os.podeExecutar) {
       try {
         final apiService = ref.read(apiServiceProvider);
-        await apiService.post('/wms/fase1/os/${os.numos}/iniciar', {});
+        await apiService.post('/wms/fase${widget.fase}/os/${os.numos}/iniciar', {});
       } catch (e) {
         // Se já está em andamento, pode continuar
         final errorStr = e.toString().toUpperCase();
         final jaEmAndamento = errorStr.contains('ANDAMENTO') ||
-            errorStr.contains('FASE1_ANDAMENTO');
+            errorStr.contains('FASE${widget.fase}_ANDAMENTO');
         if (!jaEmAndamento) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -677,7 +677,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                                       apiServiceProvider,
                                     );
                                     await apiService
-                                        .post('/wms/fase1/os/$numos/iniciar', {
+                                        .post('/wms/fase${widget.fase}/os/$numos/iniciar', {
                                           'autorizador_matricula': int.parse(
                                             matriculaController.text,
                                           ),
