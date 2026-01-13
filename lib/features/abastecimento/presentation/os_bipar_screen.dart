@@ -2365,89 +2365,352 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   }
 
   void _mostrarDialogBloquear(BuildContext context) {
-    showDialog(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.red[50],
-        title: const Text(
-          'DESEJA BLOQUEAR A\nTAREFA FASE 1?',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        actionsAlignment: MainAxisAlignment.spaceEvenly,
-        actions: [
-          FilledButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              final (sucesso, erro) = await ref
-                  .read(
-                    osDetalheNotifierProvider(
-                      widget.fase,
-                      widget.numos,
-                    ).notifier,
-                  )
-                  .bloquear('Bloqueado pelo operador');
-              if (sucesso && mounted) {
-                _mostrarSucesso('Tarefa bloqueada!');
-                Navigator.of(context).pop(true);
-              } else {
-                _mostrarErro(erro ?? 'Erro ao bloquear');
-              }
-            },
-            style: FilledButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('SIM'),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      builder: (ctx) {
+        bool isLoading = false;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) => Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Indicador de arraste
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Ícone de alerta ou loading
+                    if (isLoading) ...[
+                      const SizedBox(
+                        width: 72,
+                        height: 72,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Bloqueando...',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white70 : Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Aguarde, processando sua solicitação',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? Colors.white38 : Colors.grey.shade500,
+                        ),
+                      ),
+                    ] else ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.block_rounded,
+                          size: 40,
+                          color: Colors.red,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Título
+                      Text(
+                        'Bloquear Tarefa?',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.grey.shade900,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Descrição
+                      Text(
+                        'A tarefa será bloqueada e voltará para a fila.\nEsta ação pode ser desfeita pelo supervisor.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: isDark ? Colors.white54 : Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // Botões
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => Navigator.of(ctx).pop(),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.1)
+                                      : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'Cancelar',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? Colors.white70
+                                        : Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () async {
+                                setModalState(() => isLoading = true);
+
+                                final (sucesso, erro) = await ref
+                                    .read(
+                                      osDetalheNotifierProvider(
+                                        widget.fase,
+                                        widget.numos,
+                                      ).notifier,
+                                    )
+                                    .bloquear('Bloqueado pelo operador');
+
+                                if (!mounted) return;
+                                Navigator.of(ctx).pop();
+
+                                if (sucesso) {
+                                  _mostrarSucesso('Tarefa bloqueada!');
+                                  Navigator.of(this.context).pop(true);
+                                } else {
+                                  _mostrarErro(erro ?? 'Erro ao bloquear');
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.red.withValues(alpha: 0.4),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Text(
+                                  'Bloquear',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('NÃO'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   void _mostrarDialogDivergencia(BuildContext context) {
-    showDialog(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.orange[50],
-        title: const Text(
-          'SINALIZAR\nDIVERGÊNCIA?',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontWeight: FontWeight.bold),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => Container(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        actionsAlignment: MainAxisAlignment.spaceEvenly,
-        actions: [
-          FilledButton(
-            onPressed: () async {
-              Navigator.of(ctx).pop();
-              final (sucesso, erro) = await ref
-                  .read(
-                    osDetalheNotifierProvider(
-                      widget.fase,
-                      widget.numos,
-                    ).notifier,
-                  )
-                  .sinalizarDivergencia(
-                    'OUTRO',
-                    'Divergência sinalizada pelo operador',
-                  );
-              if (sucesso && mounted) {
-                _mostrarSucesso('Divergência sinalizada!');
-              } else {
-                _mostrarErro(erro ?? 'Erro ao sinalizar');
-              }
-            },
-            style: FilledButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text('SIM'),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Indicador de arraste
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Ícone de alerta
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.warning_amber_rounded,
+                    size: 40,
+                    color: Colors.orange,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Título
+                Text(
+                  'Sinalizar Divergência?',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : Colors.grey.shade900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Descrição
+                Text(
+                  'A divergência será registrada para\nverificação do supervisor.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? Colors.white54 : Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(height: 28),
+
+                // Botões
+                Row(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => Navigator.of(ctx).pop(),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.1)
+                                : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Cancelar',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? Colors.white70
+                                  : Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () async {
+                          Navigator.of(ctx).pop();
+                          final (sucesso, erro) = await ref
+                              .read(
+                                osDetalheNotifierProvider(
+                                  widget.fase,
+                                  widget.numos,
+                                ).notifier,
+                              )
+                              .sinalizarDivergencia(
+                                'OUTRO',
+                                'Divergência sinalizada pelo operador',
+                              );
+                          if (sucesso && mounted) {
+                            _mostrarSucesso('Divergência sinalizada!');
+                          } else {
+                            _mostrarErro(erro ?? 'Erro ao sinalizar');
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.orange.withValues(alpha: 0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: const Text(
+                            'Confirmar',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('NÃO'),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -32,7 +32,9 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0D1117) : const Color(0xFFF5F7FA),
+      backgroundColor: isDark
+          ? const Color(0xFF0D1117)
+          : const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -106,8 +108,8 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
           // Se tem OS em andamento, navega direto para ela (uma única vez)
           if (result.osEmAndamento != null && !_navegouParaOsEmAndamento) {
             _navegouParaOsEmAndamento = true;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              Navigator.pushReplacement(
+            WidgetsBinding.instance.addPostFrameCallback((_) async {
+              final resultado = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
                   builder: (context) => OsBiparScreen(
@@ -117,25 +119,44 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                   ),
                 ),
               );
+              // Se retornou (bloqueou ou finalizou), atualiza a lista
+              if (resultado == true && mounted) {
+                _navegouParaOsEmAndamento = false; // Permite nova navegação
+                ref
+                    .read(osNotifierProvider(widget.fase, widget.rua).notifier)
+                    .refresh();
+              }
             });
             return const Center(child: CircularProgressIndicator());
           }
 
           // Filtra OSs - considera podeExecutar E status (BLOQUEADA = não pode)
-          final osExecutaveis = result.ordens.where((os) => 
-            os.podeExecutar && os.status.toUpperCase() != 'BLOQUEADA'
-          ).toList();
-          final osBloqueadas = result.ordens.where((os) => 
-            !os.podeExecutar || os.status.toUpperCase() == 'BLOQUEADA'
-          ).toList();
+          final osExecutaveis = result.ordens
+              .where(
+                (os) =>
+                    os.podeExecutar && os.status.toUpperCase() != 'BLOQUEADA',
+              )
+              .toList();
+          final osBloqueadas = result.ordens
+              .where(
+                (os) =>
+                    !os.podeExecutar || os.status.toUpperCase() == 'BLOQUEADA',
+              )
+              .toList();
 
           if (osExecutaveis.isEmpty && osBloqueadas.isEmpty) {
             return _buildEmptyState(context, isDark);
           }
 
           // Adiciona +1 no final para o espaço da barra inferior
-          final totalBloqueadas = osBloqueadas.isNotEmpty ? 1 + osBloqueadas.length : 0;
-          final itemCount = osExecutaveis.length + 1 + totalBloqueadas + 1; // +1 final para padding
+          final totalBloqueadas = osBloqueadas.isNotEmpty
+              ? 1 + osBloqueadas.length
+              : 0;
+          final itemCount =
+              osExecutaveis.length +
+              1 +
+              totalBloqueadas +
+              1; // +1 final para padding
 
           return ListView.builder(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -144,7 +165,9 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
             itemBuilder: (context, index) {
               // Último item = espaço para barra inferior
               if (index == itemCount - 1) {
-                return SizedBox(height: MediaQuery.of(context).padding.bottom + 20);
+                return SizedBox(
+                  height: MediaQuery.of(context).padding.bottom + 20,
+                );
               }
               // Header das OSs disponíveis
               if (index == 0) {
@@ -164,7 +187,10 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                       const Spacer(),
                       if (osExecutaveis.isNotEmpty)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.green.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
@@ -182,7 +208,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                   ),
                 );
               }
-              
+
               // Cards de OS executáveis
               if (index <= osExecutaveis.length && osExecutaveis.isNotEmpty) {
                 final os = osExecutaveis[index - 1];
@@ -196,12 +222,14 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                   ),
                 );
               }
-              
+
               // Se não tem OSs executáveis, mostra mensagem
-              if (osExecutaveis.isEmpty && index == 1 && osBloqueadas.isNotEmpty) {
+              if (osExecutaveis.isEmpty &&
+                  index == 1 &&
+                  osBloqueadas.isNotEmpty) {
                 // Será tratado no próximo bloco
               }
-              
+
               // Header das OSs bloqueadas
               final bloqueadasHeaderIndex = osExecutaveis.length + 1;
               if (index == bloqueadasHeaderIndex && osBloqueadas.isNotEmpty) {
@@ -233,7 +261,9 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white70 : Colors.grey.shade700,
+                              color: isDark
+                                  ? Colors.white70
+                                  : Colors.grey.shade700,
                             ),
                           ),
                         ],
@@ -250,7 +280,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                   ),
                 );
               }
-              
+
               // Cards de OSs bloqueadas
               if (index > bloqueadasHeaderIndex && osBloqueadas.isNotEmpty) {
                 final bloqueadaIndex = index - bloqueadasHeaderIndex - 1;
@@ -262,7 +292,9 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                       os: os,
                       isDark: isDark,
                       onTap: () async {
-                        final autorizado = await _mostrarDialogAutorizacao(os.numos);
+                        final autorizado = await _mostrarDialogAutorizacao(
+                          os.numos,
+                        );
                         if (autorizado == true) {
                           _navegarParaOs(os);
                         }
@@ -271,7 +303,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                   );
                 }
               }
-              
+
               return const SizedBox.shrink();
             },
           );
@@ -280,9 +312,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(
-                color: Colors.blue,
-              ),
+              CircularProgressIndicator(color: Colors.blue),
               const SizedBox(height: 16),
               Text(
                 'Carregando OSs...',
@@ -333,11 +363,16 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                 GestureDetector(
                   onTap: () {
                     ref
-                        .read(osNotifierProvider(widget.fase, widget.rua).notifier)
+                        .read(
+                          osNotifierProvider(widget.fase, widget.rua).notifier,
+                        )
                         .refresh();
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.blue,
                       borderRadius: BorderRadius.circular(12),
@@ -801,7 +836,9 @@ class _OsCardState extends State<_OsCard> {
           border: Border.all(
             color: _isPressed
                 ? statusColor.withValues(alpha: 0.5)
-                : (widget.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15)),
+                : (widget.isDark
+                      ? Colors.white.withValues(alpha: 0.08)
+                      : Colors.grey.withValues(alpha: 0.15)),
             width: 1,
           ),
           boxShadow: [
@@ -827,12 +864,17 @@ class _OsCardState extends State<_OsCard> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: widget.isDark ? Colors.white : Colors.grey.shade900,
+                      color: widget.isDark
+                          ? Colors.white
+                          : Colors.grey.shade900,
                     ),
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
@@ -860,7 +902,10 @@ class _OsCardState extends State<_OsCard> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.blue, Colors.blue.shade700],
@@ -881,7 +926,9 @@ class _OsCardState extends State<_OsCard> {
                     'Cód: ${widget.os.codprod}',
                     style: TextStyle(
                       fontSize: 13,
-                      color: widget.isDark ? Colors.white54 : Colors.grey.shade500,
+                      color: widget.isDark
+                          ? Colors.white54
+                          : Colors.grey.shade500,
                     ),
                   ),
                 ],
@@ -904,7 +951,9 @@ class _OsCardState extends State<_OsCard> {
                     child: Icon(
                       Icons.inventory_2_rounded,
                       size: 16,
-                      color: widget.isDark ? Colors.white54 : Colors.grey.shade600,
+                      color: widget.isDark
+                          ? Colors.white54
+                          : Colors.grey.shade600,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -914,7 +963,9 @@ class _OsCardState extends State<_OsCard> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: widget.isDark ? Colors.white : Colors.grey.shade800,
+                        color: widget.isDark
+                            ? Colors.white
+                            : Colors.grey.shade800,
                       ),
                     ),
                   ),
@@ -933,14 +984,18 @@ class _OsCardState extends State<_OsCard> {
                         Icon(
                           Icons.straighten_rounded,
                           size: 14,
-                          color: widget.isDark ? Colors.white38 : Colors.grey.shade400,
+                          color: widget.isDark
+                              ? Colors.white38
+                              : Colors.grey.shade400,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           'Quantidade: ${widget.os.quantidade.toStringAsFixed(0)} un',
                           style: TextStyle(
                             fontSize: 12,
-                            color: widget.isDark ? Colors.white54 : Colors.grey.shade600,
+                            color: widget.isDark
+                                ? Colors.white54
+                                : Colors.grey.shade600,
                           ),
                         ),
                       ],
@@ -948,7 +1003,7 @@ class _OsCardState extends State<_OsCard> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 8),
 
               // Endereço origem
@@ -957,7 +1012,9 @@ class _OsCardState extends State<_OsCard> {
                   Icon(
                     Icons.location_on_rounded,
                     size: 14,
-                    color: widget.isDark ? Colors.white38 : Colors.grey.shade400,
+                    color: widget.isDark
+                        ? Colors.white38
+                        : Colors.grey.shade400,
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -965,7 +1022,9 @@ class _OsCardState extends State<_OsCard> {
                       'Origem: ${widget.os.enderecoOrigem}',
                       style: TextStyle(
                         fontSize: 12,
-                        color: widget.isDark ? Colors.white54 : Colors.grey.shade600,
+                        color: widget.isDark
+                            ? Colors.white54
+                            : Colors.grey.shade600,
                       ),
                     ),
                   ),
@@ -998,8 +1057,8 @@ class _OsCardBloqueada extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: isDark 
-              ? Colors.orange.withValues(alpha: 0.08) 
+          color: isDark
+              ? Colors.orange.withValues(alpha: 0.08)
               : Colors.orange.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -1016,15 +1075,11 @@ class _OsCardBloqueada extends StatelessWidget {
                 color: Colors.orange.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                Icons.lock_rounded,
-                size: 16,
-                color: Colors.orange,
-              ),
+              child: Icon(Icons.lock_rounded, size: 16, color: Colors.orange),
             ),
-            
+
             const SizedBox(width: 12),
-            
+
             // Informações
             Expanded(
               child: Column(
@@ -1042,7 +1097,10 @@ class _OsCardBloqueada extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.orange.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
@@ -1071,7 +1129,7 @@ class _OsCardBloqueada extends StatelessWidget {
                 ],
               ),
             ),
-            
+
             // Seta indicando que pode clicar
             Icon(
               Icons.chevron_right_rounded,

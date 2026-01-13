@@ -539,7 +539,7 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
     if (!mounted) return;
 
     // Sucesso! Navega para tela de bipar produto
-    Navigator.pushReplacement(
+    final resultado = await Navigator.push<bool>(
       context,
       MaterialPageRoute(
         builder: (context) => OsBiparScreen(
@@ -549,6 +549,11 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
         ),
       ),
     );
+
+    // Se retornou resultado (bloqueou ou finalizou), propaga para a tela anterior
+    if (mounted && resultado == true) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   void _mostrarErro(String mensagem) {
