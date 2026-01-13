@@ -52,7 +52,7 @@ class ClientConfig {
     'rofe': ClientConfig(
       id: 'rofe',
       name: 'Rofe',
-      apiBaseUrl: 'https://slipperier-burbly-nena.ngrok-free.dev/api',
+      apiBaseUrl: 'https://immediately-vacation-implies-lung.trycloudflare.com/api',
       logoPath: 'assets/clients/rofe/logo.png',
       primaryColorHex: 0xFF1E88E5, // Azul
       secondaryColorHex: 0xFF43A047,
