@@ -29,6 +29,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   final FocusNode _eanFocusNode = FocusNode();
   final FocusNode _unitizadorFocusNode = FocusNode();
   bool _isProcessing = false;
+  bool _finalizacaoIniciada = false; // Evita chamar finalização múltiplas vezes
 
   // Cache da quantidade conferida (usado após vincular unitizador)
   int? _caixasConferidas;
@@ -1005,10 +1006,11 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               // Mostra indicador de processamento enquanto finaliza
               Builder(
                 builder: (context) {
-                  // Agenda a finalização automática após o build
-                  if (!_isProcessing) {
+                  // Agenda a finalização automática após o build (apenas uma vez)
+                  if (!_isProcessing && !_finalizacaoIniciada) {
+                    _finalizacaoIniciada = true;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted && !_isProcessing) {
+                      if (mounted) {
                         _finalizarOs(os);
                       }
                     });
@@ -2350,9 +2352,12 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   }
 
   Future<void> _vincularUnitizador(OsDetalhe os) async {
+    // Evita chamadas duplicadas
+    if (_isProcessing) return;
+    
     final codigo = _unitizadorController.text.trim();
     if (codigo.isEmpty) {
-      _mostrarErro('Bipe a etiqueta do unitizador');
+      if (mounted) _mostrarErro('Bipe a etiqueta do unitizador');
       return;
     }
 
@@ -3346,9 +3351,12 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   void _mostrarSucesso(String msg) => ScaffoldMessenger.of(
     context,
   ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
-  void _mostrarErro(String msg) => ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+  void _mostrarErro(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
+  }
 
   void _mostrarDialogSairOs(BuildContext context) {
     final matriculaController = TextEditingController();
