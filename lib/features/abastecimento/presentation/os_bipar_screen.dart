@@ -1311,12 +1311,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     }
 
     // Primeiro valida o código de barras na API
+    if (!mounted) return;
     setState(() => _isProcessing = true);
 
     final (sucesso, erro) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
         .biparProduto(ean);
 
+    if (!mounted) return;
     setState(() => _isProcessing = false);
 
     if (sucesso) {
@@ -2299,6 +2301,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     final qtConferida = (caixas * os.multiplo) + unidades;
 
     // Guarda em cache para usar depois de vincular unitizador
+    if (!mounted) return;
     setState(() {
       _caixasConferidas = caixas;
       _unidadesConferidas = unidades;
@@ -2316,7 +2319,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     _mostrarSucesso('Quantidade conferida: $qtConferida UN');
 
     // Foca no campo de unitizador
-    _unitizadorFocusNode.requestFocus();
+    if (mounted) _unitizadorFocusNode.requestFocus();
   }
 
   /// Confirma bipagem com quantidade menor (requer autorização)
@@ -2331,6 +2334,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     String senha,
   ) async {
     // Guarda em cache para usar depois de vincular unitizador
+    if (!mounted) return;
     setState(() {
       _caixasConferidas = caixas;
       _unidadesConferidas = unidades;
@@ -2361,6 +2365,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       return;
     }
 
+    if (!mounted) return;
     setState(() => _isProcessing = true);
     final (sucesso, erro) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
@@ -2371,6 +2376,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       // Vinculou unitizador, agora finaliza automaticamente e volta para lista!
       await _finalizarOsAposUnitizador(os);
     } else {
+      if (!mounted) return;
       setState(() => _isProcessing = false);
       _mostrarErro(erro ?? 'Erro ao vincular unitizador');
     }
@@ -2382,7 +2388,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (_qtConferida == null ||
         _caixasConferidas == null ||
         _unidadesConferidas == null) {
-      setState(() => _isProcessing = false);
+      if (mounted) setState(() => _isProcessing = false);
       _mostrarErro('Erro: quantidade não conferida');
       return;
     }
@@ -2413,6 +2419,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           );
     }
 
+    if (!mounted) return;
     setState(() => _isProcessing = false);
 
     final (sucessoFinal, erroFinal) = resultado;
@@ -2420,7 +2427,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       _mostrarSucesso('Tarefa finalizada!');
       // Volta para a lista de OSs (pop 2 vezes: OsBiparScreen -> OsEnderecoScreen -> OsListScreen)
       Navigator.of(context).pop(true);
-    } else {
+    } else if (mounted) {
       _mostrarErro(erroFinal ?? 'Erro ao finalizar');
     }
   }
@@ -2434,6 +2441,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       return;
     }
 
+    if (!mounted) return;
     setState(() => _isProcessing = true);
 
     (bool, String?) resultado;
@@ -2462,13 +2470,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           );
     }
 
+    if (!mounted) return;
     setState(() => _isProcessing = false);
 
     final (sucesso, erro) = resultado;
     if (sucesso && mounted) {
       _mostrarSucesso('Tarefa finalizada!');
       Navigator.of(context).pop(true);
-    } else {
+    } else if (mounted) {
       _mostrarErro(erro ?? 'Erro ao finalizar');
     }
   }
