@@ -3116,18 +3116,26 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(ctx).size.height * 0.7,
-        ),
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
+      builder: (ctx) {
+        final keyboardHeight = MediaQuery.of(ctx).viewInsets.bottom;
+        final screenHeight = MediaQuery.of(ctx).size.height;
+        // Se teclado aberto, ocupa quase tudo. Se fechado, só o necessário
+        final sheetHeight = keyboardHeight > 0 
+            ? screenHeight - keyboardHeight - MediaQuery.of(ctx).padding.top - 50
+            : null;
+        
+        return Container(
+          height: sheetHeight,
+          constraints: sheetHeight == null 
+              ? BoxConstraints(maxHeight: screenHeight * 0.5)
+              : null,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Header
