@@ -40,7 +40,7 @@ class _PickingRotaScreenState extends ConsumerState<PickingRotaScreen> {
 
     try {
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.post('/abastecimento/fase2/rua/${widget.rua}/calcular-rota', {});
+      final response = await apiService.post('/wms/fase2/rua/${widget.rua}/calcular-rota', {});
       
       final lista = response['rota'] as List? ?? [];
       setState(() {

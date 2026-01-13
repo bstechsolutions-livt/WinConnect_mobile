@@ -306,7 +306,7 @@ class _ConferenciaScreenState extends ConsumerState<ConferenciaScreen> {
 
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/abastecimento/fase2/os/${widget.numos}/conferir', {
+      await apiService.post('/wms/fase2/os/${widget.numos}/conferir', {
         'codigo_barras': widget.codauxiliar,
         'quantidade': qtd,
       });

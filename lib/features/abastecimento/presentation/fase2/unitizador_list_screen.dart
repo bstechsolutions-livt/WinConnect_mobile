@@ -36,7 +36,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
 
     try {
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.get('/abastecimento/fase2/ruas/${widget.rua}/unitizadores');
+      final response = await apiService.get('/wms/fase2/ruas/${widget.rua}/unitizadores');
       
       final lista = response['unitizadores'] as List? ?? [];
       setState(() {
@@ -159,7 +159,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
               // Primeiro bipa o unitizador
               try {
                 final apiService = ref.read(apiServiceProvider);
-                await apiService.post('/abastecimento/fase2/unitizador/${unit['codunitizador']}/bipar', {});
+                await apiService.post('/wms/fase2/unitizador/${unit['codunitizador']}/bipar', {});
                 
                 if (!context.mounted) return;
                 

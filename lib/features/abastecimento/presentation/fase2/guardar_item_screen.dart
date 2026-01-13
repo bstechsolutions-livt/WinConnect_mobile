@@ -257,12 +257,12 @@ class _GuardarItemScreenState extends ConsumerState<GuardarItemScreen> {
       final apiService = ref.read(apiServiceProvider);
       
       // Confirma guarda
-      await apiService.post('/abastecimento/fase2/os/${widget.numos}/confirmar-guarda', {
+      await apiService.post('/wms/fase2/os/${widget.numos}/confirmar-guarda', {
         'codigo_barras_unitizador': codigo,
       });
       
       // Finaliza a OS
-      await apiService.post('/abastecimento/fase2/os/${widget.numos}/finalizar', {});
+      await apiService.post('/wms/fase2/os/${widget.numos}/finalizar', {});
 
       if (!mounted) return;
       

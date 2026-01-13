@@ -40,7 +40,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
 
     try {
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.get('/abastecimento/fase2/unitizador/${widget.codunitizador}/itens');
+      final response = await apiService.get('/wms/fase2/unitizador/${widget.codunitizador}/itens');
       
       final lista = response['itens'] as List? ?? [];
       setState(() {
