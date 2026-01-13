@@ -3116,9 +3116,16 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: Container(
+      builder: (ctx) {
+        final keyboardHeight = MediaQuery.of(ctx).viewInsets.bottom;
+        final screenHeight = MediaQuery.of(ctx).size.height;
+        final topPadding = MediaQuery.of(ctx).padding.top;
+
+        // Calcula altura disponível (tela - teclado - status bar - margem)
+        final availableHeight = screenHeight - keyboardHeight - topPadding - 20;
+
+        return Container(
+          height: keyboardHeight > 0 ? availableHeight : null,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
@@ -3133,184 +3140,185 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                   children: [
                     Icon(Icons.calculate, color: Colors.amber[700], size: 28),
                     const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'CALCULADORA',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                    const Expanded(
+                      child: Text(
+                        'CALCULADORA',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const Divider(),
-              const SizedBox(height: 8),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const Divider(),
+                const SizedBox(height: 8),
 
-              // Info do múltiplo
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Colors.amber.withValues(alpha: 0.5),
+                // Info do múltiplo
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.amber.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.inventory_2, color: Colors.amber),
+                      const SizedBox(width: 12),
+                      Text(
+                        '1 CAIXA = ${os.multiplo} UNIDADES',
+                        style: TextStyle(
+                          color: Colors.amber[900],
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+
+                const SizedBox(height: 20),
+
+                // Campos de conversão
+                Row(
                   children: [
-                    const Icon(Icons.inventory_2, color: Colors.amber),
-                    const SizedBox(width: 12),
-                    Text(
-                      '1 CAIXA = ${os.multiplo} UNIDADES',
-                      style: TextStyle(
-                        color: Colors.amber[900],
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    // Campo Unidades
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            'UNIDADES',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: ctrlUn,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: '0',
+                              filled: true,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
+                            onChanged: (value) {
+                              final un = int.tryParse(value) ?? 0;
+                              final cx = os.multiplo > 0
+                                  ? (un / os.multiplo)
+                                  : 0.0;
+                              ctrlCx.text = cx.toStringAsFixed(2);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Ícone de conversão
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Icon(
+                        Icons.swap_horiz,
+                        size: 32,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+
+                    // Campo Caixas
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Text(
+                            'CAIXAS',
+                            style: TextStyle(
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: ctrlCx,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: '0',
+                              filled: true,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            onChanged: (value) {
+                              final cx =
+                                  double.tryParse(value.replaceAll(',', '.')) ??
+                                  0;
+                              final un = (cx * os.multiplo).round();
+                              ctrlUn.text = un.toString();
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // Campos de conversão
-              Row(
-                children: [
-                  // Campo Unidades
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          'UNIDADES',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: ctrlUn,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: '0',
-                            filled: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          onChanged: (value) {
-                            final un = int.tryParse(value) ?? 0;
-                            final cx = os.multiplo > 0
-                                ? (un / os.multiplo)
-                                : 0.0;
-                            ctrlCx.text = cx.toStringAsFixed(2);
-                          },
-                        ),
-                      ],
-                    ),
+                // Botões de atalho
+                Text(
+                  'Atalhos rápidos:',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
                   ),
-
-                  // Ícone de conversão
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Icon(
-                      Icons.swap_horiz,
-                      size: 32,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
-
-                  // Campo Caixas
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          'CAIXAS',
-                          style: TextStyle(
-                            color: Colors.green[700],
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: ctrlCx,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: '0',
-                            filled: true,
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          onChanged: (value) {
-                            final cx =
-                                double.tryParse(value.replaceAll(',', '.')) ??
-                                0;
-                            final un = (cx * os.multiplo).round();
-                            ctrlUn.text = un.toString();
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // Botões de atalho
-              Text(
-                'Atalhos rápidos:',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 12,
                 ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [1, 2, 5, 10, 20, 50].map((cx) {
-                  return ActionChip(
-                    label: Text('$cx CX'),
-                    onPressed: () {
-                      ctrlCx.text = cx.toString();
-                      ctrlUn.text = (cx * os.multiplo).toString();
-                    },
-                  );
-                }).toList(),
-              ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [1, 2, 5, 10, 20, 50].map((cx) {
+                    return ActionChip(
+                      label: Text('$cx CX'),
+                      onPressed: () {
+                        ctrlCx.text = cx.toString();
+                        ctrlUn.text = (cx * os.multiplo).toString();
+                      },
+                    );
+                  }).toList(),
+                ),
 
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
