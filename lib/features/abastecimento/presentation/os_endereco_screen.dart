@@ -520,6 +520,7 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
       return;
     }
 
+    if (!mounted) return;
     setState(() => _isProcessing = true);
 
     // Chama bipar-endereco
@@ -528,6 +529,7 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
         .biparEndereco(codigo);
 
     if (!sucesso) {
+      if (!mounted) return;
       setState(() => _isProcessing = false);
       _mostrarErro(erro ?? 'Endereço incorreto');
       _enderecoController.clear();
@@ -535,9 +537,8 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
       return;
     }
 
-    setState(() => _isProcessing = false);
-
     if (!mounted) return;
+    setState(() => _isProcessing = false);
 
     // Sucesso! Navega para tela de bipar produto
     final resultado = await Navigator.push<bool>(
