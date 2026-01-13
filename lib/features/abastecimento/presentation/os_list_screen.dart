@@ -105,27 +105,29 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
       ),
       body: osAsync.when(
         data: (result) {
-          // Se tem OS em andamento, navega direto para ela (uma única vez)
+          // Se tem OS em andamento e ainda não navegamos nesta sessão, navega direto
           if (result.osEmAndamento != null && !_navegouParaOsEmAndamento) {
             _navegouParaOsEmAndamento = true;
             WidgetsBinding.instance.addPostFrameCallback((_) async {
+              if (!mounted) return;
+              
+              // Navega para tela de endereço (que vai verificar se já bipou ou não)
               final resultado = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => OsBiparScreen(
+                  builder: (context) => OsEnderecoScreen(
                     fase: widget.fase,
                     numos: result.osEmAndamento!,
                     faseNome: widget.faseNome,
                   ),
                 ),
               );
+              
               // Se retornou (bloqueou ou finalizou), atualiza a lista
               if (mounted) {
-                // Aguarda um pouco para garantir que o backend atualizou
                 await Future.delayed(const Duration(milliseconds: 500));
                 if (mounted) {
-                  _navegouParaOsEmAndamento =
-                      false; // Permite nova navegação APÓS refresh
+                  _navegouParaOsEmAndamento = false;
                   ref
                       .read(
                         osNotifierProvider(widget.fase, widget.rua).notifier,
@@ -409,8 +411,10 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
         await apiService.post('/wms/fase1/os/${os.numos}/iniciar', {});
       } catch (e) {
         // Se já está em andamento, pode continuar
-        final errorStr = e.toString();
-        if (!errorStr.contains('andamento')) {
+        final errorStr = e.toString().toUpperCase();
+        final jaEmAndamento = errorStr.contains('ANDAMENTO') ||
+            errorStr.contains('FASE1_ANDAMENTO');
+        if (!jaEmAndamento) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(

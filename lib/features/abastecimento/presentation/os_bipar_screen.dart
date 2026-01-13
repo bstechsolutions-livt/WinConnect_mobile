@@ -1001,82 +1001,82 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 },
               ),
             ] else ...[
-              // Tudo pronto - mostrar botão finalizar
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue),
-                ),
-                child: Column(
-                  children: [
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green, size: 24),
-                        SizedBox(width: 8),
-                        Text(
-                          'PRODUTO ✓',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.local_shipping,
-                          color: Colors.blue,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'UNITIZADOR: ${os.codunitizador}',
-                          style: const TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: FilledButton.icon(
-                  onPressed: _isProcessing ? null : () => _finalizarOs(os),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
+              // Unitizador já vinculado - finalizar automaticamente
+              // Mostra indicador de processamento enquanto finaliza
+              Builder(
+                builder: (context) {
+                  // Agenda a finalização automática após o build
+                  if (!_isProcessing) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted && !_isProcessing) {
+                        _finalizarOs(os);
+                      }
+                    });
+                  }
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue),
                     ),
-                  ),
-                  icon: _isProcessing ? null : const Icon(Icons.check_circle),
-                  label: _isProcessing
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'FINALIZAR TAREFA',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    child: Column(
+                      children: [
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.green, size: 24),
+                            SizedBox(width: 8),
+                            Text(
+                              'PRODUTO ✓',
+                              style: TextStyle(
+                                color: Colors.green,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.local_shipping,
+                              color: Colors.blue,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'UNITIZADOR: ${os.codunitizador}',
+                              style: const TextStyle(
+                                color: Colors.blue,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Finalizando tarefa...',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
 
@@ -1890,7 +1890,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
                         const SizedBox(height: 20),
 
-                        // Botão Finalizar (quantidade correta)
+                        // Botão Confirmar quantidade (quantidade correta)
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: SizedBox(
@@ -1928,7 +1928,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   const Text(
-                                    'FINALIZAR TAREFA',
+                                    'CONFIRMAR QUANTIDADE',
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -2363,11 +2363,60 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     if (sucesso) {
       _unitizadorController.clear();
-      // Vinculou unitizador, agora finaliza automaticamente!
-      await _finalizarOs(os);
+      // Vinculou unitizador, agora finaliza automaticamente e volta para lista!
+      await _finalizarOsAposUnitizador(os);
     } else {
       setState(() => _isProcessing = false);
       _mostrarErro(erro ?? 'Erro ao vincular unitizador');
+    }
+  }
+
+  /// Finaliza a OS após vincular unitizador e volta para lista de OSs
+  Future<void> _finalizarOsAposUnitizador(OsDetalhe os) async {
+    // Usa os dados em cache da conferência de quantidade
+    if (_qtConferida == null ||
+        _caixasConferidas == null ||
+        _unidadesConferidas == null) {
+      setState(() => _isProcessing = false);
+      _mostrarErro('Erro: quantidade não conferida');
+      return;
+    }
+
+    (bool, String?) resultado;
+
+    if (_quantidadeMenor &&
+        _autorizadorMatricula != null &&
+        _autorizadorSenha != null) {
+      // Finaliza com quantidade menor (já autorizado)
+      resultado = await ref
+          .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
+          .finalizarComQuantidadeMenor(
+            _qtConferida!,
+            _caixasConferidas!,
+            _unidadesConferidas!,
+            _autorizadorMatricula!,
+            _autorizadorSenha!,
+          );
+    } else {
+      // Finaliza com quantidade normal
+      resultado = await ref
+          .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
+          .finalizarComQuantidade(
+            _qtConferida!,
+            _caixasConferidas!,
+            _unidadesConferidas!,
+          );
+    }
+
+    setState(() => _isProcessing = false);
+
+    final (sucessoFinal, erroFinal) = resultado;
+    if (sucessoFinal && mounted) {
+      _mostrarSucesso('Tarefa finalizada!');
+      // Volta para a lista de OSs (pop 2 vezes: OsBiparScreen -> OsEnderecoScreen -> OsListScreen)
+      Navigator.of(context).pop(true);
+    } else {
+      _mostrarErro(erroFinal ?? 'Erro ao finalizar');
     }
   }
 
