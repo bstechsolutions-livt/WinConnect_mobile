@@ -2367,24 +2367,46 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       return;
     }
 
+    // Verifica se tem os dados de conferência antes de prosseguir
+    if (_qtConferida == null ||
+        _caixasConferidas == null ||
+        _unidadesConferidas == null) {
+      if (mounted) _mostrarErro('Erro: quantidade não conferida. Bipe o produto novamente.');
+      return;
+    }
+
     if (!mounted) return;
     setState(() => _isProcessing = true);
+    
+    // Chama o método que faz tudo junto: vincula + finaliza
     final (sucesso, erro) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .vincularUnitizador(codigo);
+        .vincularUnitizadorEFinalizar(
+          codigoBarrasUnitizador: codigo,
+          qtConferida: _qtConferida!,
+          caixas: _caixasConferidas!,
+          unidades: _unidadesConferidas!,
+          autorizadorMatricula: _quantidadeMenor ? _autorizadorMatricula : null,
+          autorizadorSenha: _quantidadeMenor ? _autorizadorSenha : null,
+        );
+
+    if (!mounted) return;
+    setState(() => _isProcessing = false);
 
     if (sucesso) {
       _unitizadorController.clear();
-      // Vinculou unitizador, agora finaliza automaticamente e volta para lista!
-      await _finalizarOsAposUnitizador(os);
+      _mostrarSucesso('Tarefa finalizada!');
+      // Volta para OsEnderecoScreen que vai propagar o resultado
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
     } else {
-      if (!mounted) return;
-      setState(() => _isProcessing = false);
-      _mostrarErro(erro ?? 'Erro ao vincular unitizador');
+      _mostrarErro(erro ?? 'Erro ao finalizar');
     }
   }
 
   /// Finaliza a OS após vincular unitizador e volta para lista de OSs
+  /// NOTA: Este método não é mais usado, mantido para compatibilidade
   Future<void> _finalizarOsAposUnitizador(OsDetalhe os) async {
     // Usa os dados em cache da conferência de quantidade
     if (_qtConferida == null ||

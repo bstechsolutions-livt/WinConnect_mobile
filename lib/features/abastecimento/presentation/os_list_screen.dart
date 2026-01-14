@@ -463,17 +463,21 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
       isDismissible: false,
       enableDrag: false,
       builder: (sheetContext) => StatefulBuilder(
-        builder: (context, setSheetState) => Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Form(
+        builder: (context, setSheetState) {
+          final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
+          final bottomPadding = MediaQuery.of(sheetContext).padding.bottom;
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: bottomInset > 0 ? bottomInset : bottomPadding,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Form(
               key: formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -726,8 +730,8 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                 ],
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

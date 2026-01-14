@@ -553,7 +553,8 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
     );
 
     // Se retornou resultado (bloqueou ou finalizou), propaga para a tela anterior
-    if (mounted && resultado == true) {
+    if (resultado == true && mounted) {
+      // ignore: use_build_context_synchronously
       Navigator.of(context).pop(true);
     }
   }
