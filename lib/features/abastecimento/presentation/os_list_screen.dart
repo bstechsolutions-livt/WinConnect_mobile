@@ -5,7 +5,6 @@ import '../providers/os_provider.dart';
 import '../../../shared/models/os_model.dart';
 import '../../../shared/providers/api_service_provider.dart';
 import 'os_endereco_screen.dart';
-import 'os_bipar_screen.dart';
 
 class OsListScreen extends ConsumerStatefulWidget {
   final int fase;
@@ -112,7 +111,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
               if (!mounted) return;
               
               // Navega para tela de endereço (que vai verificar se já bipou ou não)
-              final resultado = await Navigator.push<bool>(
+              await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
                   builder: (context) => OsEnderecoScreen(
@@ -123,7 +122,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                 ),
               );
               
-              // Se retornou (bloqueou ou finalizou), atualiza a lista
+              // Quando retornar (bloqueou ou finalizou), atualiza a lista
               if (mounted) {
                 await Future.delayed(const Duration(milliseconds: 500));
                 if (mounted) {
@@ -458,47 +457,47 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      useSafeArea: true,
+      useSafeArea: false,
       backgroundColor: Colors.transparent,
       isDismissible: false,
       enableDrag: false,
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setSheetState) {
-          final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
-          final bottomPadding = MediaQuery.of(sheetContext).padding.bottom;
-          return Container(
-            padding: EdgeInsets.only(
-              bottom: bottomInset > 0 ? bottomInset : bottomPadding,
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Header
-                  Row(
+          return SafeArea(
+            top: false,
+            child: Container(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+              ),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.admin_panel_settings,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 28,
-                        ),
-                      ),
+                      // Header
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.admin_panel_settings,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 28,
+                            ),
+                          ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -727,7 +726,9 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                   ),
 
                   const SizedBox(height: 8),
-                ],
+                    ],
+                  ),
+                ),
               ),
             ),
           );

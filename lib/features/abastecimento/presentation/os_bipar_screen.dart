@@ -2405,57 +2405,6 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     }
   }
 
-  /// Finaliza a OS após vincular unitizador e volta para lista de OSs
-  /// NOTA: Este método não é mais usado, mantido para compatibilidade
-  Future<void> _finalizarOsAposUnitizador(OsDetalhe os) async {
-    // Usa os dados em cache da conferência de quantidade
-    if (_qtConferida == null ||
-        _caixasConferidas == null ||
-        _unidadesConferidas == null) {
-      if (mounted) setState(() => _isProcessing = false);
-      _mostrarErro('Erro: quantidade não conferida');
-      return;
-    }
-
-    (bool, String?) resultado;
-
-    if (_quantidadeMenor &&
-        _autorizadorMatricula != null &&
-        _autorizadorSenha != null) {
-      // Finaliza com quantidade menor (já autorizado)
-      resultado = await ref
-          .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-          .finalizarComQuantidadeMenor(
-            _qtConferida!,
-            _caixasConferidas!,
-            _unidadesConferidas!,
-            _autorizadorMatricula!,
-            _autorizadorSenha!,
-          );
-    } else {
-      // Finaliza com quantidade normal
-      resultado = await ref
-          .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-          .finalizarComQuantidade(
-            _qtConferida!,
-            _caixasConferidas!,
-            _unidadesConferidas!,
-          );
-    }
-
-    if (!mounted) return;
-    setState(() => _isProcessing = false);
-
-    final (sucessoFinal, erroFinal) = resultado;
-    if (sucessoFinal && mounted) {
-      _mostrarSucesso('Tarefa finalizada!');
-      // Volta para a lista de OSs (pop 2 vezes: OsBiparScreen -> OsEnderecoScreen -> OsListScreen)
-      Navigator.of(context).pop(true);
-    } else if (mounted) {
-      _mostrarErro(erroFinal ?? 'Erro ao finalizar');
-    }
-  }
-
   Future<void> _finalizarOs(OsDetalhe os) async {
     // Usa os dados em cache da conferência de quantidade
     if (_qtConferida == null ||
