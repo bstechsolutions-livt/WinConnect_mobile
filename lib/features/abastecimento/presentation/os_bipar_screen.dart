@@ -1027,7 +1027,11 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         const Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.check_circle, color: Colors.green, size: 24),
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                              size: 24,
+                            ),
                             SizedBox(width: 8),
                             Text(
                               'PRODUTO ✓',
@@ -1069,9 +1073,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                             SizedBox(width: 12),
                             Text(
                               'Finalizando tarefa...',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: TextStyle(fontWeight: FontWeight.w500),
                             ),
                           ],
                         ),
@@ -2358,7 +2360,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   Future<void> _vincularUnitizador(OsDetalhe os) async {
     // Evita chamadas duplicadas
     if (_isProcessing) return;
-    
+
     final codigo = _unitizadorController.text.trim();
     if (codigo.isEmpty) {
       if (mounted) _mostrarErro('Bipe a etiqueta do unitizador');
@@ -2484,6 +2486,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
   void _mostrarDialogBloquear(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final motivoController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -2507,7 +2510,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               ),
             ),
             child: SafeArea(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -2585,7 +2588,27 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           color: isDark ? Colors.white54 : Colors.grey.shade600,
                         ),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: 20),
+
+                      // Campo de motivo
+                      TextField(
+                        controller: motivoController,
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          labelText: 'Motivo do bloqueio *',
+                          hintText: 'Descreva o motivo do bloqueio...',
+                          alignLabelWithHint: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.grey.shade50,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
 
                       // Botões
                       Row(
@@ -2621,6 +2644,19 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           Expanded(
                             child: GestureDetector(
                               onTap: () async {
+                                final motivo = motivoController.text.trim();
+                                if (motivo.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Informe o motivo do bloqueio',
+                                      ),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                  return;
+                                }
+
                                 setModalState(() => isLoading = true);
 
                                 final (sucesso, erro) = await ref
@@ -2630,7 +2666,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                         widget.numos,
                                       ).notifier,
                                     )
-                                    .bloquear('Bloqueado pelo operador');
+                                    .bloquear(motivo);
 
                                 if (!mounted) return;
                                 Navigator.of(ctx).pop();
@@ -2684,153 +2720,260 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
   void _mostrarDialogDivergencia(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final observacaoController = TextEditingController();
+    String? tipoSelecionado;
+
+    // Tipos de divergência conforme API
+    final tiposDivergencia = [
+      {'value': 'quantidade_menor', 'label': 'Quantidade Menor'},
+      {'value': 'quantidade_maior', 'label': 'Quantidade Maior'},
+      {'value': 'produto_errado', 'label': 'Produto Errado'},
+      {'value': 'nao_encontrado', 'label': 'Não Encontrado'},
+      {'value': 'outro', 'label': 'Outro (especificar)'},
+    ];
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (ctx) => Container(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Indicador de arraste
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white24 : Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Ícone de alerta
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.warning_amber_rounded,
-                    size: 40,
-                    color: Colors.orange,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Título
-                Text(
-                  'Sinalizar Divergência?',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: isDark ? Colors.white : Colors.grey.shade900,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Descrição
-                Text(
-                  'A divergência será registrada para\nverificação do supervisor.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDark ? Colors.white54 : Colors.grey.shade600,
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // Botões
-                Row(
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isOutro = tipoSelecionado == 'outro';
+          
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(ctx).pop(),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.1)
-                                : Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            'Cancelar',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: isDark
-                                  ? Colors.white70
-                                  : Colors.grey.shade700,
-                            ),
-                          ),
-                        ),
+                    // Indicador de arraste
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () async {
-                          Navigator.of(ctx).pop();
-                          final (sucesso, erro) = await ref
-                              .read(
-                                osDetalheNotifierProvider(
-                                  widget.fase,
-                                  widget.numos,
-                                ).notifier,
-                              )
-                              .sinalizarDivergencia(
-                                'OUTRO',
-                                'Divergência sinalizada pelo operador',
-                              );
-                          if (sucesso && mounted) {
-                            _mostrarSucesso('Divergência sinalizada!');
-                          } else {
-                            _mostrarErro(erro ?? 'Erro ao sinalizar');
+                    const SizedBox(height: 24),
+
+                    // Ícone de alerta
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.warning_amber_rounded,
+                        size: 40,
+                        color: Colors.orange,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Título
+                    Text(
+                      'Sinalizar Divergência',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.grey.shade900,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Descrição
+                    Text(
+                      'Selecione o tipo da divergência encontrada.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isDark ? Colors.white54 : Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Dropdown de tipo
+                    DropdownButtonFormField<String>(
+                      value: tipoSelecionado,
+                      decoration: InputDecoration(
+                        labelText: 'Tipo da divergência *',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.grey.shade50,
+                        prefixIcon: Icon(
+                          Icons.category_outlined,
+                          color: Colors.orange.shade300,
+                        ),
+                      ),
+                      dropdownColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                      items: tiposDivergencia.map((tipo) {
+                        return DropdownMenuItem<String>(
+                          value: tipo['value'] as String,
+                          child: Text(tipo['label'] as String),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setModalState(() {
+                          tipoSelecionado = value;
+                          // Limpa observação se mudar de "outro" para outro tipo
+                          if (value != 'outro') {
+                            observacaoController.clear();
                           }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: Colors.orange,
+                        });
+                      },
+                    ),
+                    
+                    // Campo de observação (só aparece se for "outro")
+                    if (isOutro) ...[
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: observacaoController,
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          labelText: 'Descreva a divergência *',
+                          hintText: 'Informe detalhes da divergência...',
+                          alignLabelWithHint: true,
+                          border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.orange.withValues(alpha: 0.4),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
                           ),
-                          child: const Text(
-                            'Confirmar',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                          filled: true,
+                          fillColor: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.grey.shade50,
+                          prefixIcon: Padding(
+                            padding: const EdgeInsets.only(bottom: 48),
+                            child: Icon(
+                              Icons.edit_note,
+                              color: Colors.orange.shade300,
                             ),
                           ),
                         ),
                       ),
+                    ],
+                    const SizedBox(height: 24),
+
+                    // Botões
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => Navigator.of(ctx).pop(),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Cancelar',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : Colors.grey.shade700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () async {
+                              if (tipoSelecionado == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Selecione o tipo da divergência'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final observacao = observacaoController.text.trim();
+                              
+                              // Se for "outro", observação é obrigatória
+                              if (tipoSelecionado == 'outro' && observacao.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Descreva a divergência'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              Navigator.of(ctx).pop();
+                              final (sucesso, erro) = await ref
+                                  .read(
+                                    osDetalheNotifierProvider(
+                                      widget.fase,
+                                      widget.numos,
+                                    ).notifier,
+                                  )
+                                  .sinalizarDivergencia(
+                                    tipoSelecionado!,
+                                    observacao.isNotEmpty ? observacao : null,
+                                  );
+                              if (sucesso && mounted) {
+                                _mostrarSucesso('Divergência sinalizada!');
+                              } else {
+                                _mostrarErro(erro ?? 'Erro ao sinalizar');
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.orange.withValues(alpha: 0.4),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Text(
+                                'Confirmar',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -3362,9 +3505,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.green));
   void _mostrarErro(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: Colors.red),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
   }
 
   void _mostrarDialogSairOs(BuildContext context) {

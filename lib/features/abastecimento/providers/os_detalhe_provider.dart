@@ -318,16 +318,17 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   // Sinalizar divergência
   Future<(bool, String?)> sinalizarDivergencia(
     String tipo,
-    String descricao,
+    String? observacao,
   ) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase$fase/os/$numos/divergencia', {
-        'tipo': tipo,
-        'descricao': descricao,
-      });
+      final data = <String, dynamic>{'tipo': tipo};
+      if (observacao != null && observacao.isNotEmpty) {
+        data['observacao'] = observacao;
+      }
+      await apiService.post('/wms/fase$fase/os/$numos/divergencia', data);
 
-      state = AsyncValue.data(state.value!.copyWith(divergencia: descricao));
+      state = AsyncValue.data(state.value!.copyWith(divergencia: tipo));
       return (true, null);
     } catch (e) {
       return (false, _extrairMensagemErro(e));
