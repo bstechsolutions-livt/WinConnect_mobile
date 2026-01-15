@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
 import 'carrinho_screen.dart';
 
-/// Tela de conferência de itens do unitizador (Fase 2)
-/// Operador bipa produtos e adiciona ao carrinho
+/// Tela de conferência CEGA de itens do unitizador (Fase 2)
+/// Operador bipa produtos e adiciona ao carrinho direto
 class UnitizadorItensScreen extends ConsumerStatefulWidget {
   final String codigoBarras;
   final String rua;
@@ -26,12 +27,37 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
   bool _isLoading = true;
   String? _erro;
   int _itensNoCarrinho = 0;
+  
+  // Controller para bipagem
+  final _codigoController = TextEditingController();
+  final _codigoFocusNode = FocusNode();
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
+    
+    // Esconde teclado quando foca (para scanner físico)
+    _codigoFocusNode.addListener(() {
+      if (_codigoFocusNode.hasFocus) {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      }
+    });
+    
     _carregarUnitizador();
     _carregarCarrinho();
+    
+    // Foca no campo após build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _codigoFocusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _codigoController.dispose();
+    _codigoFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _carregarUnitizador() async {
@@ -57,8 +83,19 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
     } catch (e) {
       if (!mounted) return;
       
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      
+      final isSemOsPendentes = errorMsg.toLowerCase().contains('não possui os') ||
+          errorMsg.toLowerCase().contains('sem os') ||
+          errorMsg.toLowerCase().contains('pendentes');
+      
       setState(() {
-        _erro = e.toString().replaceAll('Exception: ', '');
+        if (isSemOsPendentes) {
+          _itens = [];
+          _erro = null;
+        } else {
+          _erro = errorMsg;
+        }
         _isLoading = false;
       });
     }
@@ -77,755 +114,208 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
     } catch (_) {}
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Scaffold(
-      backgroundColor: isDark 
-          ? const Color(0xFF0D1117) 
-          : const Color(0xFFF5F7FA),
-      appBar: _buildAppBar(isDark),
-      body: _buildBody(isDark),
-      floatingActionButton: _itensNoCarrinho > 0 ? _buildCarrinhoFAB(isDark) : null,
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(bool isDark) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: IconButton(
-        icon: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.1)
-                : Colors.black.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 18,
-            color: isDark ? Colors.white : Colors.grey.shade800,
-          ),
-        ),
-        onPressed: () => Navigator.pop(context, true),
-      ),
-      title: Column(
-        children: [
-          Text(
-            'Unitizador',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.green,
-            ),
-          ),
-          Text(
-            widget.codigoBarras,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.grey.shade900,
-            ),
-          ),
-        ],
-      ),
-      centerTitle: true,
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.black.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.refresh_rounded,
-                size: 18,
-                color: isDark ? Colors.white : Colors.grey.shade800,
-              ),
-            ),
-            onPressed: () {
-              _carregarUnitizador();
-              _carregarCarrinho();
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBody(bool isDark) {
-    if (_isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 48,
-              height: 48,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Carregando itens...',
-              style: TextStyle(
-                color: isDark ? Colors.white54 : Colors.grey.shade600,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_erro != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.error_outline_rounded,
-                  size: 56,
-                  color: Colors.red.shade400,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Erro ao carregar',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.grey.shade800,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _erro!,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.white54 : Colors.grey.shade600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              GestureDetector(
-                onTap: _carregarUnitizador,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.green.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.refresh_rounded, size: 18, color: Colors.green),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Tentar novamente',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_itens.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.check_circle_outline_rounded,
-                  size: 56,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Unitizador vazio!',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.grey.shade800,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Todos os itens deste unitizador\njá foram conferidos.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.white54 : Colors.grey.shade600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
-              GestureDetector(
-                onTap: () => Navigator.pop(context, true),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.green.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.arrow_back_rounded, size: 18, color: Colors.green),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Voltar',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final itensDisponiveis = _itens.where((i) => i['conferido'] != true && i['bloqueado'] != true).length;
-    
-    return Column(
-      children: [
-        // Header com resumo
-        _buildHeader(isDark, itensDisponiveis),
-        
-        // Lista de itens
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(20),
-            itemCount: _itens.length,
-            itemBuilder: (context, index) {
-              final item = _itens[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ItemCard(
-                  item: item,
-                  onTap: () => _conferirItem(item),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeader(bool isDark, int itensDisponiveis) {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.green.withValues(alpha: 0.15),
-            Colors.green.withValues(alpha: 0.05),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.green.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.qr_code_scanner_rounded,
-                  color: Colors.green,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Conferência Cega',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.grey.shade900,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Bipe o produto e informe a quantidade',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isDark ? Colors.white54 : Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _buildStatBadge(
-                isDark,
-                Icons.inventory_2_outlined,
-                '$itensDisponiveis',
-                'Disponíveis',
-                Colors.blue,
-              ),
-              const SizedBox(width: 12),
-              _buildStatBadge(
-                isDark,
-                Icons.shopping_cart_outlined,
-                '$_itensNoCarrinho',
-                'No Carrinho',
-                Colors.orange,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatBadge(bool isDark, IconData icon, String value, String label, Color color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? Colors.white54 : Colors.grey.shade600,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCarrinhoFAB(bool isDark) {
-    return FloatingActionButton.extended(
-      onPressed: _abrirCarrinho,
-      backgroundColor: Colors.orange,
-      icon: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          const Icon(Icons.shopping_cart, color: Colors.white),
-          Positioned(
-            right: -8,
-            top: -8,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.red,
-                shape: BoxShape.circle,
-              ),
-              child: Text(
-                '$_itensNoCarrinho',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      label: const Text(
-        'Ver Carrinho',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _conferirItem(Map<String, dynamic> item) async {
-    final conferido = item['conferido'] == true;
-    final bloqueado = item['bloqueado'] == true;
-    
-    if (conferido || bloqueado) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(bloqueado ? 'Item bloqueado!' : 'Item já conferido!'),
-          backgroundColor: bloqueado ? Colors.red : Colors.orange,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-    
-    // Abre modal de conferência
-    final resultado = await _mostrarModalConferencia(item);
-    
-    if (resultado == true) {
-      _carregarUnitizador();
-      _carregarCarrinho();
-    }
-  }
-
-  Future<bool?> _mostrarModalConferencia(Map<String, dynamic> item) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final codigoController = TextEditingController();
-    final quantidadeController = TextEditingController();
-    bool isLoading = false;
-    String? erro;
-
-    return showModalBottomSheet<bool>(
+  /// Abre scanner de câmera
+  void _abrirScannerCamera() {
+    showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF161B22) : Colors.white,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
-                ),
-                child: SafeArea(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Handle bar
-                        Container(
-                          margin: const EdgeInsets.only(top: 12),
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white24 : Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        
-                        // Header
-                        Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.qr_code_scanner_rounded,
-                                  size: 40,
-                                  color: Colors.green,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'CONFERIR PRODUTO',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDark ? Colors.white : Colors.grey.shade900,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.blue.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  item['descricao'] ?? 'Produto ${item['codprod']}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.blue,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Campos
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            children: [
-                              // Código de barras
-                              TextField(
-                                controller: codigoController,
-                                autofocus: true,
-                                decoration: InputDecoration(
-                                  labelText: 'Código de Barras',
-                                  hintText: 'Bipe ou digite o código',
-                                  prefixIcon: const Icon(Icons.qr_code),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  filled: true,
-                                  fillColor: isDark 
-                                      ? Colors.white.withValues(alpha: 0.05)
-                                      : Colors.grey.withValues(alpha: 0.05),
-                                ),
-                                onSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                              ),
-                              
-                              const SizedBox(height: 16),
-                              
-                              // Quantidade
-                              TextField(
-                                controller: quantidadeController,
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                ],
-                                decoration: InputDecoration(
-                                  labelText: 'Quantidade',
-                                  hintText: 'Digite a quantidade',
-                                  prefixIcon: const Icon(Icons.numbers),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  filled: true,
-                                  fillColor: isDark 
-                                      ? Colors.white.withValues(alpha: 0.05)
-                                      : Colors.grey.withValues(alpha: 0.05),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Erro
-                        if (erro != null)
-                          Padding(
-                            padding: const EdgeInsets.all(20),
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.error_outline, color: Colors.red, size: 20),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      erro!,
-                                      style: TextStyle(color: Colors.red, fontSize: 13),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        
-                        // Botões
-                        Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: isLoading ? null : () => Navigator.pop(ctx, false),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: const Text('CANCELAR'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 2,
-                                child: FilledButton(
-                                  onPressed: isLoading
-                                      ? null
-                                      : () async {
-                                          final codigo = codigoController.text.trim();
-                                          final qtd = quantidadeController.text.trim();
-                                          
-                                          if (codigo.isEmpty) {
-                                            setModalState(() => erro = 'Digite o código de barras');
-                                            return;
-                                          }
-                                          if (qtd.isEmpty) {
-                                            setModalState(() => erro = 'Digite a quantidade');
-                                            return;
-                                          }
-                                          
-                                          setModalState(() {
-                                            isLoading = true;
-                                            erro = null;
-                                          });
-                                          
-                                          try {
-                                            final apiService = ref.read(apiServiceProvider);
-                                            await apiService.post(
-                                              '/wms/fase2/os/${item['numos']}/conferir-produto',
-                                              {
-                                                'codigo_barras': codigo,
-                                                'quantidade': qtd,
-                                              },
-                                            );
-                                            
-                                            if (ctx.mounted) {
-                                              Navigator.pop(ctx, true);
-                                              ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(
-                                                  content: Row(
-                                                    children: [
-                                                      Icon(Icons.check_circle, color: Colors.white),
-                                                      const SizedBox(width: 8),
-                                                      Text('Produto adicionado ao carrinho!'),
-                                                    ],
-                                                  ),
-                                                  backgroundColor: Colors.green,
-                                                  behavior: SnackBarBehavior.floating,
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(10),
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                          } catch (e) {
-                                            setModalState(() {
-                                              erro = e.toString().replaceAll('Exception: ', '');
-                                              isLoading = false;
-                                            });
-                                          }
-                                        },
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: isLoading
-                                      ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Text(
-                                          'CONFIRMAR',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Escanear Código do Produto',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            // Scanner
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: MobileScanner(
+                  controller: MobileScannerController(
+                    facing: CameraFacing.back,
+                  ),
+                  onDetect: (capture) {
+                    final List<Barcode> barcodes = capture.barcodes;
+                    if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+                      final codigo = barcodes.first.rawValue!;
+                      Navigator.pop(context);
+                      _codigoController.text = codigo;
+                      _processarCodigo(codigo);
+                    }
+                  },
                 ),
               ),
-            );
-          },
-        );
-      },
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Aponte a câmera para o código de barras do produto',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Processa o código escaneado ou digitado
+  void _processarCodigo(String codigo) {
+    if (codigo.isEmpty) {
+      _mostrarErro('Bipe ou escaneie um código');
+      return;
+    }
+
+    // Encontra o item pelo código
+    final item = _itens.firstWhere(
+      (i) => i['codauxiliar']?.toString() == codigo || 
+             i['codprod']?.toString() == codigo ||
+             i['ean']?.toString() == codigo,
+      orElse: () => {},
+    );
+    
+    if (item.isEmpty) {
+      _mostrarErro('Produto não encontrado neste unitizador');
+      _codigoController.clear();
+      _codigoFocusNode.requestFocus();
+      return;
+    }
+
+    // Abre bottom sheet para digitar quantidades
+    _abrirQuantidadeSheet(codigo, item);
+  }
+
+  /// Abre bottom sheet para digitar a quantidade
+  void _abrirQuantidadeSheet(String codigo, Map<String, dynamic> item) {
+    // Trata multiplo como String ou int
+    int multiplo = 1;
+    final m = item['multiplo'];
+    if (m != null) {
+      if (m is int) {
+        multiplo = m;
+      } else if (m is num) {
+        multiplo = m.toInt();
+      } else {
+        multiplo = int.tryParse(m.toString()) ?? 1;
+      }
+    }
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _QuantidadeBottomSheet(
+        descricao: item['descricao'] ?? 'Produto ${item['codprod']}',
+        codprod: item['codprod']?.toString() ?? '---',
+        multiplo: multiplo,
+        onConfirmar: (quantidade) async {
+          Navigator.pop(context);
+          await _conferirProduto(codigo, item, quantidade);
+        },
+      ),
+    );
+  }
+
+  /// Confere o produto na API
+  Future<void> _conferirProduto(
+    String codigo, 
+    Map<String, dynamic> item,
+    int quantidade,
+  ) async {
+    setState(() => _isProcessing = true);
+    
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      
+      await apiService.post(
+        '/wms/fase2/os/${item['numos']}/conferir-produto',
+        {
+          'codigo_barras': codigo,
+          'quantidade': quantidade.toString(),
+        },
+      );
+      
+      if (!mounted) return;
+      
+      _codigoController.clear();
+      _codigoFocusNode.requestFocus();
+      _mostrarSucesso('Produto adicionado ao carrinho!');
+      
+      // Recarrega dados
+      await Future.wait([
+        _carregarUnitizador(),
+        _carregarCarrinho(),
+      ]);
+      
+    } catch (e) {
+      _mostrarErro(e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  void _mostrarSucesso(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(msg)),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _mostrarErro(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(msg)),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
@@ -842,217 +332,721 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
       _carregarCarrinho();
     }
   }
-}
-
-/// Card de item do unitizador
-class _ItemCard extends StatefulWidget {
-  final Map<String, dynamic> item;
-  final VoidCallback onTap;
-
-  const _ItemCard({
-    required this.item,
-    required this.onTap,
-  });
-
-  @override
-  State<_ItemCard> createState() => _ItemCardState();
-}
-
-class _ItemCardState extends State<_ItemCard> {
-  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final conferido = widget.item['conferido'] == true;
-    final bloqueado = widget.item['bloqueado'] == true;
-    
-    Color accentColor = Colors.green;
-    if (bloqueado) accentColor = Colors.red;
-    if (conferido) accentColor = Colors.grey;
-    
-    final descricao = widget.item['descricao'] ?? 'Produto ${widget.item['codprod']}';
-    final qt = _parseNum(widget.item['qt']);
-    final unidade = widget.item['unidade'] ?? 'UN';
-    
-    return GestureDetector(
-      onTapDown: conferido || bloqueado ? null : (_) => setState(() => _isPressed = true),
-      onTapUp: conferido || bloqueado ? null : (_) {
-        setState(() => _isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF161B22) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: conferido || bloqueado
-                ? accentColor.withValues(alpha: 0.5)
-                : (_isPressed 
-                    ? accentColor.withValues(alpha: 0.5)
-                    : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15))),
-            width: conferido || bloqueado ? 2 : 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: _isPressed 
-                  ? accentColor.withValues(alpha: 0.2)
-                  : Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-              blurRadius: _isPressed ? 16 : 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Opacity(
-          opacity: conferido ? 0.5 : 1.0,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Ícone
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        accentColor.withValues(alpha: 0.2),
-                        accentColor.withValues(alpha: 0.1),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    bloqueado 
-                        ? Icons.lock_rounded
-                        : conferido 
-                            ? Icons.check_rounded
-                            : Icons.inventory_2_rounded,
-                    color: accentColor,
-                    size: 24,
-                  ),
-                ),
-                
-                const SizedBox(width: 14),
-                
-                // Info
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        descricao,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.grey.shade900,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.tag,
-                            size: 14,
-                            color: isDark ? Colors.white54 : Colors.grey.shade500,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Cód: ${widget.item['codprod']}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isDark ? Colors.white54 : Colors.grey.shade600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.scale,
-                            size: 14,
-                            color: isDark ? Colors.white54 : Colors.grey.shade500,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${qt.toStringAsFixed(0)} $unidade',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white70 : Colors.grey.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Status ou seta
-                if (bloqueado)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Text(
-                      'BLOQ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                    ),
-                  )
-                else if (conferido)
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.green.withValues(alpha: 0.2),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Unitizador ${widget.codigoBarras}'),
+        centerTitle: true,
+        actions: [
+          // Botão carrinho
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.shopping_cart),
+                tooltip: 'Ver carrinho',
+                onPressed: _abrirCarrinho,
+              ),
+              if (_itensNoCarrinho > 0)
+                Positioned(
+                  right: 4,
+                  top: 4,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.orange,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(
-                      Icons.check,
-                      color: Colors.green,
-                      size: 20,
-                    ),
-                  )
-                else
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: isDark 
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: isDark ? Colors.white54 : Colors.grey.shade600,
+                    child: Text(
+                      '$_itensNoCarrinho',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
+        ],
+      ),
+      body: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_erro != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+              const SizedBox(height: 16),
+              Text(_erro!, textAlign: TextAlign.center),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _carregarUnitizador,
+                child: const Text('Tentar novamente'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_itens.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.inbox_outlined, size: 64, color: Colors.blue),
+              const SizedBox(height: 16),
+              const Text(
+                'Nenhuma OS pendente',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Este unitizador não possui OSs\npendentes para conferência.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: () => Navigator.pop(context, true),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Voltar'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final itensPendentes = _itens.where((i) => i['conferido'] != true && i['bloqueado'] != true).toList();
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Info do Unitizador
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.inventory_2, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CONFERÊNCIA CEGA',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          '${itensPendentes.length} itens pendentes',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.shopping_cart, size: 16, color: Colors.orange),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$_itensNoCarrinho',
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+
+            // Scanner Input - IGUAL OS OUTROS
+            _buildScannerInput(context),
+            
+            const SizedBox(height: 16),
+
+            // Lista de itens para referência
+            Text(
+              'Itens para conferir:',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Lista compacta
+            ...itensPendentes.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              final descricao = item['descricao'] ?? 'Produto ${item['codprod']}';
+              final codprod = item['codprod']?.toString() ?? '---';
+              
+              return Container(
+                margin: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        descricao,
+                        style: const TextStyle(fontSize: 13),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '#$codprod',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+          ],
         ),
       ),
     );
   }
 
-  double _parseNum(dynamic value) {
-    if (value == null) return 0;
-    if (value is num) return value.toDouble();
-    if (value is String) return double.tryParse(value) ?? 0;
-    return 0;
+  /// Widget de scanner igual aos outros - SEM TECLADO
+  Widget _buildScannerInput(BuildContext context) {
+    return Column(
+      children: [
+        // Campo de input
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _codigoFocusNode.hasFocus
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.outline,
+              width: _codigoFocusNode.hasFocus ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _codigoController,
+                  focusNode: _codigoFocusNode,
+                  enabled: !_isProcessing,
+                  readOnly: false,
+                  showCursor: true,
+                  decoration: InputDecoration(
+                    hintText: 'Aguardando leitura do produto...',
+                    prefixIcon: Icon(
+                      Icons.qr_code_scanner,
+                      color: _codigoFocusNode.hasFocus
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                  ),
+                  keyboardType: TextInputType.none, // SEM TECLADO
+                  onSubmitted: (value) => _processarCodigo(value.trim()),
+                  onChanged: (value) {
+                    // Scanner físico envia Enter no final
+                    if (value.endsWith('\n') || value.endsWith('\r')) {
+                      _codigoController.text = value.trim();
+                      _processarCodigo(value.trim());
+                    }
+                  },
+                ),
+              ),
+              if (!_isProcessing)
+                IconButton(
+                  icon: const Icon(Icons.camera_alt),
+                  tooltip: 'Escanear com câmera',
+                  onPressed: _abrirScannerCamera,
+                ),
+              if (_isProcessing)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Use o leitor de código de barras ou toque na câmera',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isProcessing ? null : () {
+                  _codigoFocusNode.requestFocus();
+                  SystemChannels.textInput.invokeMethod('TextInput.show');
+                },
+                icon: const Icon(Icons.keyboard),
+                label: const Text('DIGITAR'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: FilledButton(
+                onPressed: _isProcessing ? null : () => _processarCodigo(_codigoController.text.trim()),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: _isProcessing
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'CONFIRMAR',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+
+// ============================================================================
+// QUANTIDADE BOTTOM SHEET - Para digitar caixas e unidades
+// ============================================================================
+
+class _QuantidadeBottomSheet extends StatefulWidget {
+  final String descricao;
+  final String codprod;
+  final int multiplo;
+  final Future<void> Function(int quantidade) onConfirmar;
+
+  const _QuantidadeBottomSheet({
+    required this.descricao,
+    required this.codprod,
+    required this.multiplo,
+    required this.onConfirmar,
+  });
+
+  @override
+  State<_QuantidadeBottomSheet> createState() => _QuantidadeBottomSheetState();
+}
+
+class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
+  final _caixasController = TextEditingController(text: '0');
+  final _unidadesController = TextEditingController(text: '0');
+  final _caixasFocus = FocusNode();
+  final _unidadesFocus = FocusNode();
+  bool _isConfirmando = false;
+
+  int get _totalUnidades {
+    final caixas = int.tryParse(_caixasController.text) ?? 0;
+    final unidades = int.tryParse(_unidadesController.text) ?? 0;
+    return (caixas * widget.multiplo) + unidades;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _caixasController.addListener(() => setState(() {}));
+    _unidadesController.addListener(() => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _caixasFocus.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _caixasController.dispose();
+    _unidadesController.dispose();
+    _caixasFocus.dispose();
+    _unidadesFocus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _confirmar() async {
+    if (_totalUnidades == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Informe pelo menos 1 caixa ou 1 unidade'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isConfirmando = true);
+    await widget.onConfirmar(_totalUnidades);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
+              // Produto info
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Produto encontrado!',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.descricao,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          'Código: ${widget.codprod}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '1 CX = ${widget.multiplo} UN',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Título
+              Text(
+                'Informe a quantidade conferida:',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Campos caixas e unidades
+              Row(
+                children: [
+                  // Caixas
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'CAIXAS',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _caixasController,
+                          focusNode: _caixasFocus,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.inventory_2_outlined, color: Colors.green),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.green),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.green, width: 2),
+                            ),
+                          ),
+                          onSubmitted: (_) => _unidadesFocus.requestFocus(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 16),
+                  
+                  // Unidades
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'UNIDADES',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _unidadesController,
+                          focusNode: _unidadesFocus,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          decoration: InputDecoration(
+                            prefixIcon: const Icon(Icons.apps_outlined, color: Colors.blue),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.blue),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: Colors.blue, width: 2),
+                            ),
+                          ),
+                          onSubmitted: (_) => _confirmar(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Total calculado
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      'Total: ',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    Text(
+                      '$_totalUnidades',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    const Text(
+                      ' unidades',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Botão confirmar
+              FilledButton.icon(
+                onPressed: _isConfirmando ? null : _confirmar,
+                icon: _isConfirmando 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.add_shopping_cart),
+                label: Text(_isConfirmando ? 'Adicionando...' : 'ADICIONAR AO CARRINHO'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              // Botão cancelar
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

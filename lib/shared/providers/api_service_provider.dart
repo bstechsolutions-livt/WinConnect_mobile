@@ -94,9 +94,16 @@ class ApiService {
 
   Future<Map<String, dynamic>> get(String endpoint) async {
     try {
+      print('===== API GET: $endpoint =====');
       final response = await _dio.get(endpoint);
+      print('Response type: ${response.data.runtimeType}');
+      print('Response data: ${response.data}');
+      print('==============================');
       return response.data;
     } on DioException catch (e) {
+      print('===== API ERROR: $endpoint =====');
+      print('Error: $e');
+      print('================================');
       throw _handleDioError(e);
     }
   }

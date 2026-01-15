@@ -25,7 +25,7 @@ final ruasFase2NotifierProvider = AutoDisposeAsyncNotifierProvider<
 
 typedef _$RuasFase2Notifier = AutoDisposeAsyncNotifier<List<RuaFase2>>;
 String _$unitizadoresFase2NotifierHash() =>
-    r'9c26886869e71628c0c2a0b42c0f9d955d7a494c';
+    r'21b4a6712f73824428cc8637cdbb1c7b185247e3';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -253,7 +253,7 @@ final carrinhoNotifierProvider =
 
 typedef _$CarrinhoNotifier = AsyncNotifier<List<ItemCarrinho>>;
 String _$rotaEntregaNotifierHash() =>
-    r'f5bcc67aaa9922358e5f195e1e1986561cda7178';
+    r'56e386abd0e3ae7d540aa17468a8d255781b0af2';
 
 /// Provider para a rota calculada
 ///

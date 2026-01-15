@@ -21,10 +21,17 @@ class RuaFase2 {
 
   factory RuaFase2.fromJson(Map<String, dynamic> json) {
     return RuaFase2(
-      rua: json['rua'] ?? '',
-      totalUnitizadores: json['total_unitizadores'] ?? 0,
-      totalItens: json['total_itens'] ?? 0,
+      rua: json['rua']?.toString() ?? '',
+      totalUnitizadores: _parseToInt(json['total_unitizadores']),
+      totalItens: _parseToInt(json['total_itens']),
     );
+  }
+  
+  static int _parseToInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? 0;
   }
 }
 
@@ -49,14 +56,21 @@ class Unitizador {
 
   factory Unitizador.fromJson(Map<String, dynamic> json) {
     return Unitizador(
-      id: json['id'] ?? 0,
-      codigo: json['codigo'] ?? json['codunitizador'] ?? '',
-      codigoBarras: json['codigo_barras'] ?? json['codunitizador'] ?? '',
-      status: json['status'] ?? 'disponivel',
-      totalItens: json['total_itens'] ?? json['qtd_itens'] ?? 0,
-      itensConferidos: json['itens_conferidos'] ?? 0,
-      itensEntregues: json['itens_entregues'] ?? 0,
+      id: _parseToInt(json['id']),
+      codigo: json['codigo']?.toString() ?? json['codunitizador']?.toString() ?? '',
+      codigoBarras: json['codigo_barras']?.toString() ?? json['codunitizador']?.toString() ?? '',
+      status: json['status']?.toString() ?? 'disponivel',
+      totalItens: _parseToInt(json['total_itens'] ?? json['qtd_itens']),
+      itensConferidos: _parseToInt(json['itens_conferidos']),
+      itensEntregues: _parseToInt(json['itens_entregues']),
     );
+  }
+  
+  static int _parseToInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? 0;
   }
 
   int get itensPendentes => totalItens - itensConferidos;
@@ -89,17 +103,24 @@ class ItemUnitizador {
 
   factory ItemUnitizador.fromJson(Map<String, dynamic> json) {
     return ItemUnitizador(
-      numos: json['numos'] ?? 0,
-      codprod: json['codprod'] ?? 0,
-      descricao: json['descricao'] ?? '',
-      codauxiliar: json['codauxiliar'],
-      embalagem: json['embalagem'] ?? 'UN',
-      unidade: json['unidade'] ?? 'UN',
-      qt: json['qt'] ?? 0,
-      conferido: json['conferido'] ?? false,
-      bloqueado: json['bloqueado'] ?? false,
-      tentativas: json['tentativas'] ?? 0,
+      numos: _parseToInt(json['numos']),
+      codprod: _parseToInt(json['codprod']),
+      descricao: json['descricao']?.toString() ?? '',
+      codauxiliar: json['codauxiliar']?.toString(),
+      embalagem: json['embalagem']?.toString() ?? 'UN',
+      unidade: json['unidade']?.toString() ?? 'UN',
+      qt: _parseToInt(json['qt']),
+      conferido: json['conferido'] == true || json['conferido'] == 1 || json['conferido'] == '1',
+      bloqueado: json['bloqueado'] == true || json['bloqueado'] == 1 || json['bloqueado'] == '1',
+      tentativas: _parseToInt(json['tentativas']),
     );
+  }
+  
+  static int _parseToInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? 0;
   }
 }
 
@@ -122,15 +143,22 @@ class ItemCarrinho {
 
   factory ItemCarrinho.fromJson(Map<String, dynamic> json) {
     return ItemCarrinho(
-      numos: json['numos'] ?? 0,
-      codprod: json['codprod'] ?? 0,
-      descricao: json['descricao'] ?? '',
-      qt: json['qt'] ?? 0,
-      enderecoDestino: json['endereco_destino'] ?? '',
+      numos: _parseToInt(json['numos']),
+      codprod: _parseToInt(json['codprod']),
+      descricao: json['descricao']?.toString() ?? '',
+      qt: _parseToInt(json['qt']),
+      enderecoDestino: json['endereco_destino']?.toString() ?? '',
       conferidoEm: json['conferido_em'] != null
-          ? DateTime.tryParse(json['conferido_em'])
+          ? DateTime.tryParse(json['conferido_em'].toString())
           : null,
     );
+  }
+  
+  static int _parseToInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? 0;
   }
 }
 
