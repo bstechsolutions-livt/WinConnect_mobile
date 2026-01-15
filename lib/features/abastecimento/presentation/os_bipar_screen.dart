@@ -2226,6 +2226,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                             return;
                                           }
 
+                                          final navigator = Navigator.of(ctx);
+
                                           setModalState(() => isLoading = true);
 
                                           // Apenas guarda em cache e marca como bipado
@@ -2245,7 +2247,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                           );
 
                                           if (mounted) {
-                                            Navigator.pop(ctx);
+                                            navigator.pop();
                                           }
                                         },
                                   style: FilledButton.styleFrom(

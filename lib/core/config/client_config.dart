@@ -52,7 +52,7 @@ class ClientConfig {
     'rofe': ClientConfig(
       id: 'rofe',
       name: 'Rofe',
-      apiBaseUrl: 'https://variables-manner-opposed-opportunities.trycloudflare.com/api',
+      apiBaseUrl: 'https://southampton-struggle-readers-features.trycloudflare.com/api',
       logoPath: 'assets/clients/rofe/logo.png',
       primaryColorHex: 0xFF1E88E5, // Azul
       secondaryColorHex: 0xFF43A047,

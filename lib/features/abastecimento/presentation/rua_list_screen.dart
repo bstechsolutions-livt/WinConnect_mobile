@@ -50,7 +50,7 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
               ),
             );
           } else {
-            Navigator.pushReplacement(
+            Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => UnitizadorListScreen(
@@ -266,7 +266,7 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                       );
                     } else {
                       // Fase 2: Lista de Unitizadores
-                      Navigator.pushReplacement(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => UnitizadorListScreen(

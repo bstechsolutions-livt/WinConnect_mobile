@@ -29,6 +29,8 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
   }
 
   Future<void> _carregarUnitizadores() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _erro = null;
@@ -38,12 +40,16 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.get('/wms/fase2/ruas/${widget.rua}/unitizadores');
       
+      if (!mounted) return;
+      
       final lista = response['unitizadores'] as List? ?? [];
       setState(() {
         _unitizadores = lista.cast<Map<String, dynamic>>();
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
+      
       setState(() {
         _erro = e.toString();
         _isLoading = false;
@@ -53,14 +59,73 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
+      backgroundColor: isDark 
+          ? const Color(0xFF0D1117) 
+          : const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: Text('Rua ${widget.rua} - Unitizadores'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 18,
+              color: isDark ? Colors.white : Colors.grey.shade800,
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          children: [
+            Text(
+              'Rua ${widget.rua}',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.green,
+              ),
+            ),
+            Text(
+              'Unitizadores',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.grey.shade900,
+              ),
+            ),
+          ],
+        ),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _carregarUnitizadores,
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.black.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                  color: isDark ? Colors.white : Colors.grey.shade800,
+                ),
+              ),
+              onPressed: _carregarUnitizadores,
+            ),
           ),
         ],
       ),
@@ -69,26 +134,98 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
   }
 
   Widget _buildBody() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 48,
+              height: 48,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Carregando unitizadores...',
+              style: TextStyle(
+                color: isDark ? Colors.white54 : Colors.grey.shade600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_erro != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
-              const SizedBox(height: 16),
-              Text('Erro ao carregar unitizadores', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              Text(_erro!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _carregarUnitizadores,
-                child: const Text('Tentar novamente'),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  size: 56,
+                  color: Colors.red.shade400,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Erro ao carregar',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.grey.shade800,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _erro!.replaceAll('Exception: ', ''),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white54 : Colors.grey.shade600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              GestureDetector(
+                onTap: _carregarUnitizadores,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.green.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.refresh_rounded, size: 18, color: Colors.green),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Tentar novamente',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -103,26 +240,66 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.inbox_outlined, size: 80, color: Theme.of(context).colorScheme.outline),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: isDark 
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.grey.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.local_shipping_outlined,
+                  size: 56,
+                  color: isDark ? Colors.white38 : Colors.grey.shade400,
+                ),
+              ),
               const SizedBox(height: 24),
               Text(
                 'Nenhum unitizador disponível',
-                style: Theme.of(context).textTheme.titleLarge,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.grey.shade800,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
               Text(
-                'Não há unitizadores com OSs prontas para conferência nesta rua.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                'Não há unitizadores com OSs prontas\npara conferência nesta rua.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: isDark ? Colors.white54 : Colors.grey.shade600,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: _carregarUnitizadores,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Atualizar'),
+              const SizedBox(height: 32),
+              GestureDetector(
+                onTap: _carregarUnitizadores,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.green.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.refresh_rounded, size: 18, color: Colors.green),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Atualizar',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -131,62 +308,255 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _unitizadores.length,
+      padding: const EdgeInsets.all(20),
+      itemCount: _unitizadores.length + 1,
       itemBuilder: (context, index) {
-        final unit = _unitizadores[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                Icons.local_shipping,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-            ),
-            title: Text(
-              'Unitizador ${unit['codunitizador'] ?? unit['codigo_barras']}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text('${unit['qtd_itens'] ?? 0} itens para conferir'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () async {
-              // Primeiro bipa o unitizador
-              try {
-                final apiService = ref.read(apiServiceProvider);
-                await apiService.post('/wms/fase2/unitizador/${unit['codunitizador']}/bipar', {});
-                
-                if (!context.mounted) return;
-                
-                // Navega para tela de itens do unitizador
-                final resultado = await Navigator.push<bool>(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UnitizadorItensScreen(
-                      codunitizador: unit['codunitizador'],
-                      rua: widget.rua,
+        // Header com total
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                Text(
+                  'Selecione um unitizador',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white54 : Colors.grey.shade600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isDark 
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${_unitizadores.length} ${_unitizadores.length == 1 ? "unitizador" : "unitizadores"}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white70 : Colors.grey.shade700,
                     ),
                   ),
-                );
-                
-                if (resultado == true) {
-                  _carregarUnitizadores();
-                }
-              } catch (e) {
-                if (!context.mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
-                );
-              }
-            },
+                ),
+              ],
+            ),
+          );
+        }
+        
+        final unit = _unitizadores[index - 1];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _UnitizadorCard(
+            unitizador: unit,
+            onTap: () => _onUnitizadorTap(unit),
           ),
         );
       },
+    );
+  }
+
+  Future<void> _onUnitizadorTap(Map<String, dynamic> unit) async {
+    final codigoBarras = unit['codigo_barras']?.toString() ?? unit['codunitizador']?.toString() ?? '';
+    
+    if (codigoBarras.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Código de barras do unitizador não encontrado'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
+    
+    if (!mounted) return;
+    
+    final resultado = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UnitizadorItensScreen(
+          codigoBarras: codigoBarras,
+          rua: widget.rua,
+        ),
+      ),
+    );
+    
+    if (resultado == true) {
+      _carregarUnitizadores();
+    }
+  }
+}
+
+/// Card moderno para unitizador
+class _UnitizadorCard extends StatefulWidget {
+  final Map<String, dynamic> unitizador;
+  final VoidCallback onTap;
+
+  const _UnitizadorCard({
+    required this.unitizador,
+    required this.onTap,
+  });
+
+  @override
+  State<_UnitizadorCard> createState() => _UnitizadorCardState();
+}
+
+class _UnitizadorCardState extends State<_UnitizadorCard> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor = Colors.green;
+    final qtdItens = widget.unitizador['qtd_itens'] ?? 0;
+    final codigo = widget.unitizador['codunitizador'] ?? widget.unitizador['codigo_barras'] ?? '---';
+    
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF161B22) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: _isPressed 
+                ? accentColor.withValues(alpha: 0.5)
+                : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15)),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: _isPressed 
+                  ? accentColor.withValues(alpha: 0.2)
+                  : Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+              blurRadius: _isPressed ? 16 : 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Ícone do unitizador
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      accentColor.withValues(alpha: 0.2),
+                      accentColor.withValues(alpha: 0.1),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  Icons.local_shipping_rounded,
+                  color: accentColor,
+                  size: 24,
+                ),
+              ),
+              
+              const SizedBox(width: 14),
+              
+              // Informações do unitizador
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Unitizador $codigo',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.grey.shade900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.inventory_2_outlined,
+                          size: 14,
+                          color: isDark ? Colors.white54 : Colors.grey.shade500,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '$qtdItens ${qtdItens == 1 ? "item" : "itens"} para conferir',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark ? Colors.white54 : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Badge + seta
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accentColor.withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      '$qtdItens',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: isDark 
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.grey.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 14,
+                      color: isDark ? Colors.white54 : Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

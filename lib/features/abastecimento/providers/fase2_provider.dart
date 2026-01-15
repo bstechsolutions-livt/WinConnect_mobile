@@ -227,7 +227,7 @@ class UnitizadoresFase2Notifier extends _$UnitizadoresFase2Notifier {
 
   Future<List<Unitizador>> _fetchUnitizadores() async {
     final apiService = ref.read(apiServiceProvider);
-    final response = await apiService.get('/wms/fase2/ruas/${arg}/unitizadores');
+    final response = await apiService.get('/wms/fase2/ruas/$rua/unitizadores');
     final lista = response['unitizadores'] as List? ?? [];
     return lista.map((e) => Unitizador.fromJson(e)).toList();
   }
@@ -400,7 +400,7 @@ class RotaEntregaNotifier extends _$RotaEntregaNotifier {
 
       state = (rota: rotaAtualizada, totalItens: itensRestantes);
 
-      return (true, response['message']?.toString(), itensRestantes);
+      return (true, response['message']?.toString(), itensRestantes as int);
     } catch (e) {
       return (false, e.toString().replaceAll('Exception: ', ''), state.totalItens);
     }
