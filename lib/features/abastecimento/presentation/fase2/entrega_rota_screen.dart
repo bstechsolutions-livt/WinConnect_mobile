@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
 
@@ -156,8 +157,21 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
     final item = _itemAtual;
     if (item == null) return _buildVazio(isDark);
     
-    final endereco = item['endereco'] as Map<String, dynamic>? ?? {};
-    final enderecoStr = endereco['endereco']?.toString() ?? '---';
+    // Tenta buscar endereço de várias formas possíveis
+    String enderecoStr = '---';
+    final enderecoField = item['endereco'];
+    final enderecoDestinoField = item['endereco_destino'];
+    
+    if (enderecoField is Map<String, dynamic>) {
+      enderecoStr = enderecoField['endereco']?.toString() ?? '---';
+    } else if (enderecoField is String && enderecoField.isNotEmpty) {
+      enderecoStr = enderecoField;
+    } else if (enderecoDestinoField is Map<String, dynamic>) {
+      enderecoStr = enderecoDestinoField['endereco']?.toString() ?? '---';
+    } else if (enderecoDestinoField is String && enderecoDestinoField.isNotEmpty) {
+      enderecoStr = enderecoDestinoField;
+    }
+    
     final descricao = item['descricao'] ?? 'Produto ${item['codprod']}';
     final qt = _parseNum(item['qt']);
     final ordem = item['ordem'] ?? (_indiceAtual + 1);
@@ -485,7 +499,21 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         ),
         const SizedBox(height: 12),
         ...proximos.map((item) {
-          final endereco = item['endereco'] as Map<String, dynamic>? ?? {};
+          // Tenta buscar endereço de várias formas possíveis
+          String itemEndereco = '---';
+          final enderecoField = item['endereco'];
+          final enderecoDestinoField = item['endereco_destino'];
+          
+          if (enderecoField is Map<String, dynamic>) {
+            itemEndereco = enderecoField['endereco']?.toString() ?? '---';
+          } else if (enderecoField is String && enderecoField.isNotEmpty) {
+            itemEndereco = enderecoField;
+          } else if (enderecoDestinoField is Map<String, dynamic>) {
+            itemEndereco = enderecoDestinoField['endereco']?.toString() ?? '---';
+          } else if (enderecoDestinoField is String && enderecoDestinoField.isNotEmpty) {
+            itemEndereco = enderecoDestinoField;
+          }
+          
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
@@ -533,7 +561,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  endereco['endereco']?.toString() ?? '---',
+                  itemEndereco,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -596,9 +624,105 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
     );
   }
 
+  /// Abre câmera para escanear código de barras do endereço
+  /// Se onScanned for fornecido, executa automaticamente após escanear
+  void _abrirCameraEndereco(
+    TextEditingController controller, 
+    void Function(void Function()) setModalState,
+    {Future<void> Function(String codigo)? onScanned}
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF161B22) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const SizedBox(width: 40),
+                  const Text(
+                    'Escanear Endereço',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+            ),
+            // Scanner
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: MobileScanner(
+                  controller: MobileScannerController(
+                    facing: CameraFacing.back,
+                  ),
+                  onDetect: (capture) {
+                    final List<Barcode> barcodes = capture.barcodes;
+                    if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+                      final codigo = barcodes.first.rawValue!;
+                      Navigator.pop(ctx);
+                      controller.text = codigo;
+                      
+                      // Se tiver callback, executa automaticamente
+                      if (onScanned != null) {
+                        onScanned(codigo);
+                      } else {
+                        setModalState(() {});
+                      }
+                    }
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Aponte a câmera para o código de barras do endereço',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _confirmarEntrega(Map<String, dynamic> item, String enderecoEsperado) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final enderecoController = TextEditingController();
+    final focusNode = FocusNode();
     
     // Abre modal para confirmar endereço
     final confirmado = await showModalBottomSheet<bool>(
@@ -686,24 +810,96 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                           ),
                         ),
                         
-                        // Campo de endereço
+                        // Campo de endereço - SEM TECLADO
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: TextField(
-                            controller: enderecoController,
-                            autofocus: true,
-                            textCapitalization: TextCapitalization.characters,
-                            decoration: InputDecoration(
-                              labelText: 'Bipe ou digite o endereço',
-                              hintText: enderecoEsperado,
-                              prefixIcon: const Icon(Icons.qr_code_scanner),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              fillColor: isDark 
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isDark 
                                   ? Colors.white.withValues(alpha: 0.05)
                                   : Colors.grey.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isDark 
+                                    ? Colors.white.withValues(alpha: 0.1)
+                                    : Colors.grey.withValues(alpha: 0.2),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: enderecoController,
+                                    focusNode: focusNode,
+                                    autofocus: true,
+                                    readOnly: true,
+                                    showCursor: true,
+                                    keyboardType: TextInputType.none,
+                                    textCapitalization: TextCapitalization.characters,
+                                    decoration: InputDecoration(
+                                      hintText: 'Aguardando leitura...',
+                                      prefixIcon: Icon(
+                                        Icons.qr_code_scanner,
+                                        color: Colors.green,
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 16,
+                                      ),
+                                    ),
+                                    onChanged: (value) {
+                                      // Scanner físico envia Enter no final
+                                      if (value.endsWith('\n') || value.endsWith('\r')) {
+                                        enderecoController.text = value.trim();
+                                        setModalState(() {});
+                                      }
+                                    },
+                                  ),
+                                ),
+                                // Botão de câmera
+                                Container(
+                                  margin: const EdgeInsets.only(right: 8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.camera_alt_rounded,
+                                      color: Colors.green,
+                                    ),
+                                    onPressed: isLoading ? null : () => _abrirCameraEndereco(
+                                      enderecoController, 
+                                      setModalState,
+                                      onScanned: (codigo) async {
+                                        // Confirma automaticamente ao escanear
+                                        setModalState(() {
+                                          isLoading = true;
+                                          erro = null;
+                                        });
+                                        
+                                        try {
+                                          final apiService = ref.read(apiServiceProvider);
+                                          await apiService.post(
+                                            '/wms/fase2/os/${item['numos']}/confirmar-entrega',
+                                            {'codigo_barras_endereco': codigo},
+                                          );
+                                          
+                                          if (ctx.mounted) {
+                                            Navigator.pop(ctx, true);
+                                          }
+                                        } catch (e) {
+                                          setModalState(() {
+                                            erro = e.toString().replaceAll('Exception: ', '');
+                                            isLoading = false;
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -774,7 +970,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                                             final apiService = ref.read(apiServiceProvider);
                                             await apiService.post(
                                               '/wms/fase2/os/${item['numos']}/confirmar-entrega',
-                                              {'endereco_confirmado': endereco},
+                                              {'codigo_barras_endereco': endereco},
                                             );
                                             
                                             if (ctx.mounted) {

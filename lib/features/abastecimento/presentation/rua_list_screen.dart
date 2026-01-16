@@ -3,8 +3,10 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/rua_provider.dart';
 import '../../../shared/models/rua_model.dart';
+import '../../../shared/providers/api_service_provider.dart';
 import 'os_list_screen.dart';
 import 'fase2/unitizador_list_screen.dart';
+import 'fase2/carrinho_screen.dart';
 
 class RuaListScreen extends ConsumerStatefulWidget {
   final int fase;
@@ -21,6 +23,8 @@ class RuaListScreen extends ConsumerStatefulWidget {
 }
 
 class _RuaListScreenState extends ConsumerState<RuaListScreen> {
+  int _itensNoCarrinho = 0;
+
   @override
   void initState() {
     super.initState();
@@ -28,6 +32,24 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(ruaAtualProvider.notifier).setRuaAtual(null);
     });
+    // Carrega carrinho apenas para Fase 2
+    if (widget.fase == 2) {
+      _carregarCarrinho();
+    }
+  }
+
+  Future<void> _carregarCarrinho() async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final response = await apiService.get('/wms/fase2/meu-carrinho');
+      
+      if (!mounted) return;
+      
+      final carrinho = response['carrinho'] as List? ?? [];
+      setState(() {
+        _itensNoCarrinho = carrinho.length;
+      });
+    } catch (_) {}
   }
 
   @override
@@ -112,6 +134,44 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
           ],
         ),
         centerTitle: true,
+        actions: widget.fase == 2 && _itensNoCarrinho > 0
+            ? [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: IconButton(
+                    icon: Badge(
+                      label: Text(
+                        '$_itensNoCarrinho',
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
+                      backgroundColor: Colors.orange,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.shopping_cart_rounded,
+                          size: 18,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final result = await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const CarrinhoScreen()),
+                      );
+                      if (result == true && mounted) {
+                        _carregarCarrinho();
+                        ref.invalidate(ruaNotifierProvider(widget.fase));
+                      }
+                    },
+                  ),
+                ),
+              ]
+            : null,
       ),
       body: ruasAsync.when(
         data: (ruas) {
@@ -160,8 +220,55 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
+                    // Botão ir para carrinho (Fase 2)
+                    if (widget.fase == 2 && _itensNoCarrinho > 0) ...[
+                      GestureDetector(
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const CarrinhoScreen()),
+                          );
+                          if (result == true && mounted) {
+                            _carregarCarrinho();
+                            ref.invalidate(ruaNotifierProvider(widget.fase));
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.orange.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.shopping_cart_rounded,
+                                size: 18,
+                                color: Colors.orange,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Ir para o Carrinho ($_itensNoCarrinho)',
+                                style: const TextStyle(
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                     GestureDetector(
-                      onTap: () => ref.invalidate(ruaNotifierProvider(widget.fase)),
+                      onTap: () {
+                        ref.invalidate(ruaNotifierProvider(widget.fase));
+                        if (widget.fase == 2) _carregarCarrinho();
+                      },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         decoration: BoxDecoration(
@@ -171,7 +278,7 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                             color: Colors.blue.withValues(alpha: 0.3),
                           ),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
@@ -179,7 +286,7 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                               size: 18,
                               color: Colors.blue,
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: 8),
                             Text(
                               'Atualizar',
                               style: TextStyle(

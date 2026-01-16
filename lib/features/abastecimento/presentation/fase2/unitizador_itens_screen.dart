@@ -435,6 +435,152 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
 
     final itensPendentes = _itens.where((i) => i['conferido'] != true && i['bloqueado'] != true).toList();
 
+    // Se não tem itens pendentes mas tem itens no carrinho, mostra opções
+    if (itensPendentes.isEmpty && _itensNoCarrinho > 0) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Ícone de sucesso
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_circle_outline,
+                  size: 60,
+                  color: Colors.green,
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              const Text(
+                'Unitizador conferido!',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              
+              const SizedBox(height: 8),
+              
+              Text(
+                'Todos os itens deste unitizador\nforam conferidos com sucesso.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Badge do carrinho
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.shopping_cart, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Text(
+                      '$_itensNoCarrinho ${_itensNoCarrinho == 1 ? 'item' : 'itens'} no carrinho',
+                      style: const TextStyle(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 32),
+              
+              const Text(
+                'O que deseja fazer?',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Botão principal - Ir para o carrinho
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const CarrinhoScreen()),
+                    );
+                    if (result == true && mounted) {
+                      _carregarCarrinho();
+                    }
+                  },
+                  icon: const Icon(Icons.route),
+                  label: const Text('IR PARA O CARRINHO E CRIAR ROTA'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Botão secundário - Outro unitizador
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.pop(context, true),
+                  icon: const Icon(Icons.inventory_2_outlined),
+                  label: const Text('CONFERIR OUTRO UNITIZADOR'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Botão atualizar
+              TextButton.icon(
+                onPressed: () {
+                  _carregarUnitizador();
+                  _carregarCarrinho();
+                },
+                icon: const Icon(Icons.refresh, size: 18),
+                label: const Text('Atualizar'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
 import 'unitizador_itens_screen.dart';
+import 'carrinho_screen.dart';
 
 /// Tela de lista de unitizadores para Fase 2
 class UnitizadorListScreen extends ConsumerStatefulWidget {
@@ -21,11 +22,27 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
   List<Map<String, dynamic>> _unitizadores = [];
   bool _isLoading = true;
   String? _erro;
+  int _itensNoCarrinho = 0;
 
   @override
   void initState() {
     super.initState();
     _carregarUnitizadores();
+    _carregarCarrinho();
+  }
+
+  Future<void> _carregarCarrinho() async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final response = await apiService.get('/wms/fase2/meu-carrinho');
+      
+      if (!mounted) return;
+      
+      final carrinho = response['carrinho'] as List? ?? [];
+      setState(() {
+        _itensNoCarrinho = carrinho.length;
+      });
+    } catch (_) {}
   }
 
   Future<void> _carregarUnitizadores() async {
@@ -107,6 +124,43 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
         ),
         centerTitle: true,
         actions: [
+          // Botão do carrinho
+          if (_itensNoCarrinho > 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: IconButton(
+                icon: Badge(
+                  label: Text(
+                    '$_itensNoCarrinho',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                  ),
+                  backgroundColor: Colors.orange,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.shopping_cart_rounded,
+                      size: 18,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ),
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CarrinhoScreen()),
+                  );
+                  if (result == true && mounted) {
+                    _carregarCarrinho();
+                    _carregarUnitizadores();
+                  }
+                },
+              ),
+            ),
+          // Botão refresh
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: IconButton(
@@ -124,7 +178,10 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
                   color: isDark ? Colors.white : Colors.grey.shade800,
                 ),
               ),
-              onPressed: _carregarUnitizadores,
+              onPressed: () {
+                _carregarUnitizadores();
+                _carregarCarrinho();
+              },
             ),
           ),
         ],

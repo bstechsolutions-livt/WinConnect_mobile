@@ -52,7 +52,7 @@ class ClientConfig {
     'rofe': ClientConfig(
       id: 'rofe',
       name: 'Rofe',
-      apiBaseUrl: 'https://dealers-sub-mines-upon.trycloudflare.com/api',
+      apiBaseUrl: 'https://item-advertise-nature-exception.trycloudflare.com/api',
       logoPath: 'assets/clients/rofe/logo.png',
       primaryColorHex: 0xFF1E88E5, // Azul
       secondaryColorHex: 0xFF43A047,

@@ -39,7 +39,8 @@ class _CarrinhoScreenState extends ConsumerState<CarrinhoScreen> {
       if (!mounted) return;
       
       setState(() {
-        _itens = (response['itens'] as List? ?? []).cast<Map<String, dynamic>>();
+        // A API retorna 'carrinho', não 'itens'
+        _itens = (response['carrinho'] as List? ?? []).cast<Map<String, dynamic>>();
         _isLoading = false;
       });
     } catch (e) {
@@ -522,7 +523,15 @@ class _CarrinhoItemCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final descricao = item['descricao'] ?? 'Produto ${item['codprod']}';
     final qt = _parseNum(item['qt']);
-    final endereco = item['endereco_destino'] ?? '---';
+    
+    // endereco_destino pode ser String ou Map
+    String endereco = '---';
+    final endDest = item['endereco_destino'];
+    if (endDest is String) {
+      endereco = endDest;
+    } else if (endDest is Map) {
+      endereco = endDest['endereco']?.toString() ?? '---';
+    }
     
     return Container(
       decoration: BoxDecoration(
