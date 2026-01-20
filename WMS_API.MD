@@ -781,6 +781,52 @@ Conferência cega: bipa produto e informa quantidade.
 
 ---
 
+### POST /fase2/os/{numos}/divergencia
+
+Registra divergência na Fase 2 (quantidade errada no picking).
+
+**Request:**
+```json
+{
+    "tipo": "quantidade_menor",
+    "qt_encontrada": 8,
+    "observacao": "Faltam 2 unidades no palete"
+}
+```
+
+**Tipos válidos:**
+- `quantidade_menor`
+- `quantidade_maior`
+- `produto_errado`
+- `nao_encontrado`
+- `outro`
+
+**Response (200):**
+```json
+{
+    "message": "Divergência registrada com sucesso.",
+    "divergencia": {
+        "id": 456,
+        "tipo": "quantidade_menor",
+        "tipo_label": "Quantidade Menor",
+        "qt_esperada": 10,
+        "qt_encontrada": 8
+    },
+    "os": {
+        "numos": 123456,
+        "codprod": 7890,
+        "descricao": "PRODUTO XYZ"
+    }
+}
+```
+
+**Notas:**
+- A divergência é registrada mas NÃO bloqueia a OS
+- O operador pode continuar conferindo outros itens
+- Divergências ficam pendentes para análise do supervisor
+
+---
+
 ### GET /fase2/meu-carrinho
 
 Lista OSs conferidas pelo operador (carrinho de entrega).
@@ -1008,6 +1054,7 @@ Configurações gerenciadas via painel web (`WmsConfiguracao`):
 - Fluxo otimizado: bipa endereço + bipa produto em uma única chamada
 - Response agora inclui `progresso` com contagem de entregas
 - Não precisa mais chamar `GET /proxima-entrega` após cada entrega
+- **NOVO**: `POST /fase2/os/{numos}/divergencia` para registrar divergência na Fase 2 (quantidade errada no picking)
 
 ### v2.1.0 (2026-01-19)
 - Fase 2: Obrigatório bipar unitizador antes de conferir itens

@@ -347,6 +347,37 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
     }
   }
 
+  /// Abre modal para registrar divergência de um item
+  void _abrirDivergenciaSheet(Map<String, dynamic> item) {
+    final numos = item['numos'];
+    if (numos == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _DivergenciaBottomSheet(
+        numos: numos,
+        descricao: item['descricao'] ?? 'Produto ${item['codprod']}',
+        codprod: item['codprod']?.toString() ?? '---',
+        qtEsperada: _parseNum(item['qt']).toInt(),
+        onRegistrada: () {
+          _mostrarSucesso('Divergência registrada com sucesso!');
+          _carregarUnitizador();
+        },
+        apiService: ref.read(apiServiceProvider),
+      ),
+    );
+  }
+
+  double _parseNum(dynamic value) {
+    if (value == null) return 0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0;
+    return 0;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -710,6 +741,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
               final descricao =
                   item['descricao'] ?? 'Produto ${item['codprod']}';
               final codprod = item['codprod']?.toString() ?? '---';
+              final numos = item['numos'];
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 4),
@@ -758,6 +790,22 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    // Botão de divergência
+                    const SizedBox(width: 8),
+                    InkWell(
+                      onTap: numos != null
+                          ? () => _abrirDivergenciaSheet(item)
+                          : null,
+                      borderRadius: BorderRadius.circular(6),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          Icons.warning_amber_rounded,
+                          size: 20,
+                          color: Colors.orange.shade700,
+                        ),
                       ),
                     ),
                   ],
@@ -1260,6 +1308,457 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Cancelar'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// DIVERGÊNCIA BOTTOM SHEET - Para registrar divergências
+// ============================================================================
+
+class _DivergenciaBottomSheet extends StatefulWidget {
+  final dynamic numos;
+  final String descricao;
+  final String codprod;
+  final int qtEsperada;
+  final VoidCallback onRegistrada;
+  final dynamic apiService;
+
+  const _DivergenciaBottomSheet({
+    required this.numos,
+    required this.descricao,
+    required this.codprod,
+    required this.qtEsperada,
+    required this.onRegistrada,
+    required this.apiService,
+  });
+
+  @override
+  State<_DivergenciaBottomSheet> createState() =>
+      _DivergenciaBottomSheetState();
+}
+
+class _DivergenciaBottomSheetState extends State<_DivergenciaBottomSheet> {
+  String? _tipoSelecionado;
+  final _qtEncontradaController = TextEditingController();
+  final _observacaoController = TextEditingController();
+  bool _isEnviando = false;
+  String? _erro;
+
+  static const _tipos = [
+    {
+      'value': 'quantidade_menor',
+      'label': 'Quantidade Menor',
+      'icon': Icons.remove_circle_outline,
+    },
+    {
+      'value': 'quantidade_maior',
+      'label': 'Quantidade Maior',
+      'icon': Icons.add_circle_outline,
+    },
+    {
+      'value': 'produto_errado',
+      'label': 'Produto Errado',
+      'icon': Icons.swap_horiz,
+    },
+    {
+      'value': 'nao_encontrado',
+      'label': 'Não Encontrado',
+      'icon': Icons.search_off,
+    },
+    {'value': 'outro', 'label': 'Outro', 'icon': Icons.more_horiz},
+  ];
+
+  Future<void> _registrarDivergencia() async {
+    if (_tipoSelecionado == null) {
+      setState(() => _erro = 'Selecione o tipo de divergência');
+      return;
+    }
+
+    setState(() {
+      _isEnviando = true;
+      _erro = null;
+    });
+
+    try {
+      final body = <String, dynamic>{'tipo': _tipoSelecionado};
+
+      final qtEncontrada = int.tryParse(_qtEncontradaController.text);
+      if (qtEncontrada != null) {
+        body['qt_encontrada'] = qtEncontrada;
+      }
+
+      final observacao = _observacaoController.text.trim();
+      if (observacao.isNotEmpty) {
+        body['observacao'] = observacao;
+      }
+
+      await widget.apiService.post(
+        '/wms/fase2/os/${widget.numos}/divergencia',
+        body,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pop(context);
+      widget.onRegistrada();
+    } catch (e) {
+      setState(() {
+        _erro = e.toString().replaceAll('Exception: ', '');
+        _isEnviando = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _qtEncontradaController.dispose();
+    _observacaoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161B22) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.grey.shade400,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.warning_amber_rounded,
+                      color: Colors.orange.shade700,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Registrar Divergência',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'OS #${widget.numos}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: isDark
+                                ? Colors.white54
+                                : Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // Info do produto
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.grey.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.inventory_2_outlined,
+                      color: isDark ? Colors.white54 : Colors.grey.shade600,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.descricao,
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Cód: ${widget.codprod} • Esperado: ${widget.qtEsperada} UN',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark
+                                  ? Colors.white54
+                                  : Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Tipo de divergência
+              Text(
+                'Tipo de divergência *',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white70 : Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _tipos.map((tipo) {
+                  final isSelected = _tipoSelecionado == tipo['value'];
+                  return ChoiceChip(
+                    avatar: Icon(
+                      tipo['icon'] as IconData,
+                      size: 18,
+                      color: isSelected ? Colors.white : Colors.orange.shade700,
+                    ),
+                    label: Text(tipo['label'] as String),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                        _tipoSelecionado = selected
+                            ? tipo['value'] as String
+                            : null;
+                        _erro = null;
+                      });
+                    },
+                    selectedColor: Colors.orange,
+                    backgroundColor: isDark
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.1),
+                    labelStyle: TextStyle(
+                      color: isSelected
+                          ? Colors.white
+                          : (isDark ? Colors.white70 : Colors.grey.shade700),
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                    ),
+                  );
+                }).toList(),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Quantidade encontrada (opcional)
+              Text(
+                'Quantidade encontrada (opcional)',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white70 : Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _qtEncontradaController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(
+                  hintText: 'Ex: 8',
+                  prefixIcon: const Icon(Icons.numbers),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Observação (opcional)
+              Text(
+                'Observação (opcional)',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white70 : Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _observacaoController,
+                maxLines: 3,
+                maxLength: 500,
+                decoration: InputDecoration(
+                  hintText: 'Descreva o problema encontrado...',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+
+              // Erro
+              if (_erro != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.red.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Colors.red,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _erro!,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 20),
+
+              // Aviso
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'A OS não será bloqueada. Você pode continuar conferindo.',
+                        style: TextStyle(
+                          color: Colors.blue.shade700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Botões
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: _isEnviando
+                          ? null
+                          : () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('CANCELAR'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton.icon(
+                      onPressed: _isEnviando ? null : _registrarDivergencia,
+                      icon: _isEnviando
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.check_circle_outline),
+                      label: Text(
+                        _isEnviando ? 'REGISTRANDO...' : 'REGISTRAR',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
