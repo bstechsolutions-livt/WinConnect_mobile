@@ -287,15 +287,11 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
 
       if (!mounted) return;
 
-      _codigoController.clear();
-      _codigoFocusNode.requestFocus();
-      _mostrarSucesso('Produto adicionado ao carrinho!');
-
-      // Recarrega dados
-      await Future.wait([_carregarUnitizador(), _carregarCarrinho()]);
+      // Unitizador tem só 1 item, então volta para lista de unitizadores
+      // para bipar o próximo rapidamente
+      Navigator.of(context).pop(true);
     } catch (e) {
       _mostrarErro(e.toString().replaceAll('Exception: ', ''));
-    } finally {
       if (mounted) {
         setState(() => _isProcessing = false);
       }

@@ -151,7 +151,7 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
         );
       },
       loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
     );
   }
 
@@ -185,40 +185,55 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
               // Banner de rua alocada (se houver)
               _buildMinhaRuaBanner(),
 
-              // Fase 1
-              _FaseCard(
-                faseNumber: 1,
-                title: 'Fase 1',
-                description: 'Empilhadeira',
-                icon: Icons.looks_one_rounded,
-                color: Colors.blue,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => const RuaListScreen(
-                        fase: 1,
-                        faseNome: 'Empilhadeira',
+              // Verifica se está alocado em rua da Fase 1
+              Builder(
+                builder: (context) {
+                  final minhaRuaAsync = ref.watch(minhaRuaNotifierProvider(1));
+                  final estaAlocadoFase1 = minhaRuaAsync.valueOrNull?.estaEmRua ?? false;
+
+                  return Column(
+                    children: [
+                      // Fase 1
+                      _FaseCard(
+                        faseNumber: 1,
+                        title: 'Fase 1',
+                        description: 'Empilhadeira',
+                        icon: Icons.looks_one_rounded,
+                        color: Colors.blue,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const RuaListScreen(
+                                fase: 1,
+                                faseNome: 'Empilhadeira',
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                  );
-                },
-              ),
 
-              const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-              // Fase 2
-              _FaseCard(
-                faseNumber: 2,
-                title: 'Fase 2',
-                description: 'Auxiliar',
-                icon: Icons.looks_two_rounded,
-                color: Colors.green,
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          const RuaListScreen(fase: 2, faseNome: 'Auxiliar'),
-                    ),
+                      // Fase 2 - desabilitada se alocado na Fase 1
+                      _FaseCard(
+                        faseNumber: 2,
+                        title: 'Fase 2',
+                        description: estaAlocadoFase1 
+                            ? 'Finalize a Fase 1 primeiro'
+                            : 'Auxiliar',
+                        icon: Icons.looks_two_rounded,
+                        color: Colors.green,
+                        enabled: !estaAlocadoFase1,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const RuaListScreen(fase: 2, faseNome: 'Auxiliar'),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   );
                 },
               ),
@@ -237,6 +252,7 @@ class _FaseCard extends StatefulWidget {
   final IconData icon;
   final Color color;
   final VoidCallback onTap;
+  final bool enabled;
 
   const _FaseCard({
     required this.faseNumber,
@@ -245,6 +261,7 @@ class _FaseCard extends StatefulWidget {
     required this.icon,
     required this.color,
     required this.onTap,
+    this.enabled = true,
   });
 
   @override
@@ -284,20 +301,22 @@ class _FaseCardState extends State<_FaseCard>
       animation: _scaleAnimation,
       builder: (context, child) =>
           Transform.scale(scale: _scaleAnimation.value, child: child),
-      child: GestureDetector(
-        onTapDown: (_) {
-          setState(() => _isPressed = true);
-          _controller.forward();
-        },
-        onTapUp: (_) {
-          setState(() => _isPressed = false);
-          _controller.reverse();
-          widget.onTap();
-        },
-        onTapCancel: () {
-          setState(() => _isPressed = false);
-          _controller.reverse();
-        },
+      child: Opacity(
+        opacity: widget.enabled ? 1.0 : 0.5,
+        child: GestureDetector(
+          onTapDown: widget.enabled ? (_) {
+            setState(() => _isPressed = true);
+            _controller.forward();
+          } : null,
+          onTapUp: widget.enabled ? (_) {
+            setState(() => _isPressed = false);
+            _controller.reverse();
+            widget.onTap();
+          } : null,
+          onTapCancel: widget.enabled ? () {
+            setState(() => _isPressed = false);
+            _controller.reverse();
+          } : null,
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
@@ -456,6 +475,7 @@ class _FaseCardState extends State<_FaseCard>
           ),
         ),
       ),
+    ),
     );
   }
 }

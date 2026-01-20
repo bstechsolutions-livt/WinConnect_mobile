@@ -18,23 +18,7 @@ class RuaNotifier extends _$RuaNotifier {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.get('/wms/fase$fase/ruas');
       
-      // DEBUG: Ver o que a API retorna
-      print('========== DEBUG RUAS FASE $fase ==========');
-      print('Response completa: $response');
-      print('Tipo do response: ${response.runtimeType}');
-      
       final ruasData = response['ruas'] as List? ?? [];
-      print('ruasData: $ruasData');
-      print('Tipo do ruasData: ${ruasData.runtimeType}');
-      
-      if (ruasData.isNotEmpty) {
-        print('Primeiro item: ${ruasData[0]}');
-        print('Tipo do primeiro item: ${ruasData[0].runtimeType}');
-        (ruasData[0] as Map).forEach((key, value) {
-          print('  $key: $value (${value.runtimeType})');
-        });
-      }
-      print('============================================');
       
       return ruasData.map((item) {
         // Trata quantidade - pode ser qtd_os (fase1) ou total_unitizadores (fase2)
@@ -57,11 +41,7 @@ class RuaNotifier extends _$RuaNotifier {
           quantidade: quantidade,
         );
       }).toList();
-    } catch (e, stack) {
-      print('========== ERRO AO CARREGAR RUAS ==========');
-      print('Erro: $e');
-      print('Stack: $stack');
-      print('============================================');
+    } catch (e, _) {
       rethrow;
     }
   }

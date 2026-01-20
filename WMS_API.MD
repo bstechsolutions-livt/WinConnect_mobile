@@ -159,6 +159,68 @@ Lista OSs de uma rua em ordem otimizada de rota.
 
 ---
 
+### POST /fase1/entrar-rua
+
+Operador entra em uma rua para trabalhar.
+
+**Request:**
+```json
+{
+    "rua": "A"
+}
+```
+
+**Response (200):**
+```json
+{
+    "message": "Você entrou na rua A.",
+    "rua": "A",
+    "os_pendentes": 15,
+    "proxima_os": {
+        "numos": 123456,
+        "codprod": 7890,
+        "descricao": "PRODUTO XYZ",
+        "qt": 10,
+        "endereco_origem": "A.01.02.03"
+    }
+}
+```
+
+**Response (200) - Já está na rua:**
+```json
+{
+    "message": "Você já está nesta rua.",
+    "rua": "A",
+    "desde": "2026-01-19 08:30:00",
+    "proxima_os": { ... }
+}
+```
+
+**Response (422) - Operador em outra rua:**
+```json
+{
+    "message": "Você já está alocado na rua B. Finalize as OS ou peça liberação ao supervisor.",
+    "rua_atual": "B"
+}
+```
+
+**Response (422) - Rua sem OS pendentes:**
+```json
+{
+    "message": "Esta rua não possui OS pendentes."
+}
+```
+
+**Response (422) - Rua ocupada:**
+```json
+{
+    "message": "Esta rua já está sendo atendida por outro operador (matrícula 12345).",
+    "operador_na_rua": 12345
+}
+```
+
+---
+
 ### GET /fase1/minha-rua
 
 Retorna informações sobre a rua atual do operador.
@@ -1100,6 +1162,12 @@ Configurações gerenciadas via painel web (`WmsConfiguracao`):
 ---
 
 ## Changelog
+
+### v2.4.0 (2026-01-20)
+- **NOVO**: `POST /fase1/entrar-rua` para operador entrar explicitamente em uma rua antes de iniciar OS
+- Valida se rua tem OS pendentes
+- Valida se outro operador já está na rua
+- Retorna próxima OS disponível
 
 ### v2.3.0 (2026-01-19)
 - **NOVO**: `POST /wms/autorizar-digitacao` para autorizar digitação manual de códigos

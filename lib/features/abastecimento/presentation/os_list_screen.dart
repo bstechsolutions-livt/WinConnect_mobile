@@ -5,6 +5,8 @@ import '../providers/os_provider.dart';
 import '../providers/os_detalhe_provider.dart';
 import '../../../shared/models/os_model.dart';
 import '../../../shared/providers/api_service_provider.dart';
+import '../../../shared/providers/auth_provider.dart';
+import '../../../shared/widgets/liberar_rua_dialog.dart';
 import 'os_endereco_screen.dart';
 
 class OsListScreen extends ConsumerStatefulWidget {
@@ -26,22 +28,127 @@ class OsListScreen extends ConsumerStatefulWidget {
 class _OsListScreenState extends ConsumerState<OsListScreen> {
   bool _navegouParaOsEmAndamento = false;
 
+  /// Mostra dialog quando usuário tenta voltar enquanto está na rua
+  Future<bool> _onWillPop() async {
+    // Apenas para Fase 1 (onde operador fica preso na rua)
+    if (widget.fase != 1) {
+      return true; // Permite voltar normalmente
+    }
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    final resultado = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1C2128) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange.shade700,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'Você está na Rua',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Você está alocado na Rua ${widget.rua}. O que deseja fazer?',
+          style: TextStyle(
+            color: isDark ? Colors.white70 : Colors.grey.shade700,
+          ),
+        ),
+        actions: [
+          // Continuar trabalhando
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'continuar'),
+            child: const Text('Continuar Trabalhando'),
+          ),
+          // Menu principal
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'menu'),
+            child: Text(
+              'Menu Principal',
+              style: TextStyle(color: Colors.blue.shade400),
+            ),
+          ),
+          // Sair da rua
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'sair'),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Sair da Rua'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return false;
+
+    switch (resultado) {
+      case 'menu':
+        // Volta até o menu principal (AbastecimentoScreen)
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        return false;
+      
+      case 'sair':
+        // Abre dialog de liberação com supervisor
+        final apiService = ref.read(apiServiceProvider);
+        final user = ref.read(authNotifierProvider).value;
+        final liberado = await LiberarRuaDialog.mostrar(
+          context: context,
+          apiService: apiService,
+          rua: widget.rua,
+          matriculaOperador: user?.matricula,
+        );
+        if (liberado && mounted) {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+        return false;
+      
+      case 'continuar':
+      default:
+        return false; // Fica na tela
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final osAsync = ref.watch(osNotifierProvider(widget.fase, widget.rua));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0D1117)
-          : const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
+    return PopScope(
+      canPop: widget.fase != 1, // Bloqueia pop automático apenas na Fase 1
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return; // Já fez pop, não faz nada
+        await _onWillPop();
+      },
+      child: Scaffold(
+        backgroundColor: isDark
+            ? const Color(0xFF0D1117)
+            : const Color(0xFFF5F7FA),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.1)
                   : Colors.black.withValues(alpha: 0.05),
@@ -53,7 +160,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
               color: isDark ? Colors.white : Colors.grey.shade800,
             ),
           ),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => _onWillPop(),
         ),
         title: Column(
           children: [
@@ -77,6 +184,38 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
         ),
         centerTitle: true,
         actions: [
+          // Botão Sair da Rua (apenas Fase 1)
+          if (widget.fase == 1)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () async {
+                  final apiService = ref.read(apiServiceProvider);
+                  final user = ref.read(authNotifierProvider).value;
+                  final liberado = await LiberarRuaDialog.mostrar(
+                    context: context,
+                    apiService: apiService,
+                    rua: widget.rua,
+                    matriculaOperador: user?.matricula,
+                  );
+                  if (liberado && mounted) {
+                    Navigator.pop(context); // Volta para lista de ruas
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.exit_to_app_rounded,
+                    size: 20,
+                    color: Colors.red.shade400,
+                  ),
+                ),
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
@@ -400,7 +539,8 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   void _navegarParaOs(OrdemServico os) async {
@@ -801,8 +941,9 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                               onPressed: isLoading
                                   ? null
                                   : () async {
-                                      if (!formKey.currentState!.validate())
+                                      if (!formKey.currentState!.validate()) {
                                         return;
+                                      }
 
                                       setSheetState(() {
                                         isLoading = true;

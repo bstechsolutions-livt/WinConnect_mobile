@@ -592,12 +592,6 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
                     color: isDark ? Colors.white : Colors.grey.shade900,
                   ),
                   textInputAction: TextInputAction.done,
-                  onChanged: (value) {
-                    // Auto-submit se tiver tamanho suficiente (scanner)
-                    if (value.length >= 4) {
-                      _biparUnitizador();
-                    }
-                  },
                   onSubmitted: (_) => _biparUnitizador(),
                 ),
               ),
@@ -647,6 +641,9 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
     final codigo = _codigoController.text.trim();
     if (codigo.isEmpty || _isProcessing) return;
 
+    // Remove o foco antes de processar para evitar conflito no Flutter Web
+    _codigoFocusNode.unfocus();
+    
     setState(() => _isProcessing = true);
 
     try {
@@ -679,10 +676,32 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       if (resultado == true) {
         _carregarUnitizadores();
         _carregarCarrinho();
+        
+        // Mostra sucesso rápido
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text('Produto adicionado ao carrinho!'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
       }
 
-      // Refoca no campo de scanner
-      _codigoFocusNode.requestFocus();
+      // Refoca no campo de scanner com delay para evitar conflito DOM
+      if (mounted) {
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) _codigoFocusNode.requestFocus();
+        });
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isProcessing = false);
@@ -700,7 +719,10 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       );
 
       _codigoController.clear();
-      _codigoFocusNode.requestFocus();
+      // Refoca com delay para evitar conflito DOM
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) _codigoFocusNode.requestFocus();
+      });
     }
   }
 

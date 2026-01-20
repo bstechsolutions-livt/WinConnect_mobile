@@ -367,15 +367,66 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
 
               final rua = ruas[index - 1];
               final isAlocada = ruaAlocada != null && rua.codigo == ruaAlocada;
+              // Se está alocado em alguma rua, só permite clicar na rua alocada
+              final podeClicar = ruaAlocada == null || isAlocada;
+              
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _RuaCard(
                   rua: rua,
                   isAlocada: isAlocada,
+                  enabled: podeClicar,
                   onTap: () async {
-                    // Navega diretamente para a lista de OSs da rua
+                    if (!podeClicar) return;
+                    
                     try {
                       if (!context.mounted) return;
+
+                      // Fase 1: Chama API para entrar na rua antes de navegar
+                      if (widget.fase == 1) {
+                        // Mostra loading
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+
+                        try {
+                          final apiService = ref.read(apiServiceProvider);
+                          await apiService.post(
+                            '/wms/fase1/entrar-rua',
+                            {'rua': rua.codigo},
+                          );
+
+                          if (!context.mounted) return;
+                          Navigator.pop(context); // Remove loading
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          Navigator.pop(context); // Remove loading
+
+                          // Extrai mensagem de erro da API
+                          String mensagem = 'Erro ao entrar na rua';
+                          if (e.toString().contains('message')) {
+                            final match = RegExp(r'"message"\s*:\s*"([^"]+)"')
+                                .firstMatch(e.toString());
+                            if (match != null) {
+                              mensagem = match.group(1) ?? mensagem;
+                            }
+                          } else {
+                            mensagem = e.toString().replaceAll('Exception: ', '');
+                          }
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(mensagem),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+                      }
 
                       // Atualiza rua atual e navega para tela correta da fase
                       ref
@@ -459,11 +510,13 @@ class _RuaCard extends StatefulWidget {
   final Rua rua;
   final VoidCallback onTap;
   final bool isAlocada;
+  final bool enabled;
 
   const _RuaCard({
     required this.rua,
     required this.onTap,
     this.isAlocada = false,
+    this.enabled = true,
   });
 
   @override
@@ -478,14 +531,16 @@ class _RuaCardState extends State<_RuaCard> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final accentColor = widget.isAlocada ? Colors.orange : Colors.blue;
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
+    return Opacity(
+      opacity: widget.enabled ? 1.0 : 0.4,
+      child: GestureDetector(
+        onTapDown: widget.enabled ? (_) => setState(() => _isPressed = true) : null,
+        onTapUp: widget.enabled ? (_) {
+          setState(() => _isPressed = false);
+          widget.onTap();
+        } : null,
+        onTapCancel: widget.enabled ? () => setState(() => _isPressed = false) : null,
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
         decoration: BoxDecoration(
@@ -672,6 +727,7 @@ class _RuaCardState extends State<_RuaCard> {
           ], // Fecha Stack children
         ), // Fecha Stack
       ),
+    ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -16,7 +17,21 @@ class LoginScreen extends HookConsumerWidget {
     final formKey = useMemoized(() => GlobalKey<FormState>());
     final obscurePassword = useState(true);
     final rememberMe = useState(false);
-    
+
+    // FocusNodes para controle de foco
+    final matriculaFocusNode = useFocusNode();
+    final senhaFocusNode = useFocusNode();
+
+    // Dar foco automático na matrícula ao iniciar (sem abrir teclado)
+    useEffect(() {
+      Future.microtask(() {
+        matriculaFocusNode.requestFocus();
+        // Esconde o teclado virtual caso abra
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      });
+      return null;
+    }, const []);
+
     final authState = ref.watch(authNotifierProvider);
     final config = ClientConfig.current;
 
@@ -30,7 +45,7 @@ class LoginScreen extends HookConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                
+
                 // Header com logo e seletor de tema
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -41,9 +56,9 @@ class LoginScreen extends HookConsumerWidget {
                     const ThemeSelector(),
                   ],
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // Título
                 Text(
                   'Entrar na sua conta',
@@ -51,26 +66,31 @@ class LoginScreen extends HookConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                
+
                 const SizedBox(height: 8),
-                
+
                 Text(
                   'Digite sua matrícula ou e-mail para entrar',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
-                
+
                 const SizedBox(height: 40),
-                
+
                 // Campo Email/Matrícula
                 TextFormField(
                   controller: emailController,
+                  focusNode: matriculaFocusNode,
                   keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
                     labelText: 'Matrícula ou E-mail',
                     prefixIcon: Icon(Icons.person_outline),
                   ),
+                  onFieldSubmitted: (_) {
+                    senhaFocusNode.requestFocus();
+                  },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor, digite sua matrícula ou e-mail';
@@ -78,13 +98,16 @@ class LoginScreen extends HookConsumerWidget {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Campo Senha
                 TextFormField(
                   controller: passwordController,
+                  focusNode: senhaFocusNode,
                   obscureText: obscurePassword.value,
+                  keyboardType: TextInputType.text,
+                  textInputAction: TextInputAction.done,
                   decoration: InputDecoration(
                     labelText: 'Senha',
                     prefixIcon: const Icon(Icons.lock_outline),
@@ -94,9 +117,21 @@ class LoginScreen extends HookConsumerWidget {
                             ? Icons.visibility_outlined
                             : Icons.visibility_off_outlined,
                       ),
-                      onPressed: () => obscurePassword.value = !obscurePassword.value,
+                      onPressed: () =>
+                          obscurePassword.value = !obscurePassword.value,
                     ),
                   ),
+                  onFieldSubmitted: (_) {
+                    // Ao pressionar Enter na senha, faz login
+                    if (formKey.currentState?.validate() ?? false) {
+                      ref
+                          .read(authNotifierProvider.notifier)
+                          .login(
+                            emailController.text.trim(),
+                            passwordController.text,
+                          );
+                    }
+                  },
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Por favor, digite sua senha';
@@ -104,9 +139,9 @@ class LoginScreen extends HookConsumerWidget {
                     return null;
                   },
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Lembrar-me
                 Row(
                   children: [
@@ -117,19 +152,21 @@ class LoginScreen extends HookConsumerWidget {
                     const Text('Lembrar-me'),
                   ],
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Botão Entrar
                 FilledButton(
                   onPressed: authState.isLoading
                       ? null
                       : () async {
                           if (formKey.currentState?.validate() ?? false) {
-                            await ref.read(authNotifierProvider.notifier).login(
-                              emailController.text.trim(),
-                              passwordController.text,
-                            );
+                            await ref
+                                .read(authNotifierProvider.notifier)
+                                .login(
+                                  emailController.text.trim(),
+                                  passwordController.text,
+                                );
                           }
                         },
                   style: FilledButton.styleFrom(
@@ -149,7 +186,7 @@ class LoginScreen extends HookConsumerWidget {
                           ),
                         ),
                 ),
-                
+
                 // Mostrar erro se houver
                 if (authState.hasError) ...[
                   const SizedBox(height: 16),
@@ -167,7 +204,7 @@ class LoginScreen extends HookConsumerWidget {
                     ),
                   ),
                 ],
-                
+
                 const SizedBox(height: 60),
               ],
             ),
@@ -180,7 +217,7 @@ class LoginScreen extends HookConsumerWidget {
   /// Constrói a logo do cliente com suporte a dark mode
   Widget _buildLogo(BuildContext context, ClientConfig config) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     Widget logo = Image.asset(
       config.logoPath,
       height: 60,
@@ -202,20 +239,52 @@ class LoginScreen extends HookConsumerWidget {
       // Primeiro converte para escala de cinza
       logo = ColorFiltered(
         colorFilter: const ColorFilter.matrix(<double>[
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0.2126, 0.7152, 0.0722, 0, 0,
-          0, 0, 0, 1, 0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0.2126,
+          0.7152,
+          0.0722,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
         ]),
         child: logo,
       );
       // Depois inverte (preto vira branco)
       logo = ColorFiltered(
         colorFilter: const ColorFilter.matrix(<double>[
-          -1, 0, 0, 0, 255,
-          0, -1, 0, 0, 255,
-          0, 0, -1, 0, 255,
-          0, 0, 0, 1, 0,
+          -1,
+          0,
+          0,
+          0,
+          255,
+          0,
+          -1,
+          0,
+          0,
+          255,
+          0,
+          0,
+          -1,
+          0,
+          255,
+          0,
+          0,
+          0,
+          1,
+          0,
         ]),
         child: logo,
       );

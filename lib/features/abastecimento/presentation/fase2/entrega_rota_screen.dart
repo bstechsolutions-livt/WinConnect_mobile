@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -18,13 +19,43 @@ class EntregaRotaScreen extends ConsumerStatefulWidget {
 class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
   late List<Map<String, dynamic>> _rota;
   int _indiceAtual = 0;
-  // ignore: prefer_final_fields
   bool _entregando = false;
+  
+  // Etapa: 0 = bipar endereço, 1 = bipar produto
+  int _etapa = 0;
+  String _codigoEndereco = '';
+  
+  // Controllers para scanner
+  final _codigoController = TextEditingController();
+  final _codigoFocusNode = FocusNode();
+  bool _tecladoLiberado = false;
 
   @override
   void initState() {
     super.initState();
     _rota = List.from(widget.rota);
+    
+    // Esconde teclado quando foca (para scanner físico)
+    _codigoFocusNode.addListener(_onFocusChange);
+    
+    // Foca no campo após build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _codigoFocusNode.requestFocus();
+    });
+  }
+  
+  void _onFocusChange() {
+    if (_codigoFocusNode.hasFocus && !_tecladoLiberado) {
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+    }
+  }
+
+  @override
+  void dispose() {
+    _codigoController.dispose();
+    _codigoFocusNode.removeListener(_onFocusChange);
+    _codigoFocusNode.dispose();
+    super.dispose();
   }
 
   Map<String, dynamic>? get _itemAtual =>
@@ -613,8 +644,17 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
     String endereco,
     Map<String, dynamic> item,
   ) {
+    // Etapa 0: bipar produto (pegar do carrinho)
+    // Etapa 1: bipar endereço (confirmar entrega)
+    final instrucao = _etapa == 0 
+        ? 'Bipe o produto: ${item['descricao']}'
+        : 'Bipe o endereço: $endereco';
+    final hintText = _etapa == 0 
+        ? 'Aguardando leitura do produto...'
+        : 'Aguardando leitura do endereço...';
+        
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161B22) : Colors.white,
         boxShadow: [
@@ -626,35 +666,293 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         ],
       ),
       child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          height: 56,
-          child: FilledButton.icon(
-            onPressed: _entregando
-                ? null
-                : () => _confirmarEntrega(item, endereco),
-            icon: _entregando
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Indicador de etapa
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _etapa == 0 
+                    ? Colors.orange.withValues(alpha: 0.15)
+                    : Colors.green.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _etapa == 0 ? Icons.inventory_2 : Icons.location_on,
+                    size: 16,
+                    color: _etapa == 0 ? Colors.orange : Colors.green,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    instrucao,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _etapa == 0 ? Colors.orange : Colors.green,
                     ),
-                  )
-                : const Icon(Icons.check_circle_rounded, size: 24),
-            label: Text(
-              _entregando ? 'CONFIRMANDO...' : 'CONFIRMAR ENTREGA',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            style: FilledButton.styleFrom(
-              backgroundColor: Colors.green,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                  ),
+                ],
               ),
             ),
-          ),
+            
+            const SizedBox(height: 12),
+            
+            // Campo de scanner
+            Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _codigoFocusNode.hasFocus
+                      ? (_etapa == 0 ? Colors.orange : Colors.green)
+                      : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _codigoController,
+                      focusNode: _codigoFocusNode,
+                      enabled: !_entregando,
+                      decoration: InputDecoration(
+                        hintText: hintText,
+                        hintStyle: TextStyle(
+                          color: isDark ? Colors.white38 : Colors.grey.shade500,
+                          fontSize: 14,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.qr_code_scanner,
+                          color: _etapa == 0 ? Colors.blue : Colors.orange,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                      ),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isDark ? Colors.white : Colors.grey.shade900,
+                      ),
+                      keyboardType: _tecladoLiberado 
+                          ? TextInputType.text 
+                          : TextInputType.none,
+                      onSubmitted: (_) => _processarCodigo(item, endereco),
+                    ),
+                  ),
+                  // Botão câmera
+                  IconButton(
+                    icon: Icon(
+                      Icons.camera_alt,
+                      color: _etapa == 0 ? Colors.blue : Colors.orange,
+                    ),
+                    onPressed: _entregando ? null : () => _abrirCameraEntrega(item, endereco),
+                  ),
+                  // Loading
+                  if (_entregando)
+                    const Padding(
+                      padding: EdgeInsets.only(right: 12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Botões auxiliares
+            Row(
+              children: [
+                // Botão digitar
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _entregando ? null : () => _solicitarAutorizacaoDigitar(item, endereco),
+                    icon: const Icon(Icons.keyboard, size: 18),
+                    label: const Text('DIGITAR'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Botão confirmar
+                Expanded(
+                  flex: 2,
+                  child: FilledButton.icon(
+                    onPressed: _entregando || _codigoController.text.isEmpty
+                        ? null
+                        : () => _processarCodigo(item, endereco),
+                    icon: const Icon(Icons.check, size: 18),
+                    label: const Text('CONFIRMAR'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
+      ),
+    );
+  }
+  
+  // Guarda código do produto bipado na etapa 0
+  String _codigoProduto = '';
+  
+  /// Processa o código bipado
+  Future<void> _processarCodigo(Map<String, dynamic> item, String enderecoEsperado) async {
+    final codigo = _codigoController.text.trim();
+    if (codigo.isEmpty) return;
+    
+    if (_etapa == 0) {
+      // Etapa 0: Validando produto - guarda para enviar depois
+      // A validação real será feita pela API
+      setState(() {
+        _codigoProduto = codigo;
+        _etapa = 1;
+        _codigoController.clear();
+        _tecladoLiberado = false;
+      });
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _codigoFocusNode.requestFocus();
+      });
+      
+    } else {
+      // Etapa 1: Validando endereço - aceita se contém o endereço esperado
+      final enderecoFormatado = enderecoEsperado.replaceAll('.', '').toUpperCase();
+      final codigoFormatado = codigo.replaceAll('.', '').toUpperCase();
+      
+      if (!codigoFormatado.contains(enderecoFormatado) && !enderecoFormatado.contains(codigoFormatado)) {
+        _mostrarErro('Endereço incorreto! Esperado: $enderecoEsperado');
+        _codigoController.clear();
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) _codigoFocusNode.requestFocus();
+        });
+        return;
+      }
+      
+      // Endereço OK, confirma entrega na API
+      await _confirmarEntregaApi(item, codigo, _codigoProduto);
+    }
+  }
+  
+  /// Confirma entrega na API
+  Future<void> _confirmarEntregaApi(
+    Map<String, dynamic> item,
+    String codigoEndereco,
+    String codigoProduto,
+  ) async {
+    setState(() => _entregando = true);
+    
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      await apiService.post('/wms/fase2/os/${item['numos']}/confirmar-entrega', {
+        'codigo_barras_endereco': codigoEndereco,
+        'codigo_barras_produto': codigoProduto,
+      });
+      
+      if (!mounted) return;
+      
+      // Sucesso! Remove item e vai para próximo
+      setState(() {
+        _rota.removeAt(_indiceAtual);
+        if (_indiceAtual >= _rota.length && _rota.isNotEmpty) {
+          _indiceAtual = _rota.length - 1;
+        }
+        _etapa = 0;
+        _codigoEndereco = '';
+        _codigoProduto = '';
+        _codigoController.clear();
+        _entregando = false;
+        _tecladoLiberado = false;
+      });
+      
+      // Se ainda tem itens, foca para próximo com delay
+      if (_rota.isNotEmpty) {
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) _codigoFocusNode.requestFocus();
+        });
+      }
+      
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _entregando = false);
+      _mostrarErro(e.toString().replaceAll('Exception: ', ''));
+      _codigoController.clear();
+      // Refoca com delay para evitar conflito DOM no Flutter Web
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) _codigoFocusNode.requestFocus();
+      });
+    }
+  }
+  
+  /// Abre câmera para entrega
+  void _abrirCameraEntrega(Map<String, dynamic> item, String endereco) {
+    // Etapa 0: produto, Etapa 1: endereço
+    final titulo = _etapa == 0 ? 'Escanear Produto' : 'Escanear Endereço';
+    
+    _abrirCamera(
+      titulo: titulo,
+      instrucao: _etapa == 0 ? 'Escaneie o código do produto' : 'Escaneie o endereço $endereco',
+      onScanned: (codigo) {
+        Navigator.pop(context);
+        _codigoController.text = codigo;
+        _processarCodigo(item, endereco);
+      },
+    );
+  }
+  
+  /// Solicita autorização para digitar manualmente
+  Future<void> _solicitarAutorizacaoDigitar(Map<String, dynamic> item, String endereco) async {
+    final apiService = ref.read(apiServiceProvider);
+    
+    final autorizado = await AutorizarDigitacaoDialog.mostrar(
+      context: context,
+      apiService: apiService,
+    );
+    
+    if (autorizado == true && mounted) {
+      setState(() => _tecladoLiberado = true);
+      _codigoFocusNode.requestFocus();
+      Future.delayed(const Duration(milliseconds: 100), () {
+        SystemChannels.textInput.invokeMethod('TextInput.show');
+      });
+    }
+  }
+  
+  void _mostrarErro(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(msg)),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -913,8 +1211,8 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                               final apiService = ref.read(apiServiceProvider);
                               final autorizado =
                                   await AutorizarDigitacaoDialog.mostrar(
-                                    ctx,
-                                    apiService,
+                                    context: ctx,
+                                    apiService: apiService,
                                   );
                               if (autorizado) {
                                 setModalState(() {
@@ -961,8 +1259,8 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                               final apiService = ref.read(apiServiceProvider);
                               final autorizado =
                                   await AutorizarDigitacaoDialog.mostrar(
-                                    ctx,
-                                    apiService,
+                                    context: ctx,
+                                    apiService: apiService,
                                   );
                               if (autorizado) {
                                 setModalState(() {

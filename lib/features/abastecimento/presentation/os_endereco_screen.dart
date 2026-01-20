@@ -31,6 +31,8 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
   final _enderecoController = TextEditingController();
   final _focusNode = FocusNode();
   bool _isProcessing = false;
+  bool _tecladoLiberado =
+      false; // Flag para controlar se digitação foi autorizada
 
   @override
   void initState() {
@@ -45,8 +47,8 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
   }
 
   void _onFocusChange() {
-    if (_focusNode.hasFocus) {
-      // Quando ganha foco, esconde o teclado
+    if (_focusNode.hasFocus && !_tecladoLiberado) {
+      // Quando ganha foco, esconde o teclado (a menos que esteja liberado)
       SystemChannels.textInput.invokeMethod('TextInput.hide');
     }
   }
@@ -141,8 +143,15 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
     );
 
     if (autorizado && mounted) {
-      _focusNode.requestFocus();
-      SystemChannels.textInput.invokeMethod('TextInput.show');
+      setState(() {
+        _tecladoLiberado = true;
+      });
+      // Aguarda um frame para garantir que o estado foi atualizado
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        _focusNode.requestFocus();
+        SystemChannels.textInput.invokeMethod('TextInput.show');
+      }
     }
   }
 
@@ -360,9 +369,13 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                         readOnly: false,
                         showCursor: true,
                         decoration: InputDecoration(
-                          hintText: 'Aguardando leitura...',
+                          hintText: _tecladoLiberado
+                              ? 'Digite o endereço...'
+                              : 'Aguardando leitura...',
                           prefixIcon: Icon(
-                            Icons.qr_code_scanner,
+                            _tecladoLiberado
+                                ? Icons.keyboard
+                                : Icons.qr_code_scanner,
                             color: _focusNode.hasFocus
                                 ? Theme.of(context).colorScheme.primary
                                 : null,
@@ -373,7 +386,10 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                             vertical: 16,
                           ),
                         ),
-                        keyboardType: TextInputType.none, // Não abre teclado
+                        // Só abre teclado se autorizado pelo supervisor
+                        keyboardType: _tecladoLiberado
+                            ? TextInputType.text
+                            : TextInputType.none,
                         onSubmitted: (_) => _confirmarEndereco(os),
                         onChanged: (value) {
                           // Scanner físico geralmente envia Enter no final

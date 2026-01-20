@@ -2011,10 +2011,11 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (_qtConferida == null ||
         _caixasConferidas == null ||
         _unidadesConferidas == null) {
-      if (mounted)
+      if (mounted) {
         _mostrarErro(
           'Erro: quantidade não conferida. Bipe o produto novamente.',
         );
+      }
       return;
     }
 
@@ -2204,208 +2205,44 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     );
   }
 
-  /// Mostra dialog oferecendo para ir para a próxima OS
+  /// Vai direto para a próxima OS (sem diálogo)
   Future<void> _mostrarDialogProximaOs(ProximaOs proximaOs) async {
     if (!mounted) return;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final irParaProxima = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.check_circle,
-                color: Colors.green,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'OS Finalizada!',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.grey[900],
-                    ),
-                  ),
-                  Text(
-                    'Rua ${proximaOs.rua}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue[600],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Próxima OS disponível:',
-              style: TextStyle(
-                fontSize: 14,
-                color: isDark ? Colors.white70 : Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'OS ${proximaOs.numos}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${proximaOs.qt.toStringAsFixed(0)} UN',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue[700],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    proximaOs.descricao,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? Colors.white : Colors.grey[800],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 16,
-                        color: isDark ? Colors.white54 : Colors.grey[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          proximaOs.endereco,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? Colors.white54 : Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('VOLTAR'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'IR PARA PRÓXIMA',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+    // Primeiro inicia a próxima OS via API
+    final result = await ref
+        .read(osDetalheNotifierProvider(widget.fase, proximaOs.numos).notifier)
+        .iniciarOs();
 
-    if (!mounted) return;
-
-    if (irParaProxima == true) {
-      // Navega para a próxima OS (volta e vai para a nova)
-      Navigator.of(context).pop(true);
-      // Aguarda um pouco para garantir que a navegação anterior complete
-      await Future.delayed(const Duration(milliseconds: 100));
+    if (!result.sucesso) {
+      // Mostra erro e volta para a lista
       if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OsEnderecoScreen(
-              fase: widget.fase,
-              numos: proximaOs.numos,
-              faseNome: widget.faseNome,
-            ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.erro ?? 'Erro ao iniciar próxima OS'),
+            backgroundColor: Colors.red,
           ),
         );
+        Navigator.of(context).pop(true);
       }
-    } else {
-      // Usuário escolheu voltar
-      Navigator.of(context).pop(true);
+      return;
+    }
+
+    // Navega direto para a próxima OS
+    Navigator.of(context).pop(true);
+    // Aguarda um pouco para garantir que a navegação anterior complete
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OsEnderecoScreen(
+            fase: widget.fase,
+            numos: proximaOs.numos,
+            faseNome: widget.faseNome,
+          ),
+        ),
+      );
     }
   }
 

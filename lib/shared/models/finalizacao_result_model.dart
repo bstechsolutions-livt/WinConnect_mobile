@@ -43,10 +43,14 @@ class FinalizacaoResult {
       proximaOs = ProximaOs.fromJson(response['proxima_os']);
     }
 
+    // API retorna 'rua_concluida' ou 'rua_finalizada'
+    final ruaFinalizada = response['rua_concluida'] == true || 
+                          response['rua_finalizada'] == true;
+
     return FinalizacaoResult(
       sucesso: true,
       proximaOs: proximaOs,
-      ruaFinalizada: response['rua_finalizada'] == true,
+      ruaFinalizada: ruaFinalizada,
     );
   }
 }
