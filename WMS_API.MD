@@ -626,6 +626,57 @@ Consulta estoque de um produto em todos os endereços.
 
 ---
 
+## Rotas Genéricas
+
+### POST /wms/autorizar-digitacao
+
+Autoriza um operador a digitar código manualmente (ao invés de bipar).
+
+**Uso:** Quando o leitor de código de barras não funciona ou o código está danificado, o operador pode solicitar autorização para digitar manualmente. Um supervisor com permissão `wms.autorizar-digitacao` deve autorizar.
+
+**Request:**
+```json
+{
+    "autorizador_matricula": 99999,
+    "autorizador_senha": "senha_supervisor"
+}
+```
+
+**Response (200):**
+```json
+{
+    "message": "Digitação manual autorizada.",
+    "autorizado": true,
+    "autorizador": {
+        "matricula": 99999,
+        "nome": "SUPERVISOR SILVA"
+    }
+}
+```
+
+**Response (422) - Autorizador não encontrado:**
+```json
+{
+    "message": "Autorizador não encontrado."
+}
+```
+
+**Response (422) - Senha incorreta:**
+```json
+{
+    "message": "Senha do autorizador incorreta."
+}
+```
+
+**Response (403) - Sem permissão:**
+```json
+{
+    "message": "O autorizador não possui permissão para autorizar digitação manual."
+}
+```
+
+---
+
 ## Fase 2 - Conferência e Entrega (Auxiliar de Chão)
 
 ### GET /fase2/ruas
@@ -1033,6 +1084,7 @@ Confirma entrega no endereço de destino e finaliza a OS.
 | `wms.os.liberar-ordem` | Autorizar início de OS fora da ordem |
 | `wms.os.liberar-rua` | Liberar operador de uma rua |
 | `wms.operadores.view` | Visualizar operadores alocados (painel web) |
+| `wms.autorizar-digitacao` | Autorizar operador a digitar código manualmente |
 
 ---
 
@@ -1048,6 +1100,10 @@ Configurações gerenciadas via painel web (`WmsConfiguracao`):
 ---
 
 ## Changelog
+
+### v2.3.0 (2026-01-19)
+- **NOVO**: `POST /wms/autorizar-digitacao` para autorizar digitação manual de códigos
+- **NOVA PERMISSÃO**: `wms.autorizar-digitacao` para supervisores
 
 ### v2.2.0 (2026-01-19)
 - **BREAKING**: `POST /fase2/os/{numos}/confirmar-entrega` agora exige `codigo_barras_produto` além do `codigo_barras_endereco`
