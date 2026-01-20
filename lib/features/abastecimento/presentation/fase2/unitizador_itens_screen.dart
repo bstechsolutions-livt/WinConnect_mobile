@@ -11,15 +11,18 @@ import 'carrinho_screen.dart';
 class UnitizadorItensScreen extends ConsumerStatefulWidget {
   final String codigoBarras;
   final String rua;
+  final List<Map<String, dynamic>>? itensIniciais;
 
   const UnitizadorItensScreen({
     super.key,
     required this.codigoBarras,
     required this.rua,
+    this.itensIniciais,
   });
 
   @override
-  ConsumerState<UnitizadorItensScreen> createState() => _UnitizadorItensScreenState();
+  ConsumerState<UnitizadorItensScreen> createState() =>
+      _UnitizadorItensScreenState();
 }
 
 class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
@@ -27,7 +30,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
   bool _isLoading = true;
   String? _erro;
   int _itensNoCarrinho = 0;
-  
+
   // Controller para bipagem
   final _codigoController = TextEditingController();
   final _codigoFocusNode = FocusNode();
@@ -36,17 +39,17 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // Esconde teclado quando foca (para scanner físico)
     _codigoFocusNode.addListener(() {
       if (_codigoFocusNode.hasFocus) {
         SystemChannels.textInput.invokeMethod('TextInput.hide');
       }
     });
-    
+
     _carregarUnitizador();
     _carregarCarrinho();
-    
+
     // Foca no campo após build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _codigoFocusNode.requestFocus();
@@ -62,7 +65,16 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
 
   Future<void> _carregarUnitizador() async {
     if (!mounted) return;
-    
+
+    // Se já temos itens iniciais (vindos da tela anterior), usa direto
+    if (widget.itensIniciais != null) {
+      setState(() {
+        _itens = widget.itensIniciais!;
+        _isLoading = false;
+      });
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _erro = null;
@@ -73,26 +85,35 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
       final response = await apiService.post('/wms/fase2/unitizador/bipar', {
         'codigo_barras': widget.codigoBarras,
       });
-      
+
       if (!mounted) return;
-      
+
       setState(() {
-        _itens = (response['itens'] as List? ?? []).cast<Map<String, dynamic>>();
+        _itens = (response['itens'] as List? ?? [])
+            .cast<Map<String, dynamic>>();
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
-      
+
       final errorMsg = e.toString().replaceAll('Exception: ', '');
-      
-      final isSemOsPendentes = errorMsg.toLowerCase().contains('não possui os') ||
+
+      // Verifica se é erro de "bipe o unitizador primeiro"
+      final requerBipagem =
+          errorMsg.toLowerCase().contains('bipe o unitizador') ||
+          errorMsg.toLowerCase().contains('requer_bipagem');
+
+      final isSemOsPendentes =
+          errorMsg.toLowerCase().contains('não possui os') ||
           errorMsg.toLowerCase().contains('sem os') ||
           errorMsg.toLowerCase().contains('pendentes');
-      
+
       setState(() {
         if (isSemOsPendentes) {
           _itens = [];
           _erro = null;
+        } else if (requerBipagem) {
+          _erro = 'Bipe o unitizador antes de conferir os itens.';
         } else {
           _erro = errorMsg;
         }
@@ -105,9 +126,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
     try {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.get('/wms/fase2/meu-carrinho');
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _itensNoCarrinho = response['total_itens'] ?? 0;
       });
@@ -160,7 +181,8 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                   ),
                   onDetect: (capture) {
                     final List<Barcode> barcodes = capture.barcodes;
-                    if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+                    if (barcodes.isNotEmpty &&
+                        barcodes.first.rawValue != null) {
                       final codigo = barcodes.first.rawValue!;
                       Navigator.pop(context);
                       _codigoController.text = codigo;
@@ -196,12 +218,13 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
 
     // Encontra o item pelo código
     final item = _itens.firstWhere(
-      (i) => i['codauxiliar']?.toString() == codigo || 
-             i['codprod']?.toString() == codigo ||
-             i['ean']?.toString() == codigo,
+      (i) =>
+          i['codauxiliar']?.toString() == codigo ||
+          i['codprod']?.toString() == codigo ||
+          i['ean']?.toString() == codigo,
       orElse: () => {},
     );
-    
+
     if (item.isEmpty) {
       _mostrarErro('Produto não encontrado neste unitizador');
       _codigoController.clear();
@@ -227,7 +250,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
         multiplo = int.tryParse(m.toString()) ?? 1;
       }
     }
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -247,35 +270,28 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
 
   /// Confere o produto na API
   Future<void> _conferirProduto(
-    String codigo, 
+    String codigo,
     Map<String, dynamic> item,
     int quantidade,
   ) async {
     setState(() => _isProcessing = true);
-    
+
     try {
       final apiService = ref.read(apiServiceProvider);
-      
-      await apiService.post(
-        '/wms/fase2/os/${item['numos']}/conferir-produto',
-        {
-          'codigo_barras': codigo,
-          'quantidade': quantidade.toString(),
-        },
-      );
-      
+
+      await apiService.post('/wms/fase2/os/${item['numos']}/conferir-produto', {
+        'codigo_barras': codigo,
+        'quantidade': quantidade.toString(),
+      });
+
       if (!mounted) return;
-      
+
       _codigoController.clear();
       _codigoFocusNode.requestFocus();
       _mostrarSucesso('Produto adicionado ao carrinho!');
-      
+
       // Recarrega dados
-      await Future.wait([
-        _carregarUnitizador(),
-        _carregarCarrinho(),
-      ]);
-      
+      await Future.wait([_carregarUnitizador(), _carregarCarrinho()]);
     } catch (e) {
       _mostrarErro(e.toString().replaceAll('Exception: ', ''));
     } finally {
@@ -322,11 +338,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
   Future<void> _abrirCarrinho() async {
     final resultado = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (context) => const CarrinhoScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const CarrinhoScreen()),
     );
-    
+
     if (resultado == true) {
       _carregarUnitizador();
       _carregarCarrinho();
@@ -388,7 +402,11 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline, size: 64, color: Theme.of(context).colorScheme.error),
+              Icon(
+                Icons.error_outline,
+                size: 64,
+                color: Theme.of(context).colorScheme.error,
+              ),
               const SizedBox(height: 16),
               Text(_erro!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
@@ -419,7 +437,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
               Text(
                 'Este unitizador não possui OSs\npendentes para conferência.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 24),
               OutlinedButton.icon(
@@ -433,7 +453,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
       );
     }
 
-    final itensPendentes = _itens.where((i) => i['conferido'] != true && i['bloqueado'] != true).toList();
+    final itensPendentes = _itens
+        .where((i) => i['conferido'] != true && i['bloqueado'] != true)
+        .toList();
 
     // Se não tem itens pendentes mas tem itens no carrinho, mostra opções
     if (itensPendentes.isEmpty && _itensNoCarrinho > 0) {
@@ -457,19 +479,16 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                   color: Colors.green,
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               const Text(
                 'Unitizador conferido!',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               Text(
                 'Todos os itens deste unitizador\nforam conferidos com sucesso.',
                 textAlign: TextAlign.center,
@@ -478,16 +497,21 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Badge do carrinho
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: Colors.orange.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -505,19 +529,16 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 32),
-              
+
               const Text(
                 'O que deseja fazer?',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Botão principal - Ir para o carrinho
               SizedBox(
                 width: double.infinity,
@@ -542,9 +563,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Botão secundário - Outro unitizador
               SizedBox(
                 width: double.infinity,
@@ -560,9 +581,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Botão atualizar
               TextButton.icon(
                 onPressed: () {
@@ -572,7 +593,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                 icon: const Icon(Icons.refresh, size: 18),
                 label: const Text('Atualizar'),
                 style: TextButton.styleFrom(
-                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -594,12 +617,17 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.outline.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.inventory_2, color: Theme.of(context).colorScheme.primary),
+                  Icon(
+                    Icons.inventory_2,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
@@ -616,7 +644,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                         Text(
                           '${itensPendentes.length} itens pendentes',
                           style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                             fontSize: 14,
                           ),
                         ),
@@ -624,7 +654,10 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
@@ -632,7 +665,11 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.shopping_cart, size: 16, color: Colors.orange),
+                        const Icon(
+                          Icons.shopping_cart,
+                          size: 16,
+                          color: Colors.orange,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '$_itensNoCarrinho',
@@ -647,12 +684,12 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 16),
 
             // Scanner Input - IGUAL OS OUTROS
             _buildScannerInput(context),
-            
+
             const SizedBox(height: 16),
 
             // Lista de itens para referência
@@ -665,17 +702,21 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
               ),
             ),
             const SizedBox(height: 8),
-            
+
             // Lista compacta
             ...itensPendentes.asMap().entries.map((entry) {
               final index = entry.key;
               final item = entry.value;
-              final descricao = item['descricao'] ?? 'Produto ${item['codprod']}';
+              final descricao =
+                  item['descricao'] ?? 'Produto ${item['codprod']}';
               final codprod = item['codprod']?.toString() ?? '---';
-              
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 4),
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
@@ -686,7 +727,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Center(
@@ -809,10 +852,12 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: _isProcessing ? null : () {
-                  _codigoFocusNode.requestFocus();
-                  SystemChannels.textInput.invokeMethod('TextInput.show');
-                },
+                onPressed: _isProcessing
+                    ? null
+                    : () {
+                        _codigoFocusNode.requestFocus();
+                        SystemChannels.textInput.invokeMethod('TextInput.show');
+                      },
                 icon: const Icon(Icons.keyboard),
                 label: const Text('DIGITAR'),
                 style: OutlinedButton.styleFrom(
@@ -827,7 +872,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
             Expanded(
               flex: 2,
               child: FilledButton(
-                onPressed: _isProcessing ? null : () => _processarCodigo(_codigoController.text.trim()),
+                onPressed: _isProcessing
+                    ? null
+                    : () => _processarCodigo(_codigoController.text.trim()),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -859,7 +906,6 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
     );
   }
 }
-
 
 // ============================================================================
 // QUANTIDADE BOTTOM SHEET - Para digitar caixas e unidades
@@ -957,23 +1003,29 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Produto info
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+                  border: Border.all(
+                    color: Colors.green.withValues(alpha: 0.3),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.check_circle, color: Colors.green, size: 20),
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         const Text(
                           'Produto encontrado!',
@@ -998,12 +1050,17 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                           'Código: ${widget.codprod}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.amber,
                             borderRadius: BorderRadius.circular(4),
@@ -1022,9 +1079,9 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Título
               Text(
                 'Informe a quantidade conferida:',
@@ -1034,9 +1091,9 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Campos caixas e unidades
               Row(
                 children: [
@@ -1064,16 +1121,24 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                           ),
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.inventory_2_outlined, color: Colors.green),
+                            prefixIcon: const Icon(
+                              Icons.inventory_2_outlined,
+                              color: Colors.green,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: Colors.green),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.green, width: 2),
+                              borderSide: const BorderSide(
+                                color: Colors.green,
+                                width: 2,
+                              ),
                             ),
                           ),
                           onSubmitted: (_) => _unidadesFocus.requestFocus(),
@@ -1081,9 +1146,9 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(width: 16),
-                  
+
                   // Unidades
                   Expanded(
                     child: Column(
@@ -1108,16 +1173,24 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                           ),
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                           decoration: InputDecoration(
-                            prefixIcon: const Icon(Icons.apps_outlined, color: Colors.blue),
+                            prefixIcon: const Icon(
+                              Icons.apps_outlined,
+                              color: Colors.blue,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: const BorderSide(color: Colors.blue),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.blue, width: 2),
+                              borderSide: const BorderSide(
+                                color: Colors.blue,
+                                width: 2,
+                              ),
                             ),
                           ),
                           onSubmitted: (_) => _confirmar(),
@@ -1127,9 +1200,9 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Total calculado
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1140,10 +1213,7 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Total: ',
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    const Text('Total: ', style: TextStyle(fontSize: 16)),
                     Text(
                       '$_totalUnidades',
                       style: const TextStyle(
@@ -1152,27 +1222,29 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                         color: Colors.blue,
                       ),
                     ),
-                    const Text(
-                      ' unidades',
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    const Text(' unidades', style: TextStyle(fontSize: 16)),
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Botão confirmar
               FilledButton.icon(
                 onPressed: _isConfirmando ? null : _confirmar,
-                icon: _isConfirmando 
+                icon: _isConfirmando
                     ? const SizedBox(
                         width: 20,
                         height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
                     : const Icon(Icons.add_shopping_cart),
-                label: Text(_isConfirmando ? 'Adicionando...' : 'ADICIONAR AO CARRINHO'),
+                label: Text(
+                  _isConfirmando ? 'Adicionando...' : 'ADICIONAR AO CARRINHO',
+                ),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1181,9 +1253,9 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Botão cancelar
               TextButton(
                 onPressed: () => Navigator.pop(context),

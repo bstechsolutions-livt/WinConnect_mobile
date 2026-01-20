@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
 import 'unitizador_itens_screen.dart';
 import 'carrinho_screen.dart';
 
 /// Tela de lista de unitizadores para Fase 2
+/// Operador DEVE bipar o código de barras do unitizador antes de conferir itens
 class UnitizadorListScreen extends ConsumerStatefulWidget {
   final String rua;
 
-  const UnitizadorListScreen({
-    super.key,
-    required this.rua,
-  });
+  const UnitizadorListScreen({super.key, required this.rua});
 
   @override
-  ConsumerState<UnitizadorListScreen> createState() => _UnitizadorListScreenState();
+  ConsumerState<UnitizadorListScreen> createState() =>
+      _UnitizadorListScreenState();
 }
 
 class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
@@ -24,20 +25,45 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
   String? _erro;
   int _itensNoCarrinho = 0;
 
+  // Controller para bipagem do unitizador
+  final _codigoController = TextEditingController();
+  final _codigoFocusNode = FocusNode();
+  bool _isProcessing = false;
+
   @override
   void initState() {
     super.initState();
+
+    // Esconde teclado quando foca (para scanner físico)
+    _codigoFocusNode.addListener(() {
+      if (_codigoFocusNode.hasFocus) {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      }
+    });
+
     _carregarUnitizadores();
     _carregarCarrinho();
+
+    // Foca no campo de scanner após build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _codigoFocusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _codigoController.dispose();
+    _codigoFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> _carregarCarrinho() async {
     try {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.get('/wms/fase2/meu-carrinho');
-      
+
       if (!mounted) return;
-      
+
       final carrinho = response['carrinho'] as List? ?? [];
       setState(() {
         _itensNoCarrinho = carrinho.length;
@@ -47,7 +73,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
 
   Future<void> _carregarUnitizadores() async {
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
       _erro = null;
@@ -55,10 +81,12 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
 
     try {
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.get('/wms/fase2/ruas/${widget.rua}/unitizadores');
-      
+      final response = await apiService.get(
+        '/wms/fase2/ruas/${widget.rua}/unitizadores',
+      );
+
       if (!mounted) return;
-      
+
       final lista = response['unitizadores'] as List? ?? [];
       setState(() {
         _unitizadores = lista.cast<Map<String, dynamic>>();
@@ -66,7 +94,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      
+
       setState(() {
         _erro = e.toString();
         _isLoading = false;
@@ -77,10 +105,10 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
-      backgroundColor: isDark 
-          ? const Color(0xFF0D1117) 
+      backgroundColor: isDark
+          ? const Color(0xFF0D1117)
           : const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -132,7 +160,10 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
                 icon: Badge(
                   label: Text(
                     '$_itensNoCarrinho',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   backgroundColor: Colors.orange,
                   child: Container(
@@ -192,7 +223,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
 
   Widget _buildBody() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     if (_isLoading) {
       return Center(
         child: Column(
@@ -260,7 +291,10 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
               GestureDetector(
                 onTap: _carregarUnitizadores,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -271,7 +305,11 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.refresh_rounded, size: 18, color: Colors.green),
+                      Icon(
+                        Icons.refresh_rounded,
+                        size: 18,
+                        color: Colors.green,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Tentar novamente',
@@ -300,7 +338,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: isDark 
+                  color: isDark
                       ? Colors.white.withValues(alpha: 0.05)
                       : Colors.grey.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
@@ -334,7 +372,10 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
               GestureDetector(
                 onTap: _carregarUnitizadores,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -345,7 +386,11 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.refresh_rounded, size: 18, color: Colors.green),
+                      Icon(
+                        Icons.refresh_rounded,
+                        size: 18,
+                        color: Colors.green,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Atualizar',
@@ -364,254 +409,565 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: _unitizadores.length + 1,
-      itemBuilder: (context, index) {
-        // Header com total
-        if (index == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Row(
-              children: [
-                Text(
-                  'Selecione um unitizador',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white54 : Colors.grey.shade600,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isDark 
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.grey.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    '${_unitizadores.length} ${_unitizadores.length == 1 ? "unitizador" : "unitizadores"}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white70 : Colors.grey.shade700,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-        
-        final unit = _unitizadores[index - 1];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _UnitizadorCard(
-            unitizador: unit,
-            onTap: () => _onUnitizadorTap(unit),
-          ),
-        );
-      },
-    );
-  }
+    return Column(
+      children: [
+        // Campo de scanner para bipar unitizador
+        _buildScannerInput(isDark),
 
-  Future<void> _onUnitizadorTap(Map<String, dynamic> unit) async {
-    final codigoBarras = unit['codigo_barras']?.toString() ?? unit['codunitizador']?.toString() ?? '';
-    
-    if (codigoBarras.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Código de barras do unitizador não encontrado'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
-      return;
-    }
-    
-    if (!mounted) return;
-    
-    final resultado = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => UnitizadorItensScreen(
-          codigoBarras: codigoBarras,
-          rua: widget.rua,
-        ),
-      ),
-    );
-    
-    if (resultado == true) {
-      _carregarUnitizadores();
-    }
-  }
-}
-
-/// Card moderno para unitizador
-class _UnitizadorCard extends StatefulWidget {
-  final Map<String, dynamic> unitizador;
-  final VoidCallback onTap;
-
-  const _UnitizadorCard({
-    required this.unitizador,
-    required this.onTap,
-  });
-
-  @override
-  State<_UnitizadorCard> createState() => _UnitizadorCardState();
-}
-
-class _UnitizadorCardState extends State<_UnitizadorCard> {
-  bool _isPressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentColor = Colors.green;
-    final qtdItens = widget.unitizador['qtd_itens'] ?? 0;
-    final codigo = widget.unitizador['codunitizador'] ?? widget.unitizador['codigo_barras'] ?? '---';
-    
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        transform: Matrix4.identity()..scale(_isPressed ? 0.98 : 1.0),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF161B22) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: _isPressed 
-                ? accentColor.withValues(alpha: 0.5)
-                : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15)),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: _isPressed 
-                  ? accentColor.withValues(alpha: 0.2)
-                  : Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-              blurRadius: _isPressed ? 16 : 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Ícone do unitizador
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      accentColor.withValues(alpha: 0.2),
-                      accentColor.withValues(alpha: 0.1),
+        // Lista de unitizadores (apenas informativo)
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            itemCount: _unitizadores.length + 1,
+            itemBuilder: (context, index) {
+              // Header com total
+              if (index == 0) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: isDark ? Colors.white54 : Colors.grey.shade600,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Bipe o código de barras do unitizador',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? Colors.white54 : Colors.grey.shade600,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.grey.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${_unitizadores.length}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? Colors.white70
+                                : Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
                     ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
                   ),
-                  borderRadius: BorderRadius.circular(14),
+                );
+              }
+
+              final unit = _unitizadores[index - 1];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _UnitizadorCardInfo(unitizador: unit),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Constrói o campo de scanner para bipar unitizador
+  Widget _buildScannerInput(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161B22) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.green.withValues(alpha: 0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withValues(alpha: 0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  Icons.local_shipping_rounded,
-                  color: accentColor,
+                  Icons.qr_code_scanner_rounded,
+                  color: Colors.green,
                   size: 24,
                 ),
               ),
-              
-              const SizedBox(width: 14),
-              
-              // Informações do unitizador
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Unitizador $codigo',
+                      'Escanear Unitizador',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: isDark ? Colors.white : Colors.grey.shade900,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          size: 14,
-                          color: isDark ? Colors.white54 : Colors.grey.shade500,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '$qtdItens ${qtdItens == 1 ? "item" : "itens"} para conferir',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? Colors.white54 : Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      'Bipe o código de barras para conferir',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white54 : Colors.grey.shade600,
+                      ),
                     ),
                   ],
                 ),
               ),
-              
-              // Badge + seta
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accentColor.withValues(alpha: 0.4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              // Campo de texto
+              Expanded(
+                child: TextField(
+                  controller: _codigoController,
+                  focusNode: _codigoFocusNode,
+                  enabled: !_isProcessing,
+                  decoration: InputDecoration(
+                    hintText: 'Código de barras...',
+                    hintStyle: TextStyle(
+                      color: isDark ? Colors.white38 : Colors.grey.shade400,
                     ),
-                    child: Text(
-                      '$qtdItens',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+                    filled: true,
+                    fillColor: isDark
+                        ? Colors.white.withValues(alpha: 0.05)
+                        : Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.local_shipping_rounded,
+                      color: isDark ? Colors.white38 : Colors.grey.shade400,
+                    ),
+                    suffixIcon: _isProcessing
+                        ? Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.green,
+                              ),
+                            ),
+                          )
+                        : null,
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: isDark 
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: isDark ? Colors.white54 : Colors.grey.shade600,
-                    ),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: isDark ? Colors.white : Colors.grey.shade900,
                   ),
-                ],
+                  textInputAction: TextInputAction.done,
+                  onChanged: (value) {
+                    // Auto-submit se tiver tamanho suficiente (scanner)
+                    if (value.length >= 4) {
+                      _biparUnitizador();
+                    }
+                  },
+                  onSubmitted: (_) => _biparUnitizador(),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Botão câmera
+              GestureDetector(
+                onTap: _isProcessing ? null : _abrirScannerCamera,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.camera_alt_rounded,
+                    color: Colors.green,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Botão digitar
+              GestureDetector(
+                onTap: _isProcessing ? null : _mostrarDialogDigitar,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.keyboard_rounded,
+                    color: Colors.blue,
+                    size: 24,
+                  ),
+                ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Bipa o unitizador e navega para conferência
+  Future<void> _biparUnitizador() async {
+    final codigo = _codigoController.text.trim();
+    if (codigo.isEmpty || _isProcessing) return;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final response = await apiService.post('/wms/fase2/unitizador/bipar', {
+        'codigo_barras': codigo,
+      });
+
+      _codigoController.clear();
+
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+
+      // Extrai os itens da resposta para passar à próxima tela
+      final itens =
+          (response['itens'] as List? ?? []).cast<Map<String, dynamic>>();
+
+      // Navega para a tela de conferência de itens
+      final resultado = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UnitizadorItensScreen(
+            codigoBarras: codigo,
+            rua: widget.rua,
+            itensIniciais: itens,
+          ),
+        ),
+      );
+
+      if (resultado == true) {
+        _carregarUnitizadores();
+        _carregarCarrinho();
+      }
+
+      // Refoca no campo de scanner
+      _codigoFocusNode.requestFocus();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMsg),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+
+      _codigoController.clear();
+      _codigoFocusNode.requestFocus();
+    }
+  }
+
+  /// Abre scanner de câmera
+  void _abrirScannerCamera() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.7,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Escanear Unitizador',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
+            // Scanner
+            Expanded(
+              child: MobileScanner(
+                onDetect: (capture) {
+                  final List<Barcode> barcodes = capture.barcodes;
+                  if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+                    final code = barcodes.first.rawValue!;
+                    Navigator.pop(context);
+                    _codigoController.text = code;
+                    _biparUnitizador();
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Mostra dialog para digitar código manualmente
+  void _mostrarDialogDigitar() {
+    final controller = TextEditingController();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.keyboard_rounded,
+                color: Colors.green,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Digitar Código',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.grey.shade900,
+              ),
+            ),
+          ],
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Código do unitizador...',
+            filled: true,
+            fillColor: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          onSubmitted: (value) {
+            if (value.trim().isNotEmpty) {
+              Navigator.pop(ctx);
+              _codigoController.text = value.trim();
+              _biparUnitizador();
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (controller.text.trim().isNotEmpty) {
+                Navigator.pop(ctx);
+                _codigoController.text = controller.text.trim();
+                _biparUnitizador();
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Card informativo do unitizador (sem interação de tap)
+/// Operador deve bipar o código de barras ao invés de clicar
+class _UnitizadorCardInfo extends StatelessWidget {
+  final Map<String, dynamic> unitizador;
+
+  const _UnitizadorCardInfo({required this.unitizador});
+
+  Color _getStatusColor(String? status) {
+    switch (status?.toUpperCase()) {
+      case 'EM_CONFERENCIA':
+        return Colors.orange;
+      case 'CONFERIDO':
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getStatusText(String? status) {
+    switch (status?.toUpperCase()) {
+      case 'EM_CONFERENCIA':
+        return 'Em conferência';
+      case 'CONFERIDO':
+        return 'Conferido';
+      default:
+        return 'Aguardando';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final qtdItens = unitizador['qtd_itens'] ?? 0;
+    final qtdConferidos = unitizador['qtd_conferidos'] ?? 0;
+    final codigo =
+        unitizador['codunitizador'] ?? unitizador['codigo_barras'] ?? '---';
+    final status = unitizador['status']?.toString();
+    final statusColor = _getStatusColor(status);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF161B22) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.grey.withValues(alpha: 0.15),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            // Ícone do unitizador
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                Icons.local_shipping_rounded,
+                color: statusColor,
+                size: 24,
+              ),
+            ),
+
+            const SizedBox(width: 14),
+
+            // Informações do unitizador
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Unitizador $codigo',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.grey.shade900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 14,
+                        color: isDark ? Colors.white54 : Colors.grey.shade500,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$qtdConferidos/$qtdItens conferidos',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white54 : Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Status badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _getStatusText(status),
+                style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

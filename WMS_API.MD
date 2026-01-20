@@ -684,6 +684,8 @@ Lista unitizadores disponíveis na rua para conferência.
 
 Seleciona um unitizador para conferência (bipa código de barras).
 
+**IMPORTANTE:** É obrigatório bipar o unitizador antes de conferir os itens. A bipagem é registrada no sistema.
+
 **Request:**
 ```json
 {
@@ -726,6 +728,8 @@ Seleciona um unitizador para conferência (bipa código de barras).
 
 Conferência cega: bipa produto e informa quantidade.
 
+**Pré-requisito:** Unitizador deve ter sido bipado (POST /fase2/unitizador/bipar)
+
 **Request:**
 ```json
 {
@@ -764,6 +768,14 @@ Conferência cega: bipa produto e informa quantidade.
     "message": "OS bloqueada após 3 tentativas incorretas.",
     "bloqueada": true,
     "tentativas": 3
+}
+```
+
+**Response (422) - Unitizador não bipado:**
+```json
+{
+    "message": "Bipe o unitizador antes de conferir os itens.",
+    "requer_bipagem": true
 }
 ```
 
@@ -957,6 +969,11 @@ Configurações gerenciadas via painel web (`WmsConfiguracao`):
 ---
 
 ## Changelog
+
+### v2.1.0 (2026-01-19)
+- Fase 2: Obrigatório bipar unitizador antes de conferir itens
+- Salva `matricula_bipou` e `dt_bipagem` na tabela `unitizadores`
+- `POST /fase2/os/{numos}/conferir-produto` retorna erro 422 se unitizador não foi bipado
 
 ### v2.0.0 (2026-01-19)
 - **BREAKING**: Não é mais permitido separar com quantidade diferente na Fase 1
