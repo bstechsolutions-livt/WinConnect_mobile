@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../shared/models/os_detalhe_model.dart';
+import '../../../shared/models/finalizacao_result_model.dart';
 import '../../../shared/providers/api_service_provider.dart';
 
 part 'os_detalhe_provider.g.dart';
@@ -80,12 +81,16 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   }
 
   // Iniciar OS (deve ser chamado antes de bipar)
-  // Retorna (sucesso, mensagemErro, osEmAndamento)
-  Future<(bool, String?, int?)> iniciarOs() async {
+  // Retorna IniciarOsResult com informações detalhadas sobre o resultado
+  Future<IniciarOsResult> iniciarOs() async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase$fase/os/$numos/iniciar', {});
-      return (true, null, null);
+      final response = await apiService.post(
+        '/wms/fase$fase/os/$numos/iniciar',
+        {},
+      );
+      final rua = response['rua']?.toString();
+      return IniciarOsResult.success(rua: rua);
     } catch (e) {
       final errorStr = e.toString();
       final errorMsg = _extrairMensagemErro(e);
@@ -93,7 +98,17 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
       // Se já está em andamento, considera sucesso (pode continuar)
       if (errorMsg.contains('FASE1_ANDAMENTO') ||
           errorMsg.contains('já está em andamento')) {
-        return (true, null, null);
+        return IniciarOsResult.success();
+      }
+
+      // Verifica se é erro de "preso em outra rua" (status 422)
+      // A mensagem contém "Você está alocado na Rua X"
+      final ruaMatch = RegExp(
+        r'[Vv]ocê está alocado na [Rr]ua\s+(\w+)|alocado.*?[Rr]ua\s+(\w+)',
+      ).firstMatch(errorStr);
+      if (ruaMatch != null) {
+        final ruaBloqueada = ruaMatch.group(1) ?? ruaMatch.group(2) ?? '';
+        return IniciarOsResult.presoEmRua(ruaBloqueada, errorMsg);
       }
 
       // Se tem outra OS em andamento, extrai o número dela
@@ -102,11 +117,20 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
       ).firstMatch(errorStr);
       if (osMatch != null) {
         final osNum = int.tryParse(osMatch.group(1) ?? osMatch.group(2) ?? '');
-        return (false, errorMsg, osNum);
+        return IniciarOsResult.error(errorMsg, osEmAndamento: osNum);
       }
 
-      return (false, errorMsg, null);
+      return IniciarOsResult.error(errorMsg);
     }
+  }
+
+  // Versão antiga para compatibilidade - converte para tuple
+  Future<(bool, String?, int?)> iniciarOsLegacy() async {
+    final result = await iniciarOs();
+    if (result.sucesso) {
+      return (true, null, null);
+    }
+    return (false, result.erro, result.osEmAndamento);
   }
 
   // Sair da OS (requer autorização de supervisor)
@@ -250,7 +274,8 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
 
   // Vincular unitizador E finalizar em uma única operação
   // Isso evita problemas de estado quando o widget é reconstruído
-  Future<(bool, String?)> vincularUnitizadorEFinalizar({
+  // Retorna FinalizacaoResult com info sobre próxima OS
+  Future<FinalizacaoResult> vincularUnitizadorEFinalizarComResult({
     required String codigoBarrasUnitizador,
     required int qtConferida,
     required int caixas,
@@ -265,35 +290,81 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
       });
 
       // 2. Finaliza a OS
-      await apiService.post('/wms/fase$fase/os/$numos/finalizar', {
-        'qt_conferida': qtConferida,
-        'caixas': caixas,
-        'unidades': unidades,
-      });
+      final response = await apiService.post(
+        '/wms/fase$fase/os/$numos/finalizar',
+        {'qt_conferida': qtConferida, 'caixas': caixas, 'unidades': unidades},
+      );
 
-      return (true, null);
+      return FinalizacaoResult.fromResponse(response);
     } catch (e) {
-      return (false, _extrairMensagemErro(e));
+      final errorMsg = _extrairMensagemErro(e);
+      final deveRegistrarDivergencia = _verificarDeveRegistrarDivergencia(e);
+      return FinalizacaoResult.error(
+        errorMsg,
+        deveRegistrarDivergencia: deveRegistrarDivergencia,
+      );
     }
   }
 
-  // Finalizar OS com quantidade conferida
-  Future<(bool, String?)> finalizarComQuantidade(
+  // Versão antiga para compatibilidade
+  Future<(bool, String?)> vincularUnitizadorEFinalizar({
+    required String codigoBarrasUnitizador,
+    required int qtConferida,
+    required int caixas,
+    required int unidades,
+  }) async {
+    final result = await vincularUnitizadorEFinalizarComResult(
+      codigoBarrasUnitizador: codigoBarrasUnitizador,
+      qtConferida: qtConferida,
+      caixas: caixas,
+      unidades: unidades,
+    );
+    return (result.sucesso, result.erro);
+  }
+
+  // Finalizar OS com quantidade conferida - retorna FinalizacaoResult
+  Future<FinalizacaoResult> finalizarComQuantidadeResult(
     int qtConferida,
     int caixas,
     int unidades,
   ) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase$fase/os/$numos/finalizar', {
-        'qt_conferida': qtConferida,
-        'caixas': caixas,
-        'unidades': unidades,
-      });
-      return (true, null);
+      final response = await apiService.post(
+        '/wms/fase$fase/os/$numos/finalizar',
+        {'qt_conferida': qtConferida, 'caixas': caixas, 'unidades': unidades},
+      );
+      return FinalizacaoResult.fromResponse(response);
     } catch (e) {
-      return (false, _extrairMensagemErro(e));
+      final errorMsg = _extrairMensagemErro(e);
+      final deveRegistrarDivergencia = _verificarDeveRegistrarDivergencia(e);
+      return FinalizacaoResult.error(
+        errorMsg,
+        deveRegistrarDivergencia: deveRegistrarDivergencia,
+      );
     }
+  }
+
+  // Versão antiga para compatibilidade
+  Future<(bool, String?)> finalizarComQuantidade(
+    int qtConferida,
+    int caixas,
+    int unidades,
+  ) async {
+    final result = await finalizarComQuantidadeResult(
+      qtConferida,
+      caixas,
+      unidades,
+    );
+    return (result.sucesso, result.erro);
+  }
+
+  // Verifica se o erro indica que deve registrar divergência
+  bool _verificarDeveRegistrarDivergencia(dynamic e) {
+    final errorStr = e.toString().toLowerCase();
+    return errorStr.contains('deve_registrar_divergencia') ||
+        errorStr.contains('registrar divergência') ||
+        errorStr.contains('quantidade diferente');
   }
 
   // Finalizar OS (versão antiga - mantida para compatibilidade)

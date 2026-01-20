@@ -5,12 +5,14 @@ import 'rua_list_screen.dart';
 import 'os_endereco_screen.dart';
 import '../../../shared/providers/auth_provider.dart';
 import '../providers/os_ativa_provider.dart';
+import '../providers/minha_rua_provider.dart';
 
 class AbastecimentoScreen extends ConsumerStatefulWidget {
   const AbastecimentoScreen({super.key});
 
   @override
-  ConsumerState<AbastecimentoScreen> createState() => _AbastecimentoScreenState();
+  ConsumerState<AbastecimentoScreen> createState() =>
+      _AbastecimentoScreenState();
 }
 
 class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
@@ -26,7 +28,7 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
   Future<void> _verificarOsAtiva() async {
     final authState = ref.read(authNotifierProvider);
     final user = authState.value;
-    
+
     if (user?.matricula == null) {
       setState(() => _verificandoOsAtiva = false);
       return;
@@ -34,12 +36,12 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
 
     // Consulta se tem OS ativa
     final osAtiva = await ref.read(osAtivaProvider(user!.matricula!).future);
-    
+
     if (osAtiva != null && mounted && !_navegouParaOsAtiva) {
       _navegouParaOsAtiva = true;
-      
+
       final faseNome = osAtiva.fase == 1 ? 'Empilhadeira' : 'Auxiliar';
-      
+
       // SEMPRE volta para tela de bipar endereço (recomeça do início)
       Navigator.pushReplacement(
         context,
@@ -56,14 +58,108 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
     }
   }
 
+  /// Constrói banner mostrando em qual rua o operador está alocado
+  Widget _buildMinhaRuaBanner() {
+    // Verifica a rua para fase 1 (principal)
+    final minhaRuaAsync = ref.watch(minhaRuaNotifierProvider(1));
+
+    return minhaRuaAsync.when(
+      data: (info) {
+        if (!info.estaEmRua) return const SizedBox.shrink();
+
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 20),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.blue.withValues(alpha: 0.15),
+                Colors.blue.withValues(alpha: 0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.location_on,
+                  color: Colors.blue,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Você está alocado na',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white70 : Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Rua ${info.rua}',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue[700],
+                      ),
+                    ),
+                    if (info.osPendentes > 0)
+                      Text(
+                        '${info.osPendentes} OSs pendentes',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white60 : Colors.grey[500],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  'ALOCADO',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_verificandoOsAtiva) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text('Abastecimento'),
-          centerTitle: true,
-        ),
+        appBar: AppBar(title: const Text('Abastecimento'), centerTitle: true),
         body: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -78,10 +174,7 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Abastecimento'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Abastecimento'), centerTitle: true),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -89,6 +182,9 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              // Banner de rua alocada (se houver)
+              _buildMinhaRuaBanner(),
+
               // Fase 1
               _FaseCard(
                 faseNumber: 1,
@@ -107,9 +203,9 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
                   );
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Fase 2
               _FaseCard(
                 faseNumber: 2,
@@ -120,10 +216,8 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
                 onTap: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => const RuaListScreen(
-                        fase: 2,
-                        faseNome: 'Auxiliar',
-                      ),
+                      builder: (context) =>
+                          const RuaListScreen(fase: 2, faseNome: 'Auxiliar'),
                     ),
                   );
                 },
@@ -157,7 +251,8 @@ class _FaseCard extends StatefulWidget {
   State<_FaseCard> createState() => _FaseCardState();
 }
 
-class _FaseCardState extends State<_FaseCard> with SingleTickerProviderStateMixin {
+class _FaseCardState extends State<_FaseCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   bool _isPressed = false;
@@ -169,9 +264,10 @@ class _FaseCardState extends State<_FaseCard> with SingleTickerProviderStateMixi
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.96,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -183,13 +279,11 @@ class _FaseCardState extends State<_FaseCard> with SingleTickerProviderStateMixi
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return AnimatedBuilder(
       animation: _scaleAnimation,
-      builder: (context, child) => Transform.scale(
-        scale: _scaleAnimation.value,
-        child: child,
-      ),
+      builder: (context, child) =>
+          Transform.scale(scale: _scaleAnimation.value, child: child),
       child: GestureDetector(
         onTapDown: (_) {
           setState(() => _isPressed = true);
@@ -249,10 +343,13 @@ class _FaseCardState extends State<_FaseCard> with SingleTickerProviderStateMixi
                   ),
                 ),
               ),
-              
+
               // Conteúdo principal
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 20,
+                ),
                 child: Row(
                   children: [
                     // Ícone à esquerda
@@ -288,9 +385,9 @@ class _FaseCardState extends State<_FaseCard> with SingleTickerProviderStateMixi
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(width: 16),
-                    
+
                     // Textos
                     Expanded(
                       child: Column(
@@ -312,8 +409,8 @@ class _FaseCardState extends State<_FaseCard> with SingleTickerProviderStateMixi
                             widget.description,
                             style: TextStyle(
                               fontSize: 14,
-                              color: isDark 
-                                  ? Colors.white70 
+                              color: isDark
+                                  ? Colors.white70
                                   : Colors.grey.shade600,
                               fontWeight: FontWeight.w500,
                             ),
@@ -321,7 +418,7 @@ class _FaseCardState extends State<_FaseCard> with SingleTickerProviderStateMixi
                         ],
                       ),
                     ),
-                    
+
                     // Botão Iniciar à direita
                     Container(
                       padding: const EdgeInsets.symmetric(

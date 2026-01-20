@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/os_provider.dart';
+import '../providers/os_detalhe_provider.dart';
 import '../../../shared/models/os_model.dart';
 import '../../../shared/providers/api_service_provider.dart';
 import 'os_endereco_screen.dart';
@@ -109,7 +110,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
             _navegouParaOsEmAndamento = true;
             WidgetsBinding.instance.addPostFrameCallback((_) async {
               if (!mounted) return;
-              
+
               // Navega para tela de endereço (que vai verificar se já bipou ou não)
               await Navigator.push<bool>(
                 context,
@@ -121,7 +122,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                   ),
                 ),
               );
-              
+
               // Quando retornar (bloqueou ou finalizou), atualiza a lista
               if (mounted) {
                 await Future.delayed(const Duration(milliseconds: 500));
@@ -403,27 +404,34 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
   }
 
   void _navegarParaOs(OrdemServico os) async {
-    // Primeiro inicia a OS (se podeExecutar, não precisa autorização)
+    // Primeiro inicia a OS usando o provider (que trata erro de rua bloqueada)
     if (os.podeExecutar) {
-      try {
-        final apiService = ref.read(apiServiceProvider);
-        await apiService.post('/wms/fase${widget.fase}/os/${os.numos}/iniciar', {});
-      } catch (e) {
-        // Se já está em andamento, pode continuar
-        final errorStr = e.toString().toUpperCase();
-        final jaEmAndamento = errorStr.contains('ANDAMENTO') ||
-            errorStr.contains('FASE${widget.fase}_ANDAMENTO');
-        if (!jaEmAndamento) {
+      final result = await ref
+          .read(osDetalheNotifierProvider(widget.fase, os.numos).notifier)
+          .iniciarOs();
+
+      if (!result.sucesso) {
+        // Verifica se é erro de "preso em outra rua"
+        if (result.presoEmOutraRua) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(e.toString().replaceAll('Exception: ', '')),
-                backgroundColor: Colors.red,
-              ),
+            _mostrarDialogPresoEmRua(
+              result.ruaBloqueada ?? '',
+              result.erro ?? '',
             );
           }
           return;
         }
+
+        // Outros erros
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.erro ?? 'Erro ao iniciar OS'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
       }
     }
     // Se não podeExecutar, o iniciar já foi chamado no dialog de autorização
@@ -445,6 +453,128 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
     if (resultado == true) {
       ref.read(osNotifierProvider(widget.fase, widget.rua).notifier).refresh();
     }
+  }
+
+  /// Mostra dialog informando que o operador está preso em outra rua
+  void _mostrarDialogPresoEmRua(String rua, String mensagem) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.orange[700],
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Rua Bloqueada',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.grey[900],
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.location_on, color: Colors.orange[700], size: 40),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Rua $rua',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              mensagem,
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white70 : Colors.grey[700],
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Finalize as OSs pendentes na Rua $rua ou solicite liberação ao supervisor.',
+                      style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                // Volta para a lista de ruas para o operador ir à rua correta
+                Navigator.of(context).pop();
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                'IR PARA RUA $rua',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<bool?> _mostrarDialogAutorizacao(int numos) async {
@@ -471,8 +601,9 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
               ),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -498,234 +629,242 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                               size: 28,
                             ),
                           ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'AUTORIZAÇÃO',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'AUTORIZAÇÃO',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  'OS $numos - Fora de ordem',
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              'OS $numos - Fora de ordem',
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                                fontSize: 12,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: isLoading
+                                ? null
+                                : () => Navigator.pop(sheetContext, false),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 16),
+
+                      // Aviso
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.amber.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.amber[700],
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Esta OS está fora da ordem de execução.\nÉ necessária autorização de um supervisor.',
+                                style: TextStyle(
+                                  color: Colors.amber[900],
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: isLoading
-                            ? null
-                            : () => Navigator.pop(sheetContext, false),
-                      ),
-                    ],
-                  ),
 
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 16),
+                      const SizedBox(height: 20),
 
-                  // Aviso
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.amber.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.amber.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          color: Colors.amber[700],
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Esta OS está fora da ordem de execução.\nÉ necessária autorização de um supervisor.',
-                            style: TextStyle(
-                              color: Colors.amber[900],
-                              fontSize: 13,
-                            ),
+                      // Campo matrícula
+                      TextFormField(
+                        controller: matriculaController,
+                        decoration: InputDecoration(
+                          labelText: 'Matrícula do Supervisor',
+                          prefixIcon: const Icon(Icons.badge),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          filled: true,
                         ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Campo matrícula
-                  TextFormField(
-                    controller: matriculaController,
-                    decoration: InputDecoration(
-                      labelText: 'Matrícula do Supervisor',
-                      prefixIcon: const Icon(Icons.badge),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Informe a matrícula';
+                          }
+                          return null;
+                        },
                       ),
-                      filled: true,
-                    ),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Informe a matrícula';
-                      }
-                      return null;
-                    },
-                  ),
 
-                  const SizedBox(height: 12),
+                      const SizedBox(height: 12),
 
-                  // Campo senha
-                  TextFormField(
-                    controller: senhaController,
-                    decoration: InputDecoration(
-                      labelText: 'Senha',
-                      prefixIcon: const Icon(Icons.lock),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                    ),
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Informe a senha';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  // Erro
-                  if (errorMessage != null) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.error_outline,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onErrorContainer,
+                      // Campo senha
+                      TextFormField(
+                        controller: senhaController,
+                        decoration: InputDecoration(
+                          labelText: 'Senha',
+                          prefixIcon: const Icon(Icons.lock),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              errorMessage!,
-                              style: TextStyle(
+                          filled: true,
+                        ),
+                        obscureText: true,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Informe a senha';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      // Erro
+                      if (errorMessage != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.error_outline,
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onErrorContainer,
                               ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  errorMessage!,
+                                  style: TextStyle(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onErrorContainer,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 24),
+
+                      // Botões
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () => Navigator.pop(sheetContext, false),
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text('CANCELAR'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: FilledButton(
+                              onPressed: isLoading
+                                  ? null
+                                  : () async {
+                                      if (!formKey.currentState!.validate())
+                                        return;
+
+                                      setSheetState(() {
+                                        isLoading = true;
+                                        errorMessage = null;
+                                      });
+
+                                      try {
+                                        final apiService = ref.read(
+                                          apiServiceProvider,
+                                        );
+                                        await apiService.post(
+                                          '/wms/fase${widget.fase}/os/$numos/iniciar',
+                                          {
+                                            'autorizador_matricula': int.parse(
+                                              matriculaController.text,
+                                            ),
+                                            'autorizador_senha':
+                                                senhaController.text,
+                                          },
+                                        );
+
+                                        if (sheetContext.mounted) {
+                                          Navigator.pop(sheetContext, true);
+                                        }
+                                      } catch (e) {
+                                        setSheetState(() {
+                                          isLoading = false;
+                                          errorMessage = e
+                                              .toString()
+                                              .replaceAll('Exception: ', '');
+                                        });
+                                      }
+                                    },
+                              style: FilledButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'AUTORIZAR',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
 
-                  const SizedBox(height: 24),
-
-                  // Botões
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: isLoading
-                              ? null
-                              : () => Navigator.pop(sheetContext, false),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text('CANCELAR'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: FilledButton(
-                          onPressed: isLoading
-                              ? null
-                              : () async {
-                                  if (!formKey.currentState!.validate()) return;
-
-                                  setSheetState(() {
-                                    isLoading = true;
-                                    errorMessage = null;
-                                  });
-
-                                  try {
-                                    final apiService = ref.read(
-                                      apiServiceProvider,
-                                    );
-                                    await apiService
-                                        .post('/wms/fase${widget.fase}/os/$numos/iniciar', {
-                                          'autorizador_matricula': int.parse(
-                                            matriculaController.text,
-                                          ),
-                                          'autorizador_senha':
-                                              senhaController.text,
-                                        });
-
-                                    if (sheetContext.mounted) {
-                                      Navigator.pop(sheetContext, true);
-                                    }
-                                  } catch (e) {
-                                    setSheetState(() {
-                                      isLoading = false;
-                                      errorMessage = e.toString().replaceAll(
-                                        'Exception: ',
-                                        '',
-                                      );
-                                    });
-                                  }
-                                },
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Text(
-                                  'AUTORIZAR',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
+                      const SizedBox(height: 8),
                     ],
                   ),
                 ),

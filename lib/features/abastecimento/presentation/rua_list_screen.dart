@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/rua_provider.dart';
+import '../providers/minha_rua_provider.dart';
 import '../../../shared/models/rua_model.dart';
 import '../../../shared/providers/api_service_provider.dart';
 import 'os_list_screen.dart';
@@ -12,11 +13,7 @@ class RuaListScreen extends ConsumerStatefulWidget {
   final int fase;
   final String faseNome;
 
-  const RuaListScreen({
-    super.key,
-    required this.fase,
-    required this.faseNome,
-  });
+  const RuaListScreen({super.key, required this.fase, required this.faseNome});
 
   @override
   ConsumerState<RuaListScreen> createState() => _RuaListScreenState();
@@ -42,9 +39,9 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
     try {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.get('/wms/fase2/meu-carrinho');
-      
+
       if (!mounted) return;
-      
+
       final carrinho = response['carrinho'] as List? ?? [];
       setState(() {
         _itensNoCarrinho = carrinho.length;
@@ -75,9 +72,7 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => UnitizadorListScreen(
-                  rua: next,
-                ),
+                builder: (context) => UnitizadorListScreen(rua: next),
               ),
             );
           }
@@ -86,8 +81,8 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
     });
 
     return Scaffold(
-      backgroundColor: Theme.of(context).brightness == Brightness.dark 
-          ? const Color(0xFF0D1117) 
+      backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? const Color(0xFF0D1117)
           : const Color(0xFFF5F7FA),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -142,7 +137,10 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                     icon: Badge(
                       label: Text(
                         '$_itensNoCarrinho',
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       backgroundColor: Colors.orange,
                       child: Container(
@@ -161,7 +159,9 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                     onPressed: () async {
                       final result = await Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const CarrinhoScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const CarrinhoScreen(),
+                        ),
                       );
                       if (result == true && mounted) {
                         _carregarCarrinho();
@@ -176,7 +176,7 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
       body: ruasAsync.when(
         data: (ruas) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
-          
+
           if (ruas.isEmpty) {
             return Center(
               child: Padding(
@@ -187,7 +187,7 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: isDark 
+                        color: isDark
                             ? Colors.white.withValues(alpha: 0.05)
                             : Colors.grey.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
@@ -226,7 +226,9 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                         onTap: () async {
                           final result = await Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const CarrinhoScreen()),
+                            MaterialPageRoute(
+                              builder: (_) => const CarrinhoScreen(),
+                            ),
                           );
                           if (result == true && mounted) {
                             _carregarCarrinho();
@@ -234,7 +236,10 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                           }
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 12,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.orange.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
@@ -270,7 +275,10 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                         if (widget.fase == 2) _carregarCarrinho();
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.blue.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
@@ -303,7 +311,13 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
               ),
             );
           }
-          
+
+          // Obtém a rua alocada para marcar visualmente
+          final minhaRuaAsync = ref.watch(
+            minhaRuaNotifierProvider(widget.fase),
+          );
+          final ruaAlocada = minhaRuaAsync.valueOrNull?.rua;
+
           return ListView.builder(
             padding: const EdgeInsets.all(20),
             itemCount: ruas.length + 1,
@@ -325,9 +339,12 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: isDark 
+                          color: isDark
                               ? Colors.white.withValues(alpha: 0.1)
                               : Colors.grey.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(8),
@@ -337,7 +354,9 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white70 : Colors.grey.shade700,
+                            color: isDark
+                                ? Colors.white70
+                                : Colors.grey.shade700,
                           ),
                         ),
                       ),
@@ -345,62 +364,62 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                   ),
                 );
               }
-              
+
               final rua = ruas[index - 1];
+              final isAlocada = ruaAlocada != null && rua.codigo == ruaAlocada;
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: _RuaCard(
                   rua: rua,
-                onTap: () async {
-                  // Navega diretamente para a lista de OSs da rua
-                  try {
-                    if (!context.mounted) return;
-                    
-                    // Atualiza rua atual e navega para tela correta da fase
-                    ref.read(ruaAtualProvider.notifier).setRuaAtual(rua.codigo);
-                    
-                    if (widget.fase == 1) {
-                      // Fase 1: Lista de OSs
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => OsListScreen(
-                            fase: widget.fase,
-                            rua: rua.codigo,
-                            faseNome: widget.faseNome,
+                  isAlocada: isAlocada,
+                  onTap: () async {
+                    // Navega diretamente para a lista de OSs da rua
+                    try {
+                      if (!context.mounted) return;
+
+                      // Atualiza rua atual e navega para tela correta da fase
+                      ref
+                          .read(ruaAtualProvider.notifier)
+                          .setRuaAtual(rua.codigo);
+
+                      if (widget.fase == 1) {
+                        // Fase 1: Lista de OSs
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => OsListScreen(
+                              fase: widget.fase,
+                              rua: rua.codigo,
+                              faseNome: widget.faseNome,
+                            ),
                           ),
-                        ),
-                      );
-                    } else {
-                      // Fase 2: Lista de Unitizadores
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UnitizadorListScreen(
-                            rua: rua.codigo,
+                        );
+                      } else {
+                        // Fase 2: Lista de Unitizadores
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                UnitizadorListScreen(rua: rua.codigo),
                           ),
+                        );
+                      }
+                    } catch (e) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erro ao entrar na rua: $e'),
+                          backgroundColor: Colors.red,
                         ),
                       );
                     }
-                    
-                  } catch (e) {
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Erro ao entrar na rua: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-              ),
-            );
-          },
-        );
+                  },
+                ),
+              );
+            },
+          );
         },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
+        loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -439,10 +458,12 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
 class _RuaCard extends StatefulWidget {
   final Rua rua;
   final VoidCallback onTap;
+  final bool isAlocada;
 
   const _RuaCard({
     required this.rua,
     required this.onTap,
+    this.isAlocada = false,
   });
 
   @override
@@ -455,8 +476,8 @@ class _RuaCardState extends State<_RuaCard> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final accentColor = Colors.blue;
-    
+    final accentColor = widget.isAlocada ? Colors.orange : Colors.blue;
+
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) {
@@ -471,14 +492,18 @@ class _RuaCardState extends State<_RuaCard> {
           color: isDark ? const Color(0xFF161B22) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _isPressed 
-                ? accentColor.withValues(alpha: 0.5)
-                : (isDark ? Colors.white.withValues(alpha: 0.08) : Colors.grey.withValues(alpha: 0.15)),
-            width: 1,
+            color: widget.isAlocada
+                ? Colors.orange.withValues(alpha: 0.8)
+                : (_isPressed
+                      ? accentColor.withValues(alpha: 0.5)
+                      : (isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : Colors.grey.withValues(alpha: 0.15))),
+            width: widget.isAlocada ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: _isPressed 
+              color: _isPressed
                   ? accentColor.withValues(alpha: 0.2)
                   : Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
               blurRadius: _isPressed ? 16 : 10,
@@ -486,115 +511,166 @@ class _RuaCardState extends State<_RuaCard> {
             ),
           ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Ícone da rua com gradiente
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      accentColor.withValues(alpha: 0.2),
-                      accentColor.withValues(alpha: 0.1),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+        child: Stack(
+          children: [
+            // Badge "VOCÊ ESTÁ AQUI" para rua alocada
+            if (widget.isAlocada)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
                   ),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  Icons.location_on_rounded,
-                  color: accentColor,
-                  size: 24,
-                ),
-              ),
-              
-              const SizedBox(width: 14),
-              
-              // Nome da rua e informações
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.rua.nome,
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : Colors.grey.shade900,
-                      ),
+                  decoration: const BoxDecoration(
+                    color: Colors.orange,
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(14),
+                      bottomLeft: Radius.circular(8),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.assignment_outlined,
-                          size: 14,
-                          color: isDark ? Colors.white54 : Colors.grey.shade500,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${widget.rua.quantidade} OSs pendentes',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? Colors.white54 : Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Badge com quantidade + seta
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accentColor.withValues(alpha: 0.4),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      '${widget.rua.quantidade}',
-                      style: const TextStyle(
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.person_pin_circle,
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        size: 12,
                       ),
-                    ),
+                      SizedBox(width: 4),
+                      Text(
+                        'VOCÊ ESTÁ AQUI',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  // Ícone da rua com gradiente
                   Container(
-                    padding: const EdgeInsets.all(6),
+                    width: 50,
+                    height: 50,
                     decoration: BoxDecoration(
-                      color: isDark 
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      gradient: LinearGradient(
+                        colors: [
+                          accentColor.withValues(alpha: 0.2),
+                          accentColor.withValues(alpha: 0.1),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 14,
-                      color: isDark ? Colors.white54 : Colors.grey.shade600,
+                      widget.isAlocada
+                          ? Icons.person_pin_circle
+                          : Icons.location_on_rounded,
+                      color: accentColor,
+                      size: 24,
                     ),
+                  ),
+
+                  const SizedBox(width: 14),
+
+                  // Nome da rua e informações
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.rua.nome,
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            color: isDark ? Colors.white : Colors.grey.shade900,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.assignment_outlined,
+                              size: 14,
+                              color: isDark
+                                  ? Colors.white54
+                                  : Colors.grey.shade500,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${widget.rua.quantidade} OSs pendentes',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: isDark
+                                    ? Colors.white54
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Badge com quantidade + seta
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accentColor,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentColor.withValues(alpha: 0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          '${widget.rua.quantidade}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.1)
+                              : Colors.grey.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 14,
+                          color: isDark ? Colors.white54 : Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
+            ),
+          ], // Fecha Stack children
+        ), // Fecha Stack
       ),
     );
   }

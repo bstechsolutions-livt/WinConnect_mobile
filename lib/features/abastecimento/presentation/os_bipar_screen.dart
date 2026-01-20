@@ -5,6 +5,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../providers/os_detalhe_provider.dart';
 import '../../../shared/models/os_detalhe_model.dart';
+import '../../../shared/models/finalizacao_result_model.dart';
+import 'os_endereco_screen.dart';
 
 /// 6ª TELA - Detalhes da OS após chegar no endereço
 class OsBiparScreen extends ConsumerStatefulWidget {
@@ -2009,10 +2011,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (!mounted) return;
     setState(() => _isProcessing = true);
 
-    // Chama o método que faz tudo junto: vincula + finaliza
-    final (sucesso, erro) = await ref
+    // Chama o método que faz tudo junto: vincula + finaliza (com resultado detalhado)
+    final result = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .vincularUnitizadorEFinalizar(
+        .vincularUnitizadorEFinalizarComResult(
           codigoBarrasUnitizador: codigo,
           qtConferida: _qtConferida!,
           caixas: _caixasConferidas!,
@@ -2022,15 +2024,17 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (!mounted) return;
     setState(() => _isProcessing = false);
 
-    if (sucesso) {
+    if (result.sucesso) {
       _unitizadorController.clear();
-      _mostrarSucesso('Tarefa finalizada!');
-      // Volta para OsEnderecoScreen que vai propagar o resultado
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
+      // Processa resultado da finalização (próxima OS ou rua finalizada)
+      await _processarResultadoFinalizacao(result);
     } else {
-      _mostrarErro(erro ?? 'Erro ao finalizar');
+      // Verifica se precisa registrar divergência
+      if (result.deveRegistrarDivergencia) {
+        _mostrarDialogDivergenciaObrigatoria();
+      } else {
+        _mostrarErro(result.erro ?? 'Erro ao finalizar');
+      }
     }
   }
 
@@ -2046,10 +2050,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (!mounted) return;
     setState(() => _isProcessing = true);
 
-    // Finaliza com quantidade normal
-    final resultado = await ref
+    // Finaliza com quantidade normal (com resultado detalhado)
+    final result = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .finalizarComQuantidade(
+        .finalizarComQuantidadeResult(
           _qtConferida!,
           _caixasConferidas!,
           _unidadesConferidas!,
@@ -2058,13 +2062,461 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (!mounted) return;
     setState(() => _isProcessing = false);
 
-    final (sucesso, erro) = resultado;
-    if (sucesso && mounted) {
-      _mostrarSucesso('Tarefa finalizada!');
-      Navigator.of(context).pop(true);
-    } else if (mounted) {
-      _mostrarErro(erro ?? 'Erro ao finalizar');
+    if (result.sucesso) {
+      // Processa resultado da finalização (próxima OS ou rua finalizada)
+      await _processarResultadoFinalizacao(result);
+    } else {
+      // Verifica se precisa registrar divergência
+      if (result.deveRegistrarDivergencia) {
+        _mostrarDialogDivergenciaObrigatoria();
+      } else {
+        _mostrarErro(result.erro ?? 'Erro ao finalizar');
+      }
     }
+  }
+
+  /// Processa o resultado da finalização e mostra dialogs apropriados
+  Future<void> _processarResultadoFinalizacao(FinalizacaoResult result) async {
+    if (!mounted) return;
+
+    // Se a rua foi finalizada, mostra parabéns
+    if (result.ruaFinalizada) {
+      await _mostrarDialogRuaFinalizada();
+      return;
+    }
+
+    // Se tem próxima OS, oferece para ir direto
+    if (result.proximaOs != null) {
+      await _mostrarDialogProximaOs(result.proximaOs!);
+      return;
+    }
+
+    // Caso padrão: só mostra sucesso e volta
+    _mostrarSucesso('Tarefa finalizada!');
+    if (mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  /// Mostra dialog de parabéns quando a rua foi finalizada
+  Future<void> _mostrarDialogRuaFinalizada() async {
+    if (!mounted) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Ícone de celebração
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.celebration,
+                color: Colors.green,
+                size: 60,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              '🎉 Parabéns!',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.grey[900],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Rua Finalizada!',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.green[700],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.blue[700]),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Todas as OSs desta rua foram concluídas. Você está liberado para trabalhar em outra rua.',
+                      style: TextStyle(fontSize: 14, color: Colors.blue[700]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                // Volta para a lista de ruas
+                if (mounted) {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                }
+              },
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'ESCOLHER NOVA RUA',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Mostra dialog oferecendo para ir para a próxima OS
+  Future<void> _mostrarDialogProximaOs(ProximaOs proximaOs) async {
+    if (!mounted) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final irParaProxima = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.green.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'OS Finalizada!',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.grey[900],
+                    ),
+                  ),
+                  Text(
+                    'Rua ${proximaOs.rua}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Próxima OS disponível:',
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white70 : Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'OS ${proximaOs.numos}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '${proximaOs.qt.toStringAsFixed(0)} UN',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    proximaOs.descricao,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : Colors.grey[800],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 16,
+                        color: isDark ? Colors.white54 : Colors.grey[600],
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          proximaOs.endereco,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark ? Colors.white54 : Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('VOLTAR'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'IR PARA PRÓXIMA',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (irParaProxima == true) {
+      // Navega para a próxima OS (volta e vai para a nova)
+      Navigator.of(context).pop(true);
+      // Aguarda um pouco para garantir que a navegação anterior complete
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OsEnderecoScreen(
+              fase: widget.fase,
+              numos: proximaOs.numos,
+              faseNome: widget.faseNome,
+            ),
+          ),
+        );
+      }
+    } else {
+      // Usuário escolheu voltar
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  /// Mostra dialog informando que deve registrar divergência antes de finalizar
+  void _mostrarDialogDivergenciaObrigatoria() {
+    if (!mounted) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.red[700],
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Divergência Obrigatória',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.grey[900],
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red[700], size: 40),
+                  const SizedBox(height: 12),
+                  Text(
+                    'A quantidade conferida é diferente da solicitada.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.red[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Você DEVE registrar uma divergência antes de finalizar esta OS.',
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.white70 : Colors.grey[700],
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Use o botão "Sinalizar Problema" para registrar a divergência.',
+                      style: TextStyle(fontSize: 12, color: Colors.blue[700]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'ENTENDI',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _mostrarDialogBloquear(BuildContext context) {
