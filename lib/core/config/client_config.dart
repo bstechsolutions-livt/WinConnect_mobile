@@ -52,7 +52,7 @@ class ClientConfig {
     'rofe': ClientConfig(
       id: 'rofe',
       name: 'Rofe',
-      apiBaseUrl: 'http://192.168.1.25/api',
+      apiBaseUrl: 'https://settings-desperate-mailto-cancelled.trycloudflare.com/api',
       logoPath: 'assets/clients/rofe/logo.png',
       primaryColorHex: 0xFF1E88E5, // Azul
       secondaryColorHex: 0xFF43A047,

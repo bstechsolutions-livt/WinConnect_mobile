@@ -810,7 +810,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                           ),
                         ),
                         
-                        // Campo de endereço - SEM TECLADO
+                        // Campo de endereço - COM TECLADO
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
                           child: Container(
@@ -832,12 +832,11 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                                     controller: enderecoController,
                                     focusNode: focusNode,
                                     autofocus: true,
-                                    readOnly: true,
+                                    readOnly: false,
                                     showCursor: true,
-                                    keyboardType: TextInputType.none,
                                     textCapitalization: TextCapitalization.characters,
                                     decoration: InputDecoration(
-                                      hintText: 'Aguardando leitura...',
+                                      hintText: 'Digite ou bipe o endereço...',
                                       prefixIcon: Icon(
                                         Icons.qr_code_scanner,
                                         color: Colors.green,

@@ -20,11 +20,15 @@ OrdemServico _$OrdemServicoFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$OrdemServico {
+  @FlexibleIntConverter()
   int get numos => throw _privateConstructorUsedError;
+  @FlexibleIntConverter()
   int get ordem => throw _privateConstructorUsedError;
+  @FlexibleIntConverter()
   int get codprod => throw _privateConstructorUsedError;
   String get descricao => throw _privateConstructorUsedError;
   String get enderecoOrigem => throw _privateConstructorUsedError;
+  @FlexibleDoubleConverter()
   double get quantidade => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
   bool get podeExecutar => throw _privateConstructorUsedError;
@@ -42,12 +46,12 @@ abstract class $OrdemServicoCopyWith<$Res> {
       _$OrdemServicoCopyWithImpl<$Res, OrdemServico>;
   @useResult
   $Res call(
-      {int numos,
-      int ordem,
-      int codprod,
+      {@FlexibleIntConverter() int numos,
+      @FlexibleIntConverter() int ordem,
+      @FlexibleIntConverter() int codprod,
       String descricao,
       String enderecoOrigem,
-      double quantidade,
+      @FlexibleDoubleConverter() double quantidade,
       String status,
       bool podeExecutar});
 }
@@ -120,12 +124,12 @@ abstract class _$$OrdemServicoImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {int numos,
-      int ordem,
-      int codprod,
+      {@FlexibleIntConverter() int numos,
+      @FlexibleIntConverter() int ordem,
+      @FlexibleIntConverter() int codprod,
       String descricao,
       String enderecoOrigem,
-      double quantidade,
+      @FlexibleDoubleConverter() double quantidade,
       String status,
       bool podeExecutar});
 }
@@ -191,12 +195,12 @@ class __$$OrdemServicoImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$OrdemServicoImpl implements _OrdemServico {
   const _$OrdemServicoImpl(
-      {required this.numos,
-      this.ordem = 0,
-      required this.codprod,
+      {@FlexibleIntConverter() required this.numos,
+      @FlexibleIntConverter() this.ordem = 0,
+      @FlexibleIntConverter() required this.codprod,
       required this.descricao,
       required this.enderecoOrigem,
-      this.quantidade = 0.0,
+      @FlexibleDoubleConverter() this.quantidade = 0.0,
       this.status = 'PENDENTE',
       this.podeExecutar = false});
 
@@ -204,11 +208,14 @@ class _$OrdemServicoImpl implements _OrdemServico {
       _$$OrdemServicoImplFromJson(json);
 
   @override
+  @FlexibleIntConverter()
   final int numos;
   @override
   @JsonKey()
+  @FlexibleIntConverter()
   final int ordem;
   @override
+  @FlexibleIntConverter()
   final int codprod;
   @override
   final String descricao;
@@ -216,6 +223,7 @@ class _$OrdemServicoImpl implements _OrdemServico {
   final String enderecoOrigem;
   @override
   @JsonKey()
+  @FlexibleDoubleConverter()
   final double quantidade;
   @override
   @JsonKey()
@@ -269,12 +277,12 @@ class _$OrdemServicoImpl implements _OrdemServico {
 
 abstract class _OrdemServico implements OrdemServico {
   const factory _OrdemServico(
-      {required final int numos,
-      final int ordem,
-      required final int codprod,
+      {@FlexibleIntConverter() required final int numos,
+      @FlexibleIntConverter() final int ordem,
+      @FlexibleIntConverter() required final int codprod,
       required final String descricao,
       required final String enderecoOrigem,
-      final double quantidade,
+      @FlexibleDoubleConverter() final double quantidade,
       final String status,
       final bool podeExecutar}) = _$OrdemServicoImpl;
 
@@ -282,16 +290,20 @@ abstract class _OrdemServico implements OrdemServico {
       _$OrdemServicoImpl.fromJson;
 
   @override
+  @FlexibleIntConverter()
   int get numos;
   @override
+  @FlexibleIntConverter()
   int get ordem;
   @override
+  @FlexibleIntConverter()
   int get codprod;
   @override
   String get descricao;
   @override
   String get enderecoOrigem;
   @override
+  @FlexibleDoubleConverter()
   double get quantidade;
   @override
   String get status;

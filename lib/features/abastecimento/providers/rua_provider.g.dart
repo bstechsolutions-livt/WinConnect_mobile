@@ -6,7 +6,7 @@ part of 'rua_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$ruaNotifierHash() => r'f09654ee3ecce4587a1fa2025106b24e282e3953';
+String _$ruaNotifierHash() => r'71a90c5443b7dbaf7177589ba9864a1c7bafdc76';
 
 /// Copied from Dart SDK
 class _SystemHash {

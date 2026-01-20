@@ -35,9 +35,6 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   int? _caixasConferidas;
   int? _unidadesConferidas;
   int? _qtConferida;
-  bool _quantidadeMenor = false;
-  int? _autorizadorMatricula;
-  String? _autorizadorSenha;
 
   @override
   void initState() {
@@ -1945,341 +1942,6 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           ),
                         ),
 
-                        // Botão único que muda conforme situação
-                        // Se quantidade menor que solicitada, abre tela de autorização
-                        if (totalDigitado > 0 &&
-                            totalDigitado < qtSolicitada) ...[
-                          const SizedBox(height: 12),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: SizedBox(
-                              width: double.infinity,
-                              child: FilledButton(
-                                onPressed: () {
-                                  // Abre bottom sheet de autorização
-                                  Navigator.pop(ctx);
-                                  _mostrarAutorizacaoSupervisor(
-                                    codigoBarras,
-                                    os,
-                                    caixasDigitadas,
-                                    unidadesDigitadas,
-                                    totalDigitado,
-                                  );
-                                },
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: Colors.orange[700],
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Icons.warning_amber_rounded,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'FINALIZAR COM $totalDigitado UN',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  /// Mostra bottom sheet para autorização de supervisor (quantidade menor)
-  void _mostrarAutorizacaoSupervisor(
-    String codigoBarras,
-    OsDetalhe os,
-    int caixas,
-    int unidades,
-    int totalDigitado,
-  ) {
-    final matriculaController = TextEditingController();
-    final senhaController = TextEditingController();
-    bool isLoading = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      isDismissible: false,
-      enableDrag: false,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
-                ),
-                child: SafeArea(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Handle bar
-                        Container(
-                          margin: const EdgeInsets.only(top: 12),
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.outline.withValues(alpha: 0.4),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-
-                        // Header
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.orange.withValues(alpha: 0.15),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.supervisor_account,
-                                  size: 40,
-                                  color: Colors.orange[700],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                'AUTORIZAÇÃO NECESSÁRIA',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Finalizando com $totalDigitado de ${os.qtSolicitada.toInt()} UN',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Aviso
-                        Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 20),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                              color: Colors.orange.withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.warning_amber_rounded,
-                                color: Colors.orange[700],
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Faltam ${os.qtSolicitada.toInt() - totalDigitado} unidades',
-                                  style: TextStyle(
-                                    color: Colors.orange[900],
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Campo Matrícula
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: TextField(
-                            controller: matriculaController,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                              labelText: 'Matrícula do Supervisor',
-                              prefixIcon: const Icon(Icons.badge),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            inputFormatters: [
-                              FilteringTextInputFormatter.digitsOnly,
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        // Campo Senha
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: TextField(
-                            controller: senhaController,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              labelText: 'Senha do Supervisor',
-                              prefixIcon: const Icon(Icons.lock),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Botões
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: isLoading
-                                      ? null
-                                      : () {
-                                          // Fecha este bottom sheet e reabre o de quantidade
-                                          Navigator.pop(ctx);
-                                          _mostrarConferenciaQuantidadeComValores(
-                                            codigoBarras,
-                                            os,
-                                            caixas,
-                                            unidades,
-                                          );
-                                        },
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: const Text('VOLTAR'),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 2,
-                                child: FilledButton(
-                                  onPressed: isLoading
-                                      ? null
-                                      : () async {
-                                          final matricula = int.tryParse(
-                                            matriculaController.text.trim(),
-                                          );
-                                          final senha = senhaController.text
-                                              .trim();
-
-                                          if (matricula == null) {
-                                            _mostrarErro('Digite a matrícula');
-                                            return;
-                                          }
-                                          if (senha.isEmpty) {
-                                            _mostrarErro('Digite a senha');
-                                            return;
-                                          }
-
-                                          final navigator = Navigator.of(ctx);
-
-                                          setModalState(() => isLoading = true);
-
-                                          // Apenas guarda em cache e marca como bipado
-                                          // A finalização só acontece após vincular unitizador
-                                          await _confirmarBipagemQuantidadeMenor(
-                                            codigoBarras,
-                                            os,
-                                            caixas,
-                                            unidades,
-                                            totalDigitado,
-                                            matricula,
-                                            senha,
-                                          );
-
-                                          setModalState(
-                                            () => isLoading = false,
-                                          );
-
-                                          if (mounted) {
-                                            navigator.pop();
-                                          }
-                                        },
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: Colors.orange[700],
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                  child: isLoading
-                                      ? const SizedBox(
-                                          height: 20,
-                                          width: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                      : const Text(
-                                          'AUTORIZAR E FINALIZAR',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
                         const SizedBox(height: 16),
                       ],
                     ),
@@ -2310,9 +1972,6 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       _caixasConferidas = caixas;
       _unidadesConferidas = unidades;
       _qtConferida = qtConferida;
-      _quantidadeMenor = false;
-      _autorizadorMatricula = null;
-      _autorizadorSenha = null;
     });
 
     // Marca produto como bipado no provider (atualiza estado local)
@@ -2324,39 +1983,6 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     // Foca no campo de unitizador
     if (mounted) _unitizadorFocusNode.requestFocus();
-  }
-
-  /// Confirma bipagem com quantidade menor (requer autorização)
-  /// Guarda em cache incluindo dados do autorizador
-  Future<void> _confirmarBipagemQuantidadeMenor(
-    String codigoBarras,
-    OsDetalhe os,
-    int caixas,
-    int unidades,
-    int totalDigitado,
-    int matricula,
-    String senha,
-  ) async {
-    // Guarda em cache para usar depois de vincular unitizador
-    if (!mounted) return;
-    setState(() {
-      _caixasConferidas = caixas;
-      _unidadesConferidas = unidades;
-      _qtConferida = totalDigitado;
-      _quantidadeMenor = true;
-      _autorizadorMatricula = matricula;
-      _autorizadorSenha = senha;
-    });
-
-    // Marca produto como bipado no provider
-    await ref
-        .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .marcarProdutoBipado();
-
-    _mostrarSucesso('Quantidade conferida: $totalDigitado UN (autorizado)');
-
-    // Foca no campo de unitizador
-    _unitizadorFocusNode.requestFocus();
   }
 
   Future<void> _vincularUnitizador(OsDetalhe os) async {
@@ -2373,13 +1999,16 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (_qtConferida == null ||
         _caixasConferidas == null ||
         _unidadesConferidas == null) {
-      if (mounted) _mostrarErro('Erro: quantidade não conferida. Bipe o produto novamente.');
+      if (mounted)
+        _mostrarErro(
+          'Erro: quantidade não conferida. Bipe o produto novamente.',
+        );
       return;
     }
 
     if (!mounted) return;
     setState(() => _isProcessing = true);
-    
+
     // Chama o método que faz tudo junto: vincula + finaliza
     final (sucesso, erro) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
@@ -2388,8 +2017,6 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           qtConferida: _qtConferida!,
           caixas: _caixasConferidas!,
           unidades: _unidadesConferidas!,
-          autorizadorMatricula: _quantidadeMenor ? _autorizadorMatricula : null,
-          autorizadorSenha: _quantidadeMenor ? _autorizadorSenha : null,
         );
 
     if (!mounted) return;
@@ -2419,31 +2046,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (!mounted) return;
     setState(() => _isProcessing = true);
 
-    (bool, String?) resultado;
-
-    if (_quantidadeMenor &&
-        _autorizadorMatricula != null &&
-        _autorizadorSenha != null) {
-      // Finaliza com quantidade menor (já autorizado)
-      resultado = await ref
-          .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-          .finalizarComQuantidadeMenor(
-            _qtConferida!,
-            _caixasConferidas!,
-            _unidadesConferidas!,
-            _autorizadorMatricula!,
-            _autorizadorSenha!,
-          );
-    } else {
-      // Finaliza com quantidade normal
-      resultado = await ref
-          .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-          .finalizarComQuantidade(
-            _qtConferida!,
-            _caixasConferidas!,
-            _unidadesConferidas!,
-          );
-    }
+    // Finaliza com quantidade normal
+    final resultado = await ref
+        .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
+        .finalizarComQuantidade(
+          _qtConferida!,
+          _caixasConferidas!,
+          _unidadesConferidas!,
+        );
 
     if (!mounted) return;
     setState(() => _isProcessing = false);
@@ -2713,14 +2323,16 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (context, setModalState) {
           final isOutro = tipoSelecionado == 'outro';
-          
+
           return Container(
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(ctx).viewInsets.bottom,
             ),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(24),
+              ),
             ),
             child: SafeArea(
               child: SingleChildScrollView(
@@ -2793,7 +2405,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           color: Colors.orange.shade300,
                         ),
                       ),
-                      dropdownColor: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                      dropdownColor: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.white,
                       items: tiposDivergencia.map((tipo) {
                         return DropdownMenuItem<String>(
                           value: tipo['value'] as String,
@@ -2810,7 +2424,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         });
                       },
                     ),
-                    
+
                     // Campo de observação (só aparece se for "outro")
                     if (isOutro) ...[
                       const SizedBox(height: 16),
@@ -2876,17 +2490,21 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                               if (tipoSelecionado == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Selecione o tipo da divergência'),
+                                    content: Text(
+                                      'Selecione o tipo da divergência',
+                                    ),
                                     backgroundColor: Colors.orange,
                                   ),
                                 );
                                 return;
                               }
 
-                              final observacao = observacaoController.text.trim();
-                              
+                              final observacao = observacaoController.text
+                                  .trim();
+
                               // Se for "outro", observação é obrigatória
-                              if (tipoSelecionado == 'outro' && observacao.isEmpty) {
+                              if (tipoSelecionado == 'outro' &&
+                                  observacao.isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Descreva a divergência'),

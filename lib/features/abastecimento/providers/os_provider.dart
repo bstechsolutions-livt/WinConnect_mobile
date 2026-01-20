@@ -30,23 +30,41 @@ class OsNotifier extends _$OsNotifier {
     final ordens = osData
         .map(
           (item) => OrdemServico(
-            numos: item['numos'] ?? 0,
-            ordem: item['ordem'] ?? 0,
-            codprod: item['codprod'] ?? 0,
-            descricao: item['descricao'] ?? 'Sem descrição',
-            enderecoOrigem: item['endereco_origem'] ?? '',
-            quantidade:
-                (item['qt_solicitada'] as num?)?.toDouble() ??
-                (item['qt'] as num?)?.toDouble() ??
-                (item['quantidade'] as num?)?.toDouble() ??
+            numos: _parseInt(item['numos']),
+            ordem: _parseInt(item['ordem']),
+            codprod: _parseInt(item['codprod']),
+            descricao: item['descricao']?.toString() ?? 'Sem descrição',
+            enderecoOrigem: item['endereco_origem']?.toString() ?? '',
+            quantidade: _parseDouble(item['qt_solicitada']) ??
+                _parseDouble(item['qt']) ??
+                _parseDouble(item['quantidade']) ??
                 0.0,
-            status: item['status'] ?? 'PENDENTE',
-            podeExecutar: item['pode_executar'] ?? false,
+            status: item['status']?.toString() ?? 'PENDENTE',
+            podeExecutar: item['pode_executar'] == true || item['pode_executar'] == 'true',
           ),
         )
         .toList();
 
     return OsListResult(ordens: ordens, osEmAndamento: osEmAndamento);
+  }
+
+  /// Converte dynamic para int (aceita String, int ou num)
+  int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  /// Converte dynamic para double (aceita String, int, double ou num)
+  double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   Future<void> refresh() async {

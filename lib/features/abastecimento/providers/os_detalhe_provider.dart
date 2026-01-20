@@ -255,31 +255,21 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     required int qtConferida,
     required int caixas,
     required int unidades,
-    int? autorizadorMatricula,
-    String? autorizadorSenha,
   }) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      
+
       // 1. Vincula o unitizador
       await apiService.post('/wms/fase$fase/os/$numos/vincular-unitizador', {
         'codigo_barras_unitizador': codigoBarrasUnitizador,
       });
 
       // 2. Finaliza a OS
-      final finalizarData = <String, dynamic>{
+      await apiService.post('/wms/fase$fase/os/$numos/finalizar', {
         'qt_conferida': qtConferida,
         'caixas': caixas,
         'unidades': unidades,
-      };
-      
-      // Se tem autorização de supervisor (quantidade menor)
-      if (autorizadorMatricula != null && autorizadorSenha != null) {
-        finalizarData['autorizador_matricula'] = autorizadorMatricula;
-        finalizarData['autorizador_senha'] = autorizadorSenha;
-      }
-      
-      await apiService.post('/wms/fase$fase/os/$numos/finalizar', finalizarData);
+      });
 
       return (true, null);
     } catch (e) {
@@ -299,29 +289,6 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
         'qt_conferida': qtConferida,
         'caixas': caixas,
         'unidades': unidades,
-      });
-      return (true, null);
-    } catch (e) {
-      return (false, _extrairMensagemErro(e));
-    }
-  }
-
-  // Finalizar OS com quantidade MENOR (requer autorização de supervisor)
-  Future<(bool, String?)> finalizarComQuantidadeMenor(
-    int qtConferida,
-    int caixas,
-    int unidades,
-    int autorizadorMatricula,
-    String autorizadorSenha,
-  ) async {
-    try {
-      final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase$fase/os/$numos/finalizar', {
-        'qt_conferida': qtConferida,
-        'caixas': caixas,
-        'unidades': unidades,
-        'autorizador_matricula': autorizadorMatricula,
-        'autorizador_senha': autorizadorSenha,
       });
       return (true, null);
     } catch (e) {
