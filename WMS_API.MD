@@ -895,10 +895,13 @@ Retorna a próxima entrega da rota calculada.
 
 Confirma entrega no endereço de destino e finaliza a OS.
 
+**Fluxo otimizado:** Operador bipa endereço + bipa produto em sequência. A resposta já inclui a próxima entrega automaticamente (não precisa chamar GET /proxima-entrega).
+
 **Request:**
 ```json
 {
-    "codigo_barras_endereco": "C.05.01.02"
+    "codigo_barras_endereco": "C.05.01.02",
+    "codigo_barras_produto": "7891234567890"
 }
 ```
 
@@ -908,9 +911,16 @@ Confirma entrega no endereço de destino e finaliza a OS.
     "message": "Entrega confirmada! OS finalizada com sucesso.",
     "os": {
         "numos": 123456,
+        "codprod": 7890,
+        "descricao": "PRODUTO XYZ",
         "endereco": "C.05.01.02"
     },
     "proxima_entrega": { ... },
+    "progresso": {
+        "entregues": 1,
+        "faltam": 2,
+        "total": 3
+    },
     "rota_concluida": false
 }
 ```
@@ -921,10 +931,33 @@ Confirma entrega no endereço de destino e finaliza a OS.
     "message": "Entrega confirmada! OS finalizada com sucesso.",
     "os": {
         "numos": 123456,
+        "codprod": 7890,
+        "descricao": "PRODUTO XYZ",
         "endereco": "C.05.01.02"
     },
     "proxima_entrega": null,
+    "progresso": {
+        "entregues": 3,
+        "faltam": 0,
+        "total": 3
+    },
     "rota_concluida": true
+}
+```
+
+**Response (422) - Endereço incorreto:**
+```json
+{
+    "message": "Endereço não confere. Verifique se está no local correto.",
+    "endereco_esperado": "C.05.01.02"
+}
+```
+
+**Response (422) - Produto incorreto:**
+```json
+{
+    "message": "Produto não confere. Verifique se é o produto correto.",
+    "produto_esperado": "PRODUTO XYZ"
 }
 ```
 
@@ -969,6 +1002,12 @@ Configurações gerenciadas via painel web (`WmsConfiguracao`):
 ---
 
 ## Changelog
+
+### v2.2.0 (2026-01-19)
+- **BREAKING**: `POST /fase2/os/{numos}/confirmar-entrega` agora exige `codigo_barras_produto` além do `codigo_barras_endereco`
+- Fluxo otimizado: bipa endereço + bipa produto em uma única chamada
+- Response agora inclui `progresso` com contagem de entregas
+- Não precisa mais chamar `GET /proxima-entrega` após cada entrega
 
 ### v2.1.0 (2026-01-19)
 - Fase 2: Obrigatório bipar unitizador antes de conferir itens
