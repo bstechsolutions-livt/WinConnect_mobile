@@ -5,6 +5,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../providers/os_detalhe_provider.dart';
 import '../../../shared/models/os_detalhe_model.dart';
+import '../../../shared/providers/api_service_provider.dart';
+import '../../../shared/widgets/autorizar_digitacao_dialog.dart';
 import 'os_bipar_screen.dart';
 
 /// Tela de Endereço Origem
@@ -129,6 +131,19 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
         ),
       ),
     );
+  }
+
+  /// Solicita autorização do supervisor para digitar manualmente
+  Future<void> _solicitarAutorizacaoDigitar() async {
+    final autorizado = await AutorizarDigitacaoDialog.mostrar(
+      context: context,
+      apiService: ref.read(apiServiceProvider),
+    );
+
+    if (autorizado && mounted) {
+      _focusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod('TextInput.show');
+    }
   }
 
   @override
@@ -407,21 +422,16 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
               // Botões: Digitar manualmente | Confirmar
               Row(
                 children: [
-                  // Botão para digitar manualmente
+                  // Botão para digitar manualmente (requer autorização)
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _isProcessing
                           ? null
-                          : () {
-                              // Abre teclado para digitação manual
-                              _focusNode.requestFocus();
-                              SystemChannels.textInput.invokeMethod(
-                                'TextInput.show',
-                              );
-                            },
-                      icon: const Icon(Icons.keyboard),
+                          : () => _solicitarAutorizacaoDigitar(),
+                      icon: const Icon(Icons.keyboard, color: Colors.orange),
                       label: const Text('DIGITAR'),
                       style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),

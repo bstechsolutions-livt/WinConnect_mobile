@@ -6,6 +6,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../providers/os_detalhe_provider.dart';
 import '../../../shared/models/os_detalhe_model.dart';
 import '../../../shared/models/finalizacao_result_model.dart';
+import '../../../shared/providers/api_service_provider.dart';
+import '../../../shared/widgets/autorizar_digitacao_dialog.dart';
 import 'os_endereco_screen.dart';
 
 /// 6ª TELA - Detalhes da OS após chegar no endereço
@@ -65,6 +67,19 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     _eanFocusNode.dispose();
     _unitizadorFocusNode.dispose();
     super.dispose();
+  }
+
+  /// Solicita autorização do supervisor para digitar manualmente
+  Future<void> _solicitarAutorizacaoDigitar(FocusNode focusNode) async {
+    final autorizado = await AutorizarDigitacaoDialog.mostrar(
+      context: context,
+      apiService: ref.read(apiServiceProvider),
+    );
+
+    if (autorizado && mounted) {
+      focusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod('TextInput.show');
+    }
   }
 
   /// Abre scanner de câmera para EAN
@@ -939,10 +954,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 hintText: 'Aguardando leitura do produto...',
                 icon: Icons.qr_code_scanner,
                 onCameraPressed: () => _abrirScannerCameraEan(os),
-                onDigitarPressed: () {
-                  _eanFocusNode.requestFocus();
-                  SystemChannels.textInput.invokeMethod('TextInput.show');
-                },
+                onDigitarPressed: () => _solicitarAutorizacaoDigitar(_eanFocusNode),
                 onConfirmarPressed: () => _biparProduto(os),
                 onSubmitted: (_) => _biparProduto(os),
                 onChanged: (value) {
@@ -987,10 +999,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 hintText: 'Aguardando leitura do unitizador...',
                 icon: Icons.local_shipping,
                 onCameraPressed: () => _abrirScannerCameraUnitizador(os),
-                onDigitarPressed: () {
-                  _unitizadorFocusNode.requestFocus();
-                  SystemChannels.textInput.invokeMethod('TextInput.show');
-                },
+                onDigitarPressed: () => _solicitarAutorizacaoDigitar(_unitizadorFocusNode),
                 onConfirmarPressed: () => _vincularUnitizador(os),
                 onSubmitted: (_) => _vincularUnitizador(os),
                 onChanged: (value) {
@@ -1198,9 +1207,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _isProcessing ? null : onDigitarPressed,
-                icon: const Icon(Icons.keyboard),
+                icon: const Icon(Icons.keyboard, color: Colors.orange),
                 label: const Text('DIGITAR'),
                 style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.orange,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

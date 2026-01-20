@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
+import '../../../../shared/widgets/autorizar_digitacao_dialog.dart';
 import 'carrinho_screen.dart';
 
 /// Tela de conferência CEGA de itens do unitizador (Fase 2)
@@ -344,6 +345,19 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
     if (resultado == true) {
       _carregarUnitizador();
       _carregarCarrinho();
+    }
+  }
+
+  /// Solicita autorização do supervisor para digitar manualmente
+  Future<void> _solicitarAutorizacaoDigitar() async {
+    final autorizado = await AutorizarDigitacaoDialog.mostrar(
+      context: context,
+      apiService: ref.read(apiServiceProvider),
+    );
+
+    if (autorizado && mounted) {
+      _codigoFocusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod('TextInput.show');
     }
   }
 
@@ -902,13 +916,11 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
               child: OutlinedButton.icon(
                 onPressed: _isProcessing
                     ? null
-                    : () {
-                        _codigoFocusNode.requestFocus();
-                        SystemChannels.textInput.invokeMethod('TextInput.show');
-                      },
-                icon: const Icon(Icons.keyboard),
+                    : () => _solicitarAutorizacaoDigitar(),
+                icon: const Icon(Icons.keyboard, color: Colors.orange),
                 label: const Text('DIGITAR'),
                 style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.orange,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

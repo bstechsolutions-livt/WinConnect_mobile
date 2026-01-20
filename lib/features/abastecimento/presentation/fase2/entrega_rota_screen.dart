@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
+import '../../../../shared/widgets/autorizar_digitacao_dialog.dart';
 
 /// Tela de entrega - mostra a rota e permite confirmar entregas
 class EntregaRotaScreen extends ConsumerStatefulWidget {
@@ -772,6 +773,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         String codigoProduto = '';
         bool isLoading = false;
         String? erro;
+        bool tecladoLiberado = false;
 
         final enderecoController = TextEditingController();
         final produtoController = TextEditingController();
@@ -882,11 +884,14 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                             controller: enderecoController,
                             isLoading: isLoading,
                             erro: erro,
+                            tecladoLiberado: tecladoLiberado,
                             onConfirmar: (codigo) {
                               setModalState(() {
                                 codigoEndereco = codigo;
                                 etapa = 1;
                                 erro = null;
+                                tecladoLiberado =
+                                    false; // Reset ao mudar de etapa
                               });
                             },
                             onCancelar: () => Navigator.pop(ctx, false),
@@ -900,9 +905,23 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                                   codigoEndereco = codigo;
                                   etapa = 1;
                                   erro = null;
+                                  tecladoLiberado = false;
                                 });
                               },
                             ),
+                            onDigitar: () async {
+                              final apiService = ref.read(apiServiceProvider);
+                              final autorizado =
+                                  await AutorizarDigitacaoDialog.mostrar(
+                                    ctx,
+                                    apiService,
+                                  );
+                              if (autorizado) {
+                                setModalState(() {
+                                  tecladoLiberado = true;
+                                });
+                              }
+                            },
                             setModalState: setModalState,
                           ),
                         ],
@@ -916,6 +935,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                             controller: produtoController,
                             isLoading: isLoading,
                             erro: erro,
+                            tecladoLiberado: tecladoLiberado,
                             onConfirmar: (codigo) {
                               codigoProduto = codigo;
                               confirmarNaApi();
@@ -924,6 +944,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                               setModalState(() {
                                 etapa = 0;
                                 erro = null;
+                                tecladoLiberado = false;
                               });
                             },
                             onAbrirCamera: () => _abrirCamera(
@@ -936,6 +957,19 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                                 confirmarNaApi();
                               },
                             ),
+                            onDigitar: () async {
+                              final apiService = ref.read(apiServiceProvider);
+                              final autorizado =
+                                  await AutorizarDigitacaoDialog.mostrar(
+                                    ctx,
+                                    apiService,
+                                  );
+                              if (autorizado) {
+                                setModalState(() {
+                                  tecladoLiberado = true;
+                                });
+                              }
+                            },
                             setModalState: setModalState,
                           ),
                         ],
@@ -1073,9 +1107,11 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
     required TextEditingController controller,
     required bool isLoading,
     required String? erro,
+    required bool tecladoLiberado,
     required void Function(String) onConfirmar,
     required VoidCallback onCancelar,
     required VoidCallback onAbrirCamera,
+    required VoidCallback onDigitar,
     required void Function(void Function()) setModalState,
   }) {
     return Column(
@@ -1152,14 +1188,19 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                     controller: controller,
                     autofocus: true,
                     textCapitalization: TextCapitalization.characters,
-                    decoration: const InputDecoration(
-                      hintText: 'Digite ou bipe o endereço...',
-                      prefixIcon: Icon(
+                    keyboardType: tecladoLiberado
+                        ? TextInputType.text
+                        : TextInputType.none,
+                    decoration: InputDecoration(
+                      hintText: tecladoLiberado
+                          ? 'Digite o endereço...'
+                          : 'Bipe o endereço...',
+                      prefixIcon: const Icon(
                         Icons.qr_code_scanner,
                         color: Colors.green,
                       ),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 16,
                       ),
@@ -1171,6 +1212,23 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                     },
                   ),
                 ),
+                // Botão DIGITAR
+                Container(
+                  margin: const EdgeInsets.only(right: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.keyboard_rounded,
+                      color: tecladoLiberado ? Colors.green : Colors.orange,
+                    ),
+                    tooltip: 'Digitar manualmente',
+                    onPressed: isLoading || tecladoLiberado ? null : onDigitar,
+                  ),
+                ),
+                // Botão CÂMERA
                 Container(
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
@@ -1275,9 +1333,11 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
     required TextEditingController controller,
     required bool isLoading,
     required String? erro,
+    required bool tecladoLiberado,
     required void Function(String) onConfirmar,
     required VoidCallback onVoltar,
     required VoidCallback onAbrirCamera,
+    required VoidCallback onDigitar,
     required void Function(void Function()) setModalState,
   }) {
     return Column(
@@ -1365,15 +1425,19 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                   child: TextField(
                     controller: controller,
                     autofocus: true,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      hintText: 'Digite ou bipe o código de barras...',
-                      prefixIcon: Icon(
+                    keyboardType: tecladoLiberado
+                        ? TextInputType.number
+                        : TextInputType.none,
+                    decoration: InputDecoration(
+                      hintText: tecladoLiberado
+                          ? 'Digite o código de barras...'
+                          : 'Bipe o código de barras...',
+                      prefixIcon: const Icon(
                         Icons.qr_code_scanner,
                         color: Colors.blue,
                       ),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
+                      contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 16,
                       ),
@@ -1385,6 +1449,23 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                     },
                   ),
                 ),
+                // Botão DIGITAR
+                Container(
+                  margin: const EdgeInsets.only(right: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.keyboard_rounded,
+                      color: tecladoLiberado ? Colors.blue : Colors.orange,
+                    ),
+                    tooltip: 'Digitar manualmente',
+                    onPressed: isLoading || tecladoLiberado ? null : onDigitar,
+                  ),
+                ),
+                // Botão CÂMERA
                 Container(
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(

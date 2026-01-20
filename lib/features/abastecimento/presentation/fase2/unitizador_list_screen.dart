@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
+import '../../../../shared/widgets/autorizar_digitacao_dialog.dart';
 import 'unitizador_itens_screen.dart';
 import 'carrinho_screen.dart';
 
@@ -618,18 +619,18 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              // Botão digitar
+              // Botão digitar (requer autorização)
               GestureDetector(
-                onTap: _isProcessing ? null : _mostrarDialogDigitar,
+                onTap: _isProcessing ? null : _solicitarAutorizacaoDigitar,
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.15),
+                    color: Colors.orange.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.keyboard_rounded,
-                    color: Colors.blue,
+                    color: Colors.orange,
                     size: 24,
                   ),
                 ),
@@ -759,7 +760,19 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
     );
   }
 
-  /// Mostra dialog para digitar código manualmente
+  /// Solicita autorização do supervisor para digitar manualmente
+  Future<void> _solicitarAutorizacaoDigitar() async {
+    final autorizado = await AutorizarDigitacaoDialog.mostrar(
+      context: context,
+      apiService: ref.read(apiServiceProvider),
+    );
+
+    if (autorizado && mounted) {
+      _mostrarDialogDigitar();
+    }
+  }
+
+  /// Mostra dialog para digitar código manualmente (após autorização)
   void _mostrarDialogDigitar() {
     final controller = TextEditingController();
     final isDark = Theme.of(context).brightness == Brightness.dark;
