@@ -492,8 +492,9 @@ class _CarrinhoScreenState extends ConsumerState<CarrinhoScreen> {
         ),
       );
       
-      if (resultado == true) {
-        _carregarCarrinho();
+      if (resultado == true && mounted) {
+        // Volta para lista de ruas e sinaliza que deve atualizar
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (!mounted) return;
