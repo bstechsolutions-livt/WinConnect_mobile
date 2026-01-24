@@ -25,7 +25,7 @@ class OsNotifier extends _$OsNotifier {
     final response = await apiService.get('/wms/fase$fase/ruas/$rua/os');
 
     final osData = response['ordens'] as List? ?? [];
-    final osEmAndamento = response['os_em_andamento'] as int?;
+    final osEmAndamento = _parseIntNullable(response['os_em_andamento']);
 
     final ordens = osData
         .map(
@@ -55,6 +55,15 @@ class OsNotifier extends _$OsNotifier {
     if (value is num) return value.toInt();
     if (value is String) return int.tryParse(value) ?? 0;
     return 0;
+  }
+
+  /// Converte dynamic para int? (aceita String, int ou num, retorna null se null)
+  int? _parseIntNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 
   /// Converte dynamic para double (aceita String, int, double ou num)
