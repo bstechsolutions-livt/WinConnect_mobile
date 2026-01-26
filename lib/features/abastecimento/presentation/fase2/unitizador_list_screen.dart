@@ -36,10 +36,11 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
     super.initState();
 
     // Esconde teclado quando foca (para scanner físico)
-    _codigoFocusNode.addListener(() {
-      if (_codigoFocusNode.hasFocus) {
-        SystemChannels.textInput.invokeMethod('TextInput.hide');
-      }
+    _codigoFocusNode.addListener(_esconderTeclado);
+
+    // Atualiza UI quando texto muda
+    _codigoController.addListener(() {
+      if (mounted) setState(() {});
     });
 
     _carregarUnitizadores();
@@ -48,7 +49,20 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
     // Foca no campo de scanner após build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _codigoFocusNode.requestFocus();
+      // Esconde teclado após um pequeno delay
+      Future.delayed(const Duration(milliseconds: 100), () {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      });
     });
+  }
+
+  void _esconderTeclado() {
+    if (_codigoFocusNode.hasFocus) {
+      // Usa delay para garantir que esconde após o sistema tentar abrir
+      Future.delayed(const Duration(milliseconds: 50), () {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      });
+    }
   }
 
   @override
@@ -546,37 +560,80 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              // Campo de texto
+              // Campo de texto com KeyboardListener para scanner físico
               Expanded(
-                child: TextField(
-                  controller: _codigoController,
+                child: KeyboardListener(
                   focusNode: _codigoFocusNode,
-                  enabled: !_isProcessing,
-                  decoration: InputDecoration(
-                    hintText: 'Código de barras...',
-                    hintStyle: TextStyle(
-                      color: isDark ? Colors.white38 : Colors.grey.shade400,
-                    ),
-                    filled: true,
-                    fillColor: isDark
-                        ? Colors.white.withValues(alpha: 0.05)
-                        : Colors.grey.shade100,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    prefixIcon: Icon(
-                      Icons.local_shipping_rounded,
-                      color: isDark ? Colors.white38 : Colors.grey.shade400,
-                    ),
-                    suffixIcon: _isProcessing
-                        ? Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: SizedBox(
+                  onKeyEvent: (event) {
+                    if (event is KeyDownEvent) {
+                      final key = event.logicalKey;
+                      // Enter - confirmar
+                      if (key == LogicalKeyboardKey.enter) {
+                        _biparUnitizador();
+                        return;
+                      }
+                      // Backspace
+                      if (key == LogicalKeyboardKey.backspace) {
+                        if (_codigoController.text.isNotEmpty) {
+                          _codigoController.text = _codigoController.text
+                              .substring(0, _codigoController.text.length - 1);
+                        }
+                        return;
+                      }
+                      // Caracteres imprimíveis
+                      final char = event.character;
+                      if (char != null &&
+                          char.isNotEmpty &&
+                          char != '\n' &&
+                          char != '\r') {
+                        _codigoController.text += char;
+                      }
+                    }
+                  },
+                  child: GestureDetector(
+                    onTap: () {
+                      _codigoFocusNode.requestFocus();
+                      _esconderTeclado();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.local_shipping_rounded,
+                            color: isDark
+                                ? Colors.white38
+                                : Colors.grey.shade400,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _codigoController.text.isEmpty
+                                  ? 'Aguardando leitura do unitizador...'
+                                  : _codigoController.text,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: _codigoController.text.isEmpty
+                                    ? (isDark
+                                          ? Colors.white38
+                                          : Colors.grey.shade400)
+                                    : (isDark
+                                          ? Colors.white
+                                          : Colors.grey.shade900),
+                              ),
+                            ),
+                          ),
+                          if (_isProcessing)
+                            SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
@@ -584,15 +641,10 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
                                 color: Colors.green,
                               ),
                             ),
-                          )
-                        : null,
+                        ],
+                      ),
+                    ),
                   ),
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isDark ? Colors.white : Colors.grey.shade900,
-                  ),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _biparUnitizador(),
                 ),
               ),
               const SizedBox(width: 8),
@@ -643,7 +695,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
 
     // Remove o foco antes de processar para evitar conflito no Flutter Web
     _codigoFocusNode.unfocus();
-    
+
     setState(() => _isProcessing = true);
 
     try {
@@ -658,8 +710,8 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       setState(() => _isProcessing = false);
 
       // Extrai os itens da resposta para passar à próxima tela
-      final itens =
-          (response['itens'] as List? ?? []).cast<Map<String, dynamic>>();
+      final itens = (response['itens'] as List? ?? [])
+          .cast<Map<String, dynamic>>();
 
       // Navega para a tela de conferência de itens
       final resultado = await Navigator.push<bool>(
@@ -676,7 +728,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       if (resultado == true) {
         _carregarUnitizadores();
         _carregarCarrinho();
-        
+
         // Mostra sucesso rápido
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
