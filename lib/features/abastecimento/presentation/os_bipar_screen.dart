@@ -1009,8 +1009,16 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     _mostrarSucesso('Quantidade conferida: $qtConferida UN');
 
-    // Foca no campo de unitizador
-    if (mounted) _unitizadorFocusNode.requestFocus();
+    // Força rebuild e foca no campo de unitizador
+    if (mounted) {
+      setState(() {}); // Força rebuild após atualização do provider
+      // Aguarda um frame para garantir que o campo de unitizador existe
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _unitizadorFocusNode.requestFocus();
+        }
+      });
+    }
   }
 
   Future<void> _vincularUnitizador(OsDetalhe os) async {

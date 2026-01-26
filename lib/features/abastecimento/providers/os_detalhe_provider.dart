@@ -417,16 +417,45 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   String _extrairMensagemErro(dynamic e) {
     final errorStr = e.toString();
 
-    // Tenta extrair mensagem JSON
+    // Tenta extrair mensagem JSON - procura "message" em qualquer lugar
     final msgMatch = RegExp(r'"message"\s*:\s*"([^"]+)"').firstMatch(errorStr);
     if (msgMatch != null) {
       return msgMatch.group(1) ?? 'Erro desconhecido';
     }
 
-    // Se não encontrou JSON, retorna string limpa
-    if (errorStr.contains('ApiException:')) {
-      return errorStr.replaceAll('ApiException:', '').trim();
+    // Tenta extrair "error" do JSON
+    final errorMatch = RegExp(r'"error"\s*:\s*"([^"]+)"').firstMatch(errorStr);
+    if (errorMatch != null) {
+      return errorMatch.group(1) ?? 'Erro desconhecido';
     }
+
+    // Se não encontrou JSON, limpa a string
+    String cleaned = errorStr;
+
+    // Remove prefixos comuns de exceção
+    if (cleaned.contains('DioException')) {
+      // Extrai apenas a parte útil
+      final match = RegExp(r'message[:\s]*([^\n\r{]+)').firstMatch(cleaned);
+      if (match != null) {
+        return match.group(1)?.trim() ?? 'Erro de conexão';
+      }
+      return 'Erro de conexão com o servidor';
+    }
+
+    if (cleaned.contains('ApiException:')) {
+      cleaned = cleaned.replaceAll(RegExp(r'ApiException:\s*'), '').trim();
+    }
+
+    if (cleaned.contains('Exception:')) {
+      cleaned = cleaned.replaceAll(RegExp(r'Exception:\s*'), '').trim();
+    }
+
+    // Limita tamanho da mensagem para evitar texto gigante
+    if (cleaned.length > 100) {
+      cleaned = '${cleaned.substring(0, 100)}...';
+    }
+
+    return cleaned.isEmpty ? 'Erro desconhecido' : cleaned;
 
     return errorStr;
   }

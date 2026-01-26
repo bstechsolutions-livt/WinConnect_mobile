@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// Resultado da conferência de quantidade
 class ConferenciaQuantidadeResult {
@@ -48,11 +49,53 @@ class _OsConferenciaQuantidadeScreenState
   late int _caixas;
   late int _unidades;
 
+  late TextEditingController _caixasController;
+  late TextEditingController _unidadesController;
+  final FocusNode _caixasFocusNode = FocusNode();
+  final FocusNode _unidadesFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
     _caixas = widget.caixasIniciais;
     _unidades = widget.unidadesIniciais;
+    _caixasController = TextEditingController(text: '$_caixas');
+    _unidadesController = TextEditingController(text: '$_unidades');
+
+    // Esconde teclado virtual ao focar
+    _caixasFocusNode.addListener(() {
+      if (_caixasFocusNode.hasFocus) {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      }
+    });
+    _unidadesFocusNode.addListener(() {
+      if (_unidadesFocusNode.hasFocus) {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _caixasController.dispose();
+    _unidadesController.dispose();
+    _caixasFocusNode.dispose();
+    _unidadesFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _updateCaixas(int value) {
+    setState(() {
+      _caixas = value < 0 ? 0 : value;
+      _caixasController.text = '$_caixas';
+    });
+  }
+
+  void _updateUnidades(int value) {
+    setState(() {
+      _unidades = value < 0 ? 0 : value;
+      _unidadesController.text = '$_unidades';
+    });
   }
 
   // Getters para cálculos
@@ -128,7 +171,7 @@ class _OsConferenciaQuantidadeScreenState
                       ),
                     ),
                     const SizedBox(height: 6),
-                    
+
                     // Opções de como pegar
                     Row(
                       children: [
@@ -144,7 +187,8 @@ class _OsConferenciaQuantidadeScreenState
                               children: [
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.baseline,
                                   textBaseline: TextBaseline.alphabetic,
                                   children: [
                                     Text(
@@ -190,7 +234,7 @@ class _OsConferenciaQuantidadeScreenState
                             ),
                           ),
                         ),
-                        
+
                         // OU
                         const Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
@@ -203,7 +247,7 @@ class _OsConferenciaQuantidadeScreenState
                             ),
                           ),
                         ),
-                        
+
                         // Opção UNIDADES
                         Expanded(
                           child: Container(
@@ -239,9 +283,9 @@ class _OsConferenciaQuantidadeScreenState
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 6),
-                    
+
                     // Info do múltiplo
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -275,13 +319,14 @@ class _OsConferenciaQuantidadeScreenState
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withValues(alpha: 0.3),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Column(
@@ -294,18 +339,20 @@ class _OsConferenciaQuantidadeScreenState
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 10),
 
                       // Input CAIXAS - HORIZONTAL
                       _buildHorizontalInput(
                         label: 'CAIXAS',
                         value: _caixas,
+                        controller: _caixasController,
+                        focusNode: _caixasFocusNode,
                         color: Colors.green,
-                        onIncrement: () => setState(() => _caixas++),
-                        onDecrement: () {
-                          if (_caixas > 0) setState(() => _caixas--);
-                        },
+                        onIncrement: () => _updateCaixas(_caixas + 1),
+                        onDecrement: () => _updateCaixas(_caixas - 1),
+                        onChanged: (val) =>
+                            _updateCaixas(int.tryParse(val) ?? 0),
                       ),
 
                       const SizedBox(height: 6),
@@ -314,11 +361,13 @@ class _OsConferenciaQuantidadeScreenState
                       _buildHorizontalInput(
                         label: 'UNIDADES',
                         value: _unidades,
+                        controller: _unidadesController,
+                        focusNode: _unidadesFocusNode,
                         color: Colors.blue,
-                        onIncrement: () => setState(() => _unidades++),
-                        onDecrement: () {
-                          if (_unidades > 0) setState(() => _unidades--);
-                        },
+                        onIncrement: () => _updateUnidades(_unidades + 1),
+                        onDecrement: () => _updateUnidades(_unidades - 1),
+                        onChanged: (val) =>
+                            _updateUnidades(int.tryParse(val) ?? 0),
                       ),
 
                       const Spacer(),
@@ -331,20 +380,19 @@ class _OsConferenciaQuantidadeScreenState
                           color: _quantidadeCorreta
                               ? Colors.green[50]
                               : _temDiferenca
-                                  ? Colors.red[50]
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .surfaceContainerHigh,
+                              ? Colors.red[50]
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHigh,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
                             color: _quantidadeCorreta
                                 ? Colors.green
                                 : _temDiferenca
-                                    ? Colors.red
-                                    : Theme.of(context)
-                                        .colorScheme
-                                        .outline
-                                        .withValues(alpha: 0.3),
+                                ? Colors.red
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.outline.withValues(alpha: 0.3),
                             width: 2,
                           ),
                         ),
@@ -352,9 +400,17 @@ class _OsConferenciaQuantidadeScreenState
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             if (_quantidadeCorreta)
-                              Icon(Icons.check_circle, color: Colors.green[700], size: 18),
+                              Icon(
+                                Icons.check_circle,
+                                color: Colors.green[700],
+                                size: 18,
+                              ),
                             if (_temDiferenca)
-                              Icon(Icons.error, color: Colors.red[700], size: 18),
+                              Icon(
+                                Icons.error,
+                                color: Colors.red[700],
+                                size: 18,
+                              ),
                             const SizedBox(width: 6),
                             Text(
                               'TOTAL: $_totalDigitado UN',
@@ -364,8 +420,8 @@ class _OsConferenciaQuantidadeScreenState
                                 color: _quantidadeCorreta
                                     ? Colors.green[700]
                                     : _temDiferenca
-                                        ? Colors.red[700]
-                                        : Theme.of(context).colorScheme.onSurface,
+                                    ? Colors.red[700]
+                                    : Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             if (_temDiferenca) ...[
@@ -380,7 +436,9 @@ class _OsConferenciaQuantidadeScreenState
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  _diferenca > 0 ? '+$_diferenca' : '$_diferenca',
+                                  _diferenca > 0
+                                      ? '+$_diferenca'
+                                      : '$_diferenca',
                                   style: TextStyle(
                                     color: Colors.red[700],
                                     fontSize: 11,
@@ -463,9 +521,12 @@ class _OsConferenciaQuantidadeScreenState
   Widget _buildHorizontalInput({
     required String label,
     required int value,
+    required TextEditingController controller,
+    required FocusNode focusNode,
     required Color color,
     required VoidCallback onIncrement,
     required VoidCallback onDecrement,
+    required ValueChanged<String> onChanged,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -503,15 +564,71 @@ class _OsConferenciaQuantidadeScreenState
             ),
           ),
 
-          // Valor
+          // Valor (clicável, aceita teclado físico, sem teclado virtual)
           Expanded(
             child: Center(
-              child: Text(
-                '$value',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
+              child: GestureDetector(
+                onTap: () {
+                  focusNode.requestFocus();
+                },
+                child: Container(
+                  width: 60,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: focusNode.hasFocus ? color : Colors.transparent,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                  child: KeyboardListener(
+                    focusNode: focusNode,
+                    onKeyEvent: (event) {
+                      if (event is KeyDownEvent) {
+                        final key = event.logicalKey;
+                        // Números 0-9
+                        if (key.keyId >= 0x30 && key.keyId <= 0x39) {
+                          final digit = key.keyId - 0x30;
+                          final newValue = controller.text + digit.toString();
+                          controller.text = newValue;
+                          onChanged(newValue);
+                        }
+                        // Numpad 0-9
+                        else if (key.keyId >= 0x100000030 &&
+                            key.keyId <= 0x100000039) {
+                          final digit = key.keyId - 0x100000030;
+                          final newValue = controller.text + digit.toString();
+                          controller.text = newValue;
+                          onChanged(newValue);
+                        }
+                        // Backspace
+                        else if (key == LogicalKeyboardKey.backspace) {
+                          if (controller.text.isNotEmpty) {
+                            final newValue = controller.text.substring(
+                              0,
+                              controller.text.length - 1,
+                            );
+                            controller.text = newValue;
+                            onChanged(newValue.isEmpty ? '0' : newValue);
+                          }
+                        }
+                        // Enter - confirmar
+                        else if (key == LogicalKeyboardKey.enter) {
+                          FocusScope.of(context).nextFocus();
+                        }
+                      }
+                    },
+                    child: Text(
+                      controller.text.isEmpty ? '0' : controller.text,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
