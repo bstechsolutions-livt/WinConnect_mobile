@@ -1002,13 +1002,26 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
     super.initState();
     _caixasController.addListener(() => setState(() {}));
     _unidadesController.addListener(() => setState(() {}));
+    
+    // Esconde teclado quando focar (para scanner físico)
+    _caixasFocus.addListener(_esconderTeclado);
+    _unidadesFocus.addListener(_esconderTeclado);
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _caixasFocus.requestFocus();
     });
   }
 
+  void _esconderTeclado() {
+    Future.delayed(const Duration(milliseconds: 50), () {
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+    });
+  }
+
   @override
   void dispose() {
+    _caixasFocus.removeListener(_esconderTeclado);
+    _unidadesFocus.removeListener(_esconderTeclado);
     _caixasController.dispose();
     _unidadesController.dispose();
     _caixasFocus.dispose();
@@ -1171,7 +1184,8 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                         TextField(
                           controller: _caixasController,
                           focusNode: _caixasFocus,
-                          keyboardType: TextInputType.number,
+                          keyboardType: TextInputType.none,
+                          showCursor: true,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 32,
@@ -1223,7 +1237,8 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                         TextField(
                           controller: _unidadesController,
                           focusNode: _unidadesFocus,
-                          keyboardType: TextInputType.number,
+                          keyboardType: TextInputType.none,
+                          showCursor: true,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 32,

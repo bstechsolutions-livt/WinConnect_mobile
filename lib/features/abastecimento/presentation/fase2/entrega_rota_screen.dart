@@ -731,6 +731,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 color: isDark ? Colors.white : Colors.grey.shade900,
               ),
               onChanged: (value) {
+                setModalState(() {}); // Atualiza botão CONFIRMAR
                 if (value.contains('\n') || value.contains('\r')) {
                   final codigo = value
                       .replaceAll('\n', '')
@@ -942,6 +943,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 color: isDark ? Colors.white : Colors.grey.shade900,
               ),
               onChanged: (value) {
+                setModalState(() {}); // Atualiza botão CONFIRMAR
                 if (value.contains('\n') || value.contains('\r')) {
                   final codigo = value
                       .replaceAll('\n', '')
@@ -1065,6 +1067,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                       : TextInputType.none,
                   onSubmitted: (_) => _processarCodigo(item, endereco),
                   onChanged: (value) {
+                    setState(() {}); // Atualiza botão CONFIRMAR
                     if (value.endsWith('\n') || value.endsWith('\r')) {
                       _codigoController.text = value.trim();
                       _processarCodigo(item, endereco);
@@ -1180,7 +1183,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
             ),
           ),
           Text(
-            value.padLeft(2, '0'),
+            value,
             style: const TextStyle(
               color: Colors.green,
               fontSize: 22,
@@ -1711,6 +1714,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                           ? TextInputType.text
                           : TextInputType.none,
                       onSubmitted: (_) => _processarCodigo(item, endereco),
+                      onChanged: (_) => setState(() {}), // Atualiza botão CONFIRMAR
                     ),
                   ),
                   // Botão câmera
@@ -1758,7 +1762,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 // Botão confirmar
                 Expanded(
                   flex: 2,
@@ -1779,6 +1783,33 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 ),
               ],
             ),
+            // Botão alterar produto (só aparece na etapa 1 - bipar endereço)
+            if (_etapa == 1) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _entregando
+                      ? null
+                      : () {
+                          setState(() {
+                            _etapa = 0;
+                            _codigoProduto = '';
+                            _codigoController.clear();
+                          });
+                        },
+                  icon: const Icon(Icons.inventory_2_outlined, size: 18),
+                  label: const Text('ALTERAR PRODUTO'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange,
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
