@@ -52,7 +52,8 @@ class ClientConfig {
     'rofe': ClientConfig(
       id: 'rofe',
       name: 'Rofe',
-      apiBaseUrl: 'http://192.168.1.25/api',
+      // apiBaseUrl: 'http://192.168.1.25/api', // Original (via VPN direta)
+      apiBaseUrl: 'http://192.168.137.1:3000/api', // Via proxy no PC (hotspot)
       logoPath: 'assets/clients/rofe/logo.png',
       primaryColorHex: 0xFF1E88E5, // Azul
       secondaryColorHex: 0xFF43A047,

@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import 'core/config/client_config.dart';
+import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/abastecimento/presentation/abastecimento_screen.dart';
@@ -125,6 +126,19 @@ class DashboardScreen extends ConsumerWidget {
                           ),
                         );
                       },
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // Versão do app
+                    Center(
+                      child: Text(
+                        'v${AppConstants.appVersion}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white38 : Colors.grey.shade400,
+                        ),
+                      ),
                     ),
                   ],
                 ),

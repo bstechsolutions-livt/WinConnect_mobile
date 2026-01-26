@@ -20,11 +20,12 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
   late List<Map<String, dynamic>> _rota;
   int _indiceAtual = 0;
   bool _entregando = false;
-  
-  // Etapa: 0 = bipar endereço, 1 = bipar produto
+
+  // Etapa: 0 = bipar endereço, 1 = bipar produto, 2 = bipar endereço novamente
   int _etapa = 0;
   String _codigoEndereco = '';
-  
+  String _codigoProduto = '';
+
   // Controllers para scanner
   final _codigoController = TextEditingController();
   final _codigoFocusNode = FocusNode();
@@ -34,16 +35,16 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
   void initState() {
     super.initState();
     _rota = List.from(widget.rota);
-    
+
     // Esconde teclado quando foca (para scanner físico)
     _codigoFocusNode.addListener(_onFocusChange);
-    
+
     // Foca no campo após build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _codigoFocusNode.requestFocus();
     });
   }
-  
+
   void _onFocusChange() {
     if (_codigoFocusNode.hasFocus && !_tecladoLiberado) {
       SystemChannels.textInput.invokeMethod('TextInput.hide');
@@ -204,40 +205,1004 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
     final descricao = item['descricao'] ?? 'Produto ${item['codprod']}';
     final qt = _parseNum(item['qt']);
-    final ordem = item['ordem'] ?? (_indiceAtual + 1);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Column(
+          children: [
+            // Progresso compacto
+            _buildProgressoCompacto(isDark),
+
+            const SizedBox(height: 8),
+
+            // Conteúdo principal
+            Expanded(
+              child: _buildConteudoEntrega(
+                isDark,
+                item,
+                enderecoStr,
+                descricao,
+                qt,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressoCompacto(bool isDark) {
+    final entregues = widget.rota.length - _rota.length;
+    final progresso = widget.rota.isEmpty
+        ? 1.0
+        : (entregues / widget.rota.length);
+
+    return Row(
+      children: [
+        Text(
+          '$entregues/${widget.rota.length}',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+            color: Colors.blue,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progresso,
+              minHeight: 6,
+              backgroundColor: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.grey.withValues(alpha: 0.2),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'Item ${_indiceAtual + 1}',
+          style: TextStyle(
+            fontSize: 11,
+            color: isDark ? Colors.white54 : Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConteudoEntrega(
+    bool isDark,
+    Map<String, dynamic> item,
+    String endereco,
+    String descricao,
+    double qt,
+  ) {
+    // Etapa 0: Bipar endereço (chegou no local)
+    // Etapa 1: Bipar produto (confirma produto)
+    // Etapa 2: Bipar endereço novamente (confirma entrega)
+    if (_etapa == 0) {
+      return _buildEtapaEndereco(
+        isDark,
+        item,
+        endereco,
+        'VÁ ATÉ O ENDEREÇO',
+        false,
+      );
+    } else if (_etapa == 1) {
+      return _buildEtapaProduto(isDark, item, endereco, descricao, qt);
+    } else {
+      return _buildEtapaEndereco(
+        isDark,
+        item,
+        endereco,
+        'CONFIRME A ENTREGA',
+        true,
+      );
+    }
+  }
+
+  /// Etapa de endereço - pode ser etapa 0 (ir até) ou etapa 2 (confirmar)
+  Widget _buildEtapaEndereco(
+    bool isDark,
+    Map<String, dynamic> item,
+    String endereco,
+    String instrucaoTitulo,
+    bool mostrarCheckProduto,
+  ) {
+    // Extrair partes do endereço (formato: RUA.PREDIO.NIVEL.APTO)
+    final partes = endereco.split('.');
+    final rua = partes.isNotEmpty ? partes[0] : '-';
+    final predio = partes.length > 1 ? partes[1] : '-';
+    final nivel = partes.length > 2 ? partes[2] : '-';
+    final apto = partes.length > 3 ? partes[3] : '-';
 
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Progress bar
-        _buildProgressBar(isDark),
-
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
+        // Check de produto confirmado (só na etapa 2) - inline com instrução
+        if (mostrarCheckProduto)
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Card do item atual
-                _buildItemAtualCard(
-                  isDark,
-                  item,
-                  enderecoStr,
-                  descricao,
-                  qt,
-                  ordem,
+                Icon(Icons.check_circle, size: 12, color: Colors.orange),
+                const SizedBox(width: 4),
+                Text(
+                  'Produto ✓',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.orange,
+                  ),
                 ),
-
-                const SizedBox(height: 20),
-
-                // Lista de próximos itens
-                if (_rota.length > 1) _buildProximosItens(isDark),
               ],
+            ),
+          ),
+
+        // Instrução
+        Text(
+          instrucaoTitulo,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // RUA destacada
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.green,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            'RUA $rua',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ),
 
-        // Botão de confirmar entrega
-        _buildBottomBar(isDark, enderecoStr, item),
+        const SizedBox(height: 10),
+
+        // Caixas de endereço
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildEnderecoBoxEntrega(isDark, 'PRÉDIO', predio),
+            _buildPonto(isDark),
+            _buildEnderecoBoxEntrega(isDark, 'NÍVEL', nivel),
+            _buildPonto(isDark),
+            _buildEnderecoBoxEntrega(isDark, 'APTO', apto),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        // Indicador
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.location_on, size: 14, color: Colors.green),
+              const SizedBox(width: 4),
+              Text(
+                'BIPE O ENDEREÇO',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Campo de scanner
+        _buildCampoScanner(
+          isDark,
+          item,
+          endereco,
+          Colors.green,
+          'Aguardando leitura do endereço...',
+        ),
+
+        const Spacer(),
       ],
+    );
+  }
+
+  /// Etapa 2: Produto - usuário bipa o produto para confirmar
+  Widget _buildEtapaProduto(
+    bool isDark,
+    Map<String, dynamic> item,
+    String endereco,
+    String descricao,
+    double qt,
+  ) {
+    final unitizador =
+        item['codunitizador']?.toString() ??
+        item['unitizador']?.toString() ??
+        '-';
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Check de endereço confirmado
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, size: 16, color: Colors.green),
+              const SizedBox(width: 6),
+              Text(
+                'Endereço: $endereco ✓',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.green,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Instrução
+        Text(
+          'CONFIRME O PRODUTO',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        // Card do produto
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Unitizador
+              Row(
+                children: [
+                  Icon(Icons.local_shipping, size: 16, color: Colors.blue),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Unitizador: ',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? Colors.white54 : Colors.grey.shade600,
+                    ),
+                  ),
+                  Text(
+                    unitizador,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+
+              // Código do produto
+              Text(
+                'Cód: ${item['codprod']}',
+                style: TextStyle(
+                  color: isDark ? Colors.white54 : Colors.grey.shade600,
+                  fontSize: 11,
+                ),
+              ),
+
+              // Descrição
+              Text(
+                descricao,
+                style: TextStyle(
+                  color: isDark ? Colors.white : Colors.grey.shade900,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+
+              const SizedBox(height: 6),
+
+              // Quantidade
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'QTD: ${qt.toStringAsFixed(0)} UN',
+                  style: const TextStyle(
+                    color: Colors.orange,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Indicador
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.orange.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.inventory_2, size: 16, color: Colors.orange),
+              const SizedBox(width: 6),
+              Text(
+                'BIPE O PRODUTO',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        // Campo de scanner
+        _buildCampoScanner(
+          isDark,
+          item,
+          endereco,
+          Colors.orange,
+          'Aguardando leitura do produto...',
+        ),
+
+        const Spacer(),
+      ],
+    );
+  }
+
+  /// Etapa de endereço para modal - com callbacks
+  Widget _buildEtapaEnderecoModal({
+    required bool isDark,
+    required String enderecoEsperado,
+    required TextEditingController controller,
+    required bool isLoading,
+    required String? erro,
+    required bool tecladoLiberado,
+    required void Function(String) onConfirmar,
+    required VoidCallback onCancelar,
+    required VoidCallback onAbrirCamera,
+    required VoidCallback onDigitar,
+    required void Function(void Function()) setModalState,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.location_on_rounded,
+              size: 32,
+              color: Colors.green,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'BIPAR ENDEREÇO',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.grey.shade900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.green.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              enderecoEsperado,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Campo de scanner
+          Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: erro != null
+                    ? Colors.red.withValues(alpha: 0.5)
+                    : Colors.green.withValues(alpha: 0.3),
+                width: 2,
+              ),
+            ),
+            child: TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: tecladoLiberado
+                  ? TextInputType.text
+                  : TextInputType.none,
+              decoration: InputDecoration(
+                hintText: 'Aguardando leitura...',
+                hintStyle: TextStyle(
+                  color: isDark ? Colors.white38 : Colors.grey.shade500,
+                ),
+                prefixIcon: const Icon(
+                  Icons.qr_code_scanner_rounded,
+                  color: Colors.green,
+                ),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.camera_alt_rounded),
+                      color: Colors.green,
+                      onPressed: onAbrirCamera,
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.keyboard_rounded,
+                        color: tecladoLiberado ? Colors.orange : Colors.grey,
+                      ),
+                      onPressed: onDigitar,
+                    ),
+                  ],
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white : Colors.grey.shade900,
+              ),
+              onChanged: (value) {
+                if (value.contains('\n') || value.contains('\r')) {
+                  final codigo = value
+                      .replaceAll('\n', '')
+                      .replaceAll('\r', '')
+                      .trim();
+                  if (codigo.isNotEmpty) {
+                    controller.text = codigo;
+                    onConfirmar(codigo);
+                  }
+                }
+              },
+              onSubmitted: (value) {
+                if (value.isNotEmpty) {
+                  onConfirmar(value);
+                }
+              },
+            ),
+          ),
+          if (erro != null) ...[
+            const SizedBox(height: 8),
+            Text(erro, style: const TextStyle(color: Colors.red, fontSize: 12)),
+          ],
+          const SizedBox(height: 16),
+
+          // Botões
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: isLoading ? null : onCancelar,
+                  icon: const Icon(Icons.close_rounded),
+                  label: const Text('CANCELAR'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: FilledButton.icon(
+                  onPressed: isLoading || controller.text.isEmpty
+                      ? null
+                      : () => onConfirmar(controller.text.trim()),
+                  icon: isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.check_circle_rounded),
+                  label: Text(
+                    isLoading ? 'CONFIRMANDO...' : 'CONFIRMAR',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Etapa de produto para modal - com callbacks
+  Widget _buildEtapaProdutoModal({
+    required bool isDark,
+    required String descricao,
+    required String codauxiliar,
+    required TextEditingController controller,
+    required bool isLoading,
+    required String? erro,
+    required bool tecladoLiberado,
+    required void Function(String) onConfirmar,
+    required VoidCallback onVoltar,
+    required VoidCallback onAbrirCamera,
+    required VoidCallback onDigitar,
+    required void Function(void Function()) setModalState,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.inventory_2_rounded,
+              size: 32,
+              color: Colors.orange,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'BIPAR PRODUTO',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.grey.shade900,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  descricao,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : Colors.grey.shade800,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'EAN: $codauxiliar',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.white54 : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Campo de scanner
+          Container(
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: erro != null
+                    ? Colors.red.withValues(alpha: 0.5)
+                    : Colors.orange.withValues(alpha: 0.3),
+                width: 2,
+              ),
+            ),
+            child: TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: tecladoLiberado
+                  ? TextInputType.text
+                  : TextInputType.none,
+              decoration: InputDecoration(
+                hintText: 'Aguardando leitura...',
+                hintStyle: TextStyle(
+                  color: isDark ? Colors.white38 : Colors.grey.shade500,
+                ),
+                prefixIcon: const Icon(
+                  Icons.qr_code_scanner_rounded,
+                  color: Colors.orange,
+                ),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.camera_alt_rounded),
+                      color: Colors.orange,
+                      onPressed: onAbrirCamera,
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.keyboard_rounded,
+                        color: tecladoLiberado ? Colors.orange : Colors.grey,
+                      ),
+                      onPressed: onDigitar,
+                    ),
+                  ],
+                ),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+              ),
+              style: TextStyle(
+                fontSize: 16,
+                color: isDark ? Colors.white : Colors.grey.shade900,
+              ),
+              onChanged: (value) {
+                if (value.contains('\n') || value.contains('\r')) {
+                  final codigo = value
+                      .replaceAll('\n', '')
+                      .replaceAll('\r', '')
+                      .trim();
+                  if (codigo.isNotEmpty) {
+                    controller.text = codigo;
+                    onConfirmar(codigo);
+                  }
+                }
+              },
+              onSubmitted: (value) {
+                if (value.isNotEmpty) {
+                  onConfirmar(value);
+                }
+              },
+            ),
+          ),
+          if (erro != null) ...[
+            const SizedBox(height: 8),
+            Text(erro, style: const TextStyle(color: Colors.red, fontSize: 12)),
+          ],
+          const SizedBox(height: 16),
+
+          // Botões
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: isLoading ? null : onVoltar,
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  label: const Text('VOLTAR'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: FilledButton.icon(
+                  onPressed: isLoading || controller.text.isEmpty
+                      ? null
+                      : () => onConfirmar(controller.text.trim()),
+                  icon: isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.check_circle_rounded),
+                  label: Text(
+                    isLoading ? 'CONFIRMANDO...' : 'CONFIRMAR',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Campo de scanner reutilizável
+  Widget _buildCampoScanner(
+    bool isDark,
+    Map<String, dynamic> item,
+    String endereco,
+    Color cor,
+    String hintText,
+  ) {
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: _codigoFocusNode.hasFocus
+                  ? cor
+                  : Theme.of(context).colorScheme.outline,
+              width: _codigoFocusNode.hasFocus ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _codigoController,
+                  focusNode: _codigoFocusNode,
+                  enabled: !_entregando,
+                  decoration: InputDecoration(
+                    hintText: hintText,
+                    hintStyle: const TextStyle(fontSize: 13),
+                    prefixIcon: Icon(
+                      Icons.qr_code_scanner,
+                      color: _codigoFocusNode.hasFocus ? cor : null,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 12,
+                    ),
+                  ),
+                  keyboardType: _tecladoLiberado
+                      ? TextInputType.text
+                      : TextInputType.none,
+                  onSubmitted: (_) => _processarCodigo(item, endereco),
+                  onChanged: (value) {
+                    if (value.endsWith('\n') || value.endsWith('\r')) {
+                      _codigoController.text = value.trim();
+                      _processarCodigo(item, endereco);
+                    }
+                  },
+                ),
+              ),
+              if (!_entregando)
+                IconButton(
+                  icon: const Icon(Icons.camera_alt),
+                  onPressed: () => _abrirCameraEntrega(item, endereco),
+                ),
+              if (_entregando)
+                const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 4),
+
+        Text(
+          'Use o leitor ou toque na câmera',
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 9,
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Botões
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _entregando
+                    ? null
+                    : () => _solicitarAutorizacaoDigitar(item, endereco),
+                icon: Icon(Icons.keyboard, color: cor, size: 16),
+                label: const Text('DIGITAR', style: TextStyle(fontSize: 11)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: cor,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 2,
+              child: FilledButton(
+                onPressed: _entregando || _codigoController.text.isEmpty
+                    ? null
+                    : () => _processarCodigo(item, endereco),
+                style: FilledButton.styleFrom(
+                  backgroundColor: cor,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: _entregando
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'CONFIRMAR',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEnderecoBoxEntrega(bool isDark, String label, String value) {
+    return Container(
+      width: 54,
+      height: 58,
+      decoration: BoxDecoration(
+        color: Colors.green.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green, width: 2),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.green.withValues(alpha: 0.7),
+              fontSize: 8,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            value.padLeft(2, '0'),
+            style: const TextStyle(
+              color: Colors.green,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPonto(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: Text(
+        '.',
+        style: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: isDark ? Colors.white : Colors.grey.shade800,
+        ),
+      ),
     );
   }
 
@@ -646,13 +1611,13 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
   ) {
     // Etapa 0: bipar produto (pegar do carrinho)
     // Etapa 1: bipar endereço (confirmar entrega)
-    final instrucao = _etapa == 0 
+    final instrucao = _etapa == 0
         ? 'Bipe o produto: ${item['descricao']}'
         : 'Bipe o endereço: $endereco';
-    final hintText = _etapa == 0 
+    final hintText = _etapa == 0
         ? 'Aguardando leitura do produto...'
         : 'Aguardando leitura do endereço...';
-        
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -673,7 +1638,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _etapa == 0 
+                color: _etapa == 0
                     ? Colors.orange.withValues(alpha: 0.15)
                     : Colors.green.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(20),
@@ -698,9 +1663,9 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Campo de scanner
             Container(
               decoration: BoxDecoration(
@@ -742,8 +1707,8 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                         fontSize: 16,
                         color: isDark ? Colors.white : Colors.grey.shade900,
                       ),
-                      keyboardType: _tecladoLiberado 
-                          ? TextInputType.text 
+                      keyboardType: _tecladoLiberado
+                          ? TextInputType.text
                           : TextInputType.none,
                       onSubmitted: (_) => _processarCodigo(item, endereco),
                     ),
@@ -754,7 +1719,9 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                       Icons.camera_alt,
                       color: _etapa == 0 ? Colors.blue : Colors.orange,
                     ),
-                    onPressed: _entregando ? null : () => _abrirCameraEntrega(item, endereco),
+                    onPressed: _entregando
+                        ? null
+                        : () => _abrirCameraEntrega(item, endereco),
                   ),
                   // Loading
                   if (_entregando)
@@ -769,16 +1736,18 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 8),
-            
+
             // Botões auxiliares
             Row(
               children: [
                 // Botão digitar
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _entregando ? null : () => _solicitarAutorizacaoDigitar(item, endereco),
+                    onPressed: _entregando
+                        ? null
+                        : () => _solicitarAutorizacaoDigitar(item, endereco),
                     icon: const Icon(Icons.keyboard, size: 18),
                     label: const Text('DIGITAR'),
                     style: OutlinedButton.styleFrom(
@@ -815,34 +1784,26 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
       ),
     );
   }
-  
-  // Guarda código do produto bipado na etapa 0
-  String _codigoProduto = '';
-  
+
+  // Removido - já declarado acima
+
   /// Processa o código bipado
-  Future<void> _processarCodigo(Map<String, dynamic> item, String enderecoEsperado) async {
+  Future<void> _processarCodigo(
+    Map<String, dynamic> item,
+    String enderecoEsperado,
+  ) async {
     final codigo = _codigoController.text.trim();
     if (codigo.isEmpty) return;
-    
+
     if (_etapa == 0) {
-      // Etapa 0: Validando produto - guarda para enviar depois
-      // A validação real será feita pela API
-      setState(() {
-        _codigoProduto = codigo;
-        _etapa = 1;
-        _codigoController.clear();
-        _tecladoLiberado = false;
-      });
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (mounted) _codigoFocusNode.requestFocus();
-      });
-      
-    } else {
-      // Etapa 1: Validando endereço - aceita se contém o endereço esperado
-      final enderecoFormatado = enderecoEsperado.replaceAll('.', '').toUpperCase();
+      // Etapa 0: Bipar endereço (chegou no local)
+      final enderecoFormatado = enderecoEsperado
+          .replaceAll('.', '')
+          .toUpperCase();
       final codigoFormatado = codigo.replaceAll('.', '').toUpperCase();
-      
-      if (!codigoFormatado.contains(enderecoFormatado) && !enderecoFormatado.contains(codigoFormatado)) {
+
+      if (!codigoFormatado.contains(enderecoFormatado) &&
+          !enderecoFormatado.contains(codigoFormatado)) {
         _mostrarErro('Endereço incorreto! Esperado: $enderecoEsperado');
         _codigoController.clear();
         Future.delayed(const Duration(milliseconds: 200), () {
@@ -850,12 +1811,50 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         });
         return;
       }
-      
-      // Endereço OK, confirma entrega na API
+
+      // Endereço OK, vai para etapa do produto
+      setState(() {
+        _codigoEndereco = codigo;
+        _etapa = 1;
+        _codigoController.clear();
+        _tecladoLiberado = false;
+      });
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _codigoFocusNode.requestFocus();
+      });
+    } else if (_etapa == 1) {
+      // Etapa 1: Bipar produto
+      setState(() {
+        _codigoProduto = codigo;
+        _etapa = 2;
+        _codigoController.clear();
+        _tecladoLiberado = false;
+      });
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted) _codigoFocusNode.requestFocus();
+      });
+    } else {
+      // Etapa 2: Bipar endereço novamente - confirma entrega
+      final enderecoFormatado = enderecoEsperado
+          .replaceAll('.', '')
+          .toUpperCase();
+      final codigoFormatado = codigo.replaceAll('.', '').toUpperCase();
+
+      if (!codigoFormatado.contains(enderecoFormatado) &&
+          !enderecoFormatado.contains(codigoFormatado)) {
+        _mostrarErro('Endereço incorreto! Esperado: $enderecoEsperado');
+        _codigoController.clear();
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) _codigoFocusNode.requestFocus();
+        });
+        return;
+      }
+
+      // Tudo OK, confirma entrega na API
       await _confirmarEntregaApi(item, codigo, _codigoProduto);
     }
   }
-  
+
   /// Confirma entrega na API
   Future<void> _confirmarEntregaApi(
     Map<String, dynamic> item,
@@ -863,16 +1862,17 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
     String codigoProduto,
   ) async {
     setState(() => _entregando = true);
-    
+
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase2/os/${item['numos']}/confirmar-entrega', {
-        'codigo_barras_endereco': codigoEndereco,
-        'codigo_barras_produto': codigoProduto,
-      });
-      
+      await apiService
+          .post('/wms/fase2/os/${item['numos']}/confirmar-entrega', {
+            'codigo_barras_endereco': codigoEndereco,
+            'codigo_barras_produto': codigoProduto,
+          });
+
       if (!mounted) return;
-      
+
       // Sucesso! Remove item e vai para próximo
       setState(() {
         _rota.removeAt(_indiceAtual);
@@ -886,14 +1886,13 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         _entregando = false;
         _tecladoLiberado = false;
       });
-      
+
       // Se ainda tem itens, foca para próximo com delay
       if (_rota.isNotEmpty) {
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) _codigoFocusNode.requestFocus();
         });
       }
-      
     } catch (e) {
       if (!mounted) return;
       setState(() => _entregando = false);
@@ -905,15 +1904,17 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
       });
     }
   }
-  
+
   /// Abre câmera para entrega
   void _abrirCameraEntrega(Map<String, dynamic> item, String endereco) {
-    // Etapa 0: produto, Etapa 1: endereço
-    final titulo = _etapa == 0 ? 'Escanear Produto' : 'Escanear Endereço';
-    
+    // Etapa 0 e 2: endereço, Etapa 1: produto
+    final titulo = _etapa == 1 ? 'Escanear Produto' : 'Escanear Endereço';
+
     _abrirCamera(
       titulo: titulo,
-      instrucao: _etapa == 0 ? 'Escaneie o código do produto' : 'Escaneie o endereço $endereco',
+      instrucao: _etapa == 1
+          ? 'Escaneie o código do produto'
+          : 'Escaneie o endereço $endereco',
       onScanned: (codigo) {
         Navigator.pop(context);
         _codigoController.text = codigo;
@@ -921,16 +1922,19 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
       },
     );
   }
-  
+
   /// Solicita autorização para digitar manualmente
-  Future<void> _solicitarAutorizacaoDigitar(Map<String, dynamic> item, String endereco) async {
+  Future<void> _solicitarAutorizacaoDigitar(
+    Map<String, dynamic> item,
+    String endereco,
+  ) async {
     final apiService = ref.read(apiServiceProvider);
-    
+
     final autorizado = await AutorizarDigitacaoDialog.mostrar(
       context: context,
       apiService: apiService,
     );
-    
+
     if (autorizado == true && mounted) {
       setState(() => _tecladoLiberado = true);
       _codigoFocusNode.requestFocus();
@@ -939,7 +1943,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
       });
     }
   }
-  
+
   void _mostrarErro(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1176,7 +2180,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
                         // ETAPA 0: Bipar endereço
                         if (etapa == 0) ...[
-                          _buildEtapaEndereco(
+                          _buildEtapaEnderecoModal(
                             isDark: isDark,
                             enderecoEsperado: enderecoEsperado,
                             controller: enderecoController,
@@ -1226,7 +2230,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
                         // ETAPA 1: Bipar produto
                         if (etapa == 1) ...[
-                          _buildEtapaProduto(
+                          _buildEtapaProdutoModal(
                             isDark: isDark,
                             descricao: descricao,
                             codauxiliar: codauxiliar,
@@ -1393,481 +2397,6 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 ? (isDark ? Colors.white70 : Colors.grey.shade700)
                 : (isDark ? Colors.white38 : Colors.grey.shade400),
             fontWeight: ativo ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEtapaEndereco({
-    required bool isDark,
-    required String enderecoEsperado,
-    required TextEditingController controller,
-    required bool isLoading,
-    required String? erro,
-    required bool tecladoLiberado,
-    required void Function(String) onConfirmar,
-    required VoidCallback onCancelar,
-    required VoidCallback onAbrirCamera,
-    required VoidCallback onDigitar,
-    required void Function(void Function()) setModalState,
-  }) {
-    return Column(
-      children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.location_on_rounded,
-                  size: 40,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'BIPAR ENDEREÇO',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.grey.shade900,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  enderecoEsperado,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Campo de endereço
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.grey.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.grey.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    autofocus: true,
-                    textCapitalization: TextCapitalization.characters,
-                    keyboardType: tecladoLiberado
-                        ? TextInputType.text
-                        : TextInputType.none,
-                    decoration: InputDecoration(
-                      hintText: tecladoLiberado
-                          ? 'Digite o endereço...'
-                          : 'Bipe o endereço...',
-                      prefixIcon: const Icon(
-                        Icons.qr_code_scanner,
-                        color: Colors.green,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
-                    onSubmitted: (value) {
-                      if (value.trim().isNotEmpty) {
-                        onConfirmar(value.trim());
-                      }
-                    },
-                  ),
-                ),
-                // Botão DIGITAR
-                Container(
-                  margin: const EdgeInsets.only(right: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.keyboard_rounded,
-                      color: tecladoLiberado ? Colors.green : Colors.orange,
-                    ),
-                    tooltip: 'Digitar manualmente',
-                    onPressed: isLoading || tecladoLiberado ? null : onDigitar,
-                  ),
-                ),
-                // Botão CÂMERA
-                Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.green,
-                    ),
-                    onPressed: isLoading ? null : onAbrirCamera,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Erro
-        if (erro != null)
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      erro,
-                      style: const TextStyle(color: Colors.red, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-        // Botões
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: isLoading ? null : onCancelar,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text('CANCELAR'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: FilledButton.icon(
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                          final endereco = controller.text.trim();
-                          if (endereco.isEmpty) {
-                            setModalState(() {});
-                            return;
-                          }
-                          onConfirmar(endereco);
-                        },
-                  icon: const Icon(Icons.arrow_forward_rounded),
-                  label: const Text(
-                    'PRÓXIMO',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEtapaProduto({
-    required bool isDark,
-    required String descricao,
-    required String codauxiliar,
-    required TextEditingController controller,
-    required bool isLoading,
-    required String? erro,
-    required bool tecladoLiberado,
-    required void Function(String) onConfirmar,
-    required VoidCallback onVoltar,
-    required VoidCallback onAbrirCamera,
-    required VoidCallback onDigitar,
-    required void Function(void Function()) setModalState,
-  }) {
-    return Column(
-      children: [
-        // Header
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.inventory_2_rounded,
-                  size: 40,
-                  color: Colors.blue,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'BIPAR PRODUTO',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.grey.shade900,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                descricao,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.white70 : Colors.grey.shade700,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (codauxiliar.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'EAN: $codauxiliar',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark ? Colors.white54 : Colors.grey.shade600,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-
-        // Campo de produto
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.grey.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.1)
-                    : Colors.grey.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    autofocus: true,
-                    keyboardType: tecladoLiberado
-                        ? TextInputType.number
-                        : TextInputType.none,
-                    decoration: InputDecoration(
-                      hintText: tecladoLiberado
-                          ? 'Digite o código de barras...'
-                          : 'Bipe o código de barras...',
-                      prefixIcon: const Icon(
-                        Icons.qr_code_scanner,
-                        color: Colors.blue,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
-                    onSubmitted: (value) {
-                      if (value.trim().isNotEmpty) {
-                        onConfirmar(value.trim());
-                      }
-                    },
-                  ),
-                ),
-                // Botão DIGITAR
-                Container(
-                  margin: const EdgeInsets.only(right: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.keyboard_rounded,
-                      color: tecladoLiberado ? Colors.blue : Colors.orange,
-                    ),
-                    tooltip: 'Digitar manualmente',
-                    onPressed: isLoading || tecladoLiberado ? null : onDigitar,
-                  ),
-                ),
-                // Botão CÂMERA
-                Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.camera_alt_rounded,
-                      color: Colors.blue,
-                    ),
-                    onPressed: isLoading ? null : onAbrirCamera,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Erro
-        if (erro != null)
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.red, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      erro,
-                      style: const TextStyle(color: Colors.red, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-        // Botões
-        Padding(
-          padding: const EdgeInsets.all(20),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: isLoading ? null : onVoltar,
-                  icon: const Icon(Icons.arrow_back_rounded),
-                  label: const Text('VOLTAR'),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: FilledButton.icon(
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                          final codigo = controller.text.trim();
-                          if (codigo.isEmpty) {
-                            setModalState(() {});
-                            return;
-                          }
-                          onConfirmar(codigo);
-                        },
-                  icon: isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.check_circle_rounded),
-                  label: Text(
-                    isLoading ? 'CONFIRMANDO...' : 'CONFIRMAR',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
         ),
       ],

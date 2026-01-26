@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/config/client_config.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/widgets/theme_selector.dart';
 
@@ -38,13 +39,13 @@ class LoginScreen extends HookConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: Form(
             key: formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 16),
 
                 // Header com logo e seletor de tema
                 Row(
@@ -57,26 +58,26 @@ class LoginScreen extends HookConsumerWidget {
                   ],
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
                 // Título
                 Text(
                   'Entrar na sua conta',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
 
                 Text(
                   'Digite sua matrícula ou e-mail para entrar',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
                 // Campo Email/Matrícula
                 TextFormField(
@@ -140,20 +141,25 @@ class LoginScreen extends HookConsumerWidget {
                   },
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
                 // Lembrar-me
                 Row(
                   children: [
-                    Checkbox(
-                      value: rememberMe.value,
-                      onChanged: (value) => rememberMe.value = value ?? false,
+                    SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: Checkbox(
+                        value: rememberMe.value,
+                        onChanged: (value) => rememberMe.value = value ?? false,
+                      ),
                     ),
-                    const Text('Lembrar-me'),
+                    const SizedBox(width: 8),
+                    const Text('Lembrar-me', style: TextStyle(fontSize: 13)),
                   ],
                 ),
 
-                const SizedBox(height: 32),
+                const SizedBox(height: 16),
 
                 // Botão Entrar
                 FilledButton(
@@ -170,18 +176,18 @@ class LoginScreen extends HookConsumerWidget {
                           }
                         },
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: authState.isLoading
                       ? const SizedBox(
-                          height: 20,
-                          width: 20,
+                          height: 18,
+                          width: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Text(
                           'Entrar',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -189,9 +195,9 @@ class LoginScreen extends HookConsumerWidget {
 
                 // Mostrar erro se houver
                 if (authState.hasError) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.errorContainer,
                       borderRadius: BorderRadius.circular(8),
@@ -200,12 +206,28 @@ class LoginScreen extends HookConsumerWidget {
                       authState.error.toString(),
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onErrorContainer,
+                        fontSize: 12,
                       ),
                     ),
                   ),
                 ],
 
-                const SizedBox(height: 60),
+                const SizedBox(height: 24),
+
+                // Versão do app
+                Center(
+                  child: Text(
+                    'v${AppConstants.appVersion}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
               ],
             ),
           ),

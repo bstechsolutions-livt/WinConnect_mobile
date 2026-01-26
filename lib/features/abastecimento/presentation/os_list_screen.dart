@@ -307,26 +307,26 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
               1; // +1 final para padding
 
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
             // +1 header executáveis, +1 header bloqueadas, + cards bloqueadas, +1 bottom padding
             itemCount: itemCount,
             itemBuilder: (context, index) {
               // Último item = espaço para barra inferior
               if (index == itemCount - 1) {
                 return SizedBox(
-                  height: MediaQuery.of(context).padding.bottom + 20,
+                  height: MediaQuery.of(context).padding.bottom + 12,
                 );
               }
               // Header das OSs disponíveis
               if (index == 0) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
                     children: [
                       Text(
                         'Ordens de Serviço',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: isDark ? Colors.white54 : Colors.grey.shade600,
                           letterSpacing: 0.3,
@@ -336,17 +336,17 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                       if (osExecutaveis.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
+                            horizontal: 8,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.green.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             '${osExecutaveis.length} disponíveis',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: 10,
                               fontWeight: FontWeight.w600,
                               color: Colors.green,
                             ),
@@ -361,7 +361,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
               if (index <= osExecutaveis.length && osExecutaveis.isNotEmpty) {
                 final os = osExecutaveis[index - 1];
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.only(bottom: 8),
                   child: _OsCard(
                     os: os,
                     isDark: isDark,
@@ -1149,7 +1149,7 @@ class _OsCardState extends State<_OsCard> {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1159,7 +1159,7 @@ class _OsCardState extends State<_OsCard> {
                   Text(
                     'OS ${widget.os.numos}',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: widget.isDark
                           ? Colors.white
@@ -1169,12 +1169,12 @@ class _OsCardState extends State<_OsCard> {
                   const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
+                      horizontal: 8,
+                      vertical: 3,
                     ),
                     decoration: BoxDecoration(
                       color: statusColor.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                       border: Border.all(
                         color: statusColor.withValues(alpha: 0.3),
                         width: 1,
@@ -1185,7 +1185,7 @@ class _OsCardState extends State<_OsCard> {
                       style: TextStyle(
                         color: statusColor,
                         fontWeight: FontWeight.w700,
-                        fontSize: 11,
+                        fontSize: 9,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -1193,36 +1193,36 @@ class _OsCardState extends State<_OsCard> {
                 ],
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 8),
 
               // Ordem + Código
               Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                      horizontal: 8,
+                      vertical: 3,
                     ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [Colors.blue, Colors.blue.shade700],
                       ),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       '#${widget.os.ordem}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: 10,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Text(
                     'Cód: ${widget.os.codprod}',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 11,
                       color: widget.isDark
                           ? Colors.white54
                           : Colors.grey.shade500,
@@ -1231,98 +1231,87 @@ class _OsCardState extends State<_OsCard> {
                 ],
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
 
               // Informações do produto
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(6),
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: widget.isDark
                           ? Colors.white.withValues(alpha: 0.08)
                           : Colors.grey.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Icon(
                       Icons.inventory_2_rounded,
-                      size: 16,
+                      size: 14,
                       color: widget.isDark
                           ? Colors.white54
                           : Colors.grey.shade600,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       widget.os.descricao,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: widget.isDark
                             ? Colors.white
                             : Colors.grey.shade800,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 6),
 
-              // Quantidade e Origem
-              Row(
-                children: [
-                  // Quantidade
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.straighten_rounded,
-                          size: 14,
-                          color: widget.isDark
-                              ? Colors.white38
-                              : Colors.grey.shade400,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Quantidade: ${widget.os.quantidade.toStringAsFixed(0)} un',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: widget.isDark
-                                ? Colors.white54
-                                : Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              // Endereço origem
+              // Quantidade e Origem em uma linha
               Row(
                 children: [
                   Icon(
-                    Icons.location_on_rounded,
-                    size: 14,
+                    Icons.straighten_rounded,
+                    size: 12,
                     color: widget.isDark
                         ? Colors.white38
                         : Colors.grey.shade400,
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${widget.os.quantidade.toStringAsFixed(0)} un',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: widget.isDark
+                          ? Colors.white54
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Icon(
+                    Icons.location_on_rounded,
+                    size: 12,
+                    color: widget.isDark
+                        ? Colors.white38
+                        : Colors.grey.shade400,
+                  ),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      'Origem: ${widget.os.enderecoOrigem}',
+                      widget.os.enderecoOrigem,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: widget.isDark
                             ? Colors.white54
                             : Colors.grey.shade600,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],

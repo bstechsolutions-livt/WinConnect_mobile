@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../core/constants/app_constants.dart';
 import 'rua_list_screen.dart';
 import 'os_endereco_screen.dart';
 import '../../../shared/providers/auth_provider.dart';
@@ -70,8 +71,8 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
         final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 20),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
@@ -79,24 +80,24 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
                 Colors.blue.withValues(alpha: 0.05),
               ],
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.blue.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.location_on,
                   color: Colors.blue,
-                  size: 24,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,15 +105,14 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
                     Text(
                       'Você está alocado na',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 10,
                         color: isDark ? Colors.white70 : Colors.grey[600],
                       ),
                     ),
-                    const SizedBox(height: 2),
                     Text(
                       'Rua ${info.rua}',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.blue[700],
                       ),
@@ -121,7 +121,7 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
                       Text(
                         '${info.osPendentes} OSs pendentes',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 10,
                           color: isDark ? Colors.white60 : Colors.grey[500],
                         ),
                       ),
@@ -130,18 +130,18 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+                  horizontal: 8,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.orange,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
                   'ALOCADO',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -174,13 +174,29 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Abastecimento'), centerTitle: true),
+      appBar: AppBar(
+        title: const Text('Abastecimento'),
+        centerTitle: true,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Center(
+              child: Text(
+                'v${AppConstants.appVersion}',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Banner de rua alocada (se houver)
               _buildMinhaRuaBanner(),
@@ -212,7 +228,7 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
                         },
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
                       // Fase 2 - desabilitada se alocado na Fase 1
                       _FaseCard(
@@ -366,15 +382,15 @@ class _FaseCardState extends State<_FaseCard>
               // Conteúdo principal
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 20,
+                  horizontal: 14,
+                  vertical: 14,
                 ),
                 child: Row(
                   children: [
                     // Ícone à esquerda
                     Container(
-                      width: 64,
-                      height: 64,
+                      width: 48,
+                      height: 48,
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
@@ -384,12 +400,12 @@ class _FaseCardState extends State<_FaseCard>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
                             color: widget.color.withValues(alpha: 0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
                           ),
                         ],
                       ),
@@ -397,7 +413,7 @@ class _FaseCardState extends State<_FaseCard>
                         child: Text(
                           '${widget.faseNumber}',
                           style: const TextStyle(
-                            fontSize: 28,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
@@ -405,7 +421,7 @@ class _FaseCardState extends State<_FaseCard>
                       ),
                     ),
 
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
 
                     // Textos
                     Expanded(
@@ -417,17 +433,16 @@ class _FaseCardState extends State<_FaseCard>
                           Text(
                             widget.title,
                             style: TextStyle(
-                              fontSize: 22,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: widget.color,
                               letterSpacing: -0.5,
                             ),
                           ),
-                          const SizedBox(height: 2),
                           Text(
                             widget.description,
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: 12,
                               color: isDark
                                   ? Colors.white70
                                   : Colors.grey.shade600,
@@ -441,12 +456,12 @@ class _FaseCardState extends State<_FaseCard>
                     // Botão Iniciar à direita
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 10,
+                        horizontal: 10,
+                        vertical: 8,
                       ),
                       decoration: BoxDecoration(
                         color: widget.color,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -456,14 +471,14 @@ class _FaseCardState extends State<_FaseCard>
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
-                              fontSize: 13,
+                              fontSize: 12,
                             ),
                           ),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: 2),
                           const Icon(
                             Icons.arrow_forward_rounded,
                             color: Colors.white,
-                            size: 16,
+                            size: 14,
                           ),
                         ],
                       ),

@@ -319,19 +319,19 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
           final ruaAlocada = minhaRuaAsync.valueOrNull?.rua;
 
           return ListView.builder(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             itemCount: ruas.length + 1,
             itemBuilder: (context, index) {
               // Header com total de ruas
               if (index == 0) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
                     children: [
                       Text(
                         'Selecione uma rua',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: isDark ? Colors.white54 : Colors.grey.shade600,
                           letterSpacing: 0.3,
@@ -340,19 +340,19 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
+                          horizontal: 8,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.1)
                               : Colors.grey.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           '${ruas.length} ruas',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 10,
                             fontWeight: FontWeight.w600,
                             color: isDark
                                 ? Colors.white70
@@ -371,7 +371,7 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
               final podeClicar = ruaAlocada == null || isAlocada;
               
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 8),
                 child: _RuaCard(
                   rua: rua,
                   isAlocada: isAlocada,
@@ -383,7 +383,8 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                       if (!context.mounted) return;
 
                       // Fase 1: Chama API para entrar na rua antes de navegar
-                      if (widget.fase == 1) {
+                      // MAS só se NÃO estiver já alocado nessa rua
+                      if (widget.fase == 1 && !isAlocada) {
                         // Mostra loading
                         showDialog(
                           context: context,
@@ -408,23 +409,31 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
 
                           // Extrai mensagem de erro da API
                           String mensagem = 'Erro ao entrar na rua';
-                          if (e.toString().contains('message')) {
-                            final match = RegExp(r'"message"\s*:\s*"([^"]+)"')
-                                .firstMatch(e.toString());
-                            if (match != null) {
-                              mensagem = match.group(1) ?? mensagem;
-                            }
+                          final errorStr = e.toString();
+                          
+                          // Se o erro é "já está alocado na mesma rua", ignora e continua
+                          if (errorStr.contains('rua_atual') || 
+                              (errorStr.contains('já está alocado') && errorStr.contains(rua.codigo))) {
+                            // Continua normalmente - já está na rua correta
                           } else {
-                            mensagem = e.toString().replaceAll('Exception: ', '');
-                          }
+                            if (errorStr.contains('message')) {
+                              final match = RegExp(r'"message"\s*:\s*"([^"]+)"')
+                                  .firstMatch(errorStr);
+                              if (match != null) {
+                                mensagem = match.group(1) ?? mensagem;
+                              }
+                            } else {
+                              mensagem = errorStr.replaceAll('Exception: ', '');
+                            }
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(mensagem),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                          return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(mensagem),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            return;
+                          }
                         }
                       }
 
@@ -607,13 +616,13 @@ class _RuaCardState extends State<_RuaCard> {
                 ),
               ),
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
                   // Ícone da rua com gradiente
                   Container(
-                    width: 50,
-                    height: 50,
+                    width: 40,
+                    height: 40,
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: [
@@ -623,18 +632,18 @@ class _RuaCardState extends State<_RuaCard> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
                       widget.isAlocada
                           ? Icons.person_pin_circle
                           : Icons.location_on_rounded,
                       color: accentColor,
-                      size: 24,
+                      size: 20,
                     ),
                   ),
 
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 10),
 
                   // Nome da rua e informações
                   Expanded(
@@ -644,17 +653,17 @@ class _RuaCardState extends State<_RuaCard> {
                         Text(
                           widget.rua.nome,
                           style: TextStyle(
-                            fontSize: 17,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: isDark ? Colors.white : Colors.grey.shade900,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Row(
                           children: [
                             Icon(
                               Icons.assignment_outlined,
-                              size: 14,
+                              size: 12,
                               color: isDark
                                   ? Colors.white54
                                   : Colors.grey.shade500,
@@ -663,7 +672,7 @@ class _RuaCardState extends State<_RuaCard> {
                             Text(
                               '${widget.rua.quantidade} OSs pendentes',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 11,
                                 color: isDark
                                     ? Colors.white54
                                     : Colors.grey.shade600,
@@ -681,16 +690,16 @@ class _RuaCardState extends State<_RuaCard> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
+                          horizontal: 10,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
                           color: accentColor,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
                               color: accentColor.withValues(alpha: 0.4),
-                              blurRadius: 8,
+                              blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
                           ],
@@ -700,22 +709,22 @@ class _RuaCardState extends State<_RuaCard> {
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 14,
+                            fontSize: 12,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
                           color: isDark
                               ? Colors.white.withValues(alpha: 0.1)
                               : Colors.grey.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Icon(
                           Icons.arrow_forward_ios_rounded,
-                          size: 14,
+                          size: 12,
                           color: isDark ? Colors.white54 : Colors.grey.shade600,
                         ),
                       ),

@@ -323,14 +323,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               ],
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
-            // Card: Endereço de Origem (MELHORADO)
+            // Card: Endereço de Origem (COMPACTO)
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: Theme.of(
                     context,
@@ -346,26 +346,26 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                       Icon(
                         Icons.location_on,
                         color: Theme.of(context).colorScheme.primary,
-                        size: 20,
+                        size: 16,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
                       Text(
-                        'ENDEREÇO DE ORIGEM',
+                        'ENDEREÇO ORIGEM',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          fontSize: 10,
                         ),
                       ),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 6,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           'OS: ${os.numos}',
@@ -374,52 +374,49 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                               context,
                             ).colorScheme.onPrimaryContainer,
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                            fontSize: 10,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Endereço completo com labels
                   Row(
                     children: [
                       // RUA
-                      Expanded(
-                        flex: 2,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                'RUA',
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.onPrimary
-                                      .withValues(alpha: 0.7),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'RUA',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onPrimary
+                                    .withValues(alpha: 0.7),
+                                fontSize: 8,
+                                fontWeight: FontWeight.w500,
                               ),
-                              Text(
-                                os.enderecoOrigem.rua,
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimary,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
-                                ),
+                            ),
+                            Text(
+                              os.enderecoOrigem.rua,
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -430,9 +427,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         os.enderecoOrigem.predio.toString().padLeft(2, '0'),
                       ),
                       const Text(
-                        ' • ',
+                        '•',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -443,9 +440,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         os.enderecoOrigem.nivel.toString().padLeft(2, '0'),
                       ),
                       const Text(
-                        ' • ',
+                        '•',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -455,29 +452,27 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         'APTO',
                         os.enderecoOrigem.apto.toString().padLeft(2, '0'),
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 8),
-
-                  // Estoque atual
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Estoque atual no endereço: ',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          fontSize: 12,
-                        ),
-                      ),
-                      Text(
-                        '${os.qtEstoqueAtual.toStringAsFixed(0)} UN',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                      const Spacer(),
+                      // Estoque atual
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'Estoque:',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            '${os.qtEstoqueAtual.toStringAsFixed(0)} UN',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -485,7 +480,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
             // Card: Produto
             Container(
@@ -493,7 +488,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: Theme.of(
                     context,
@@ -507,50 +502,50 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 6,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.blue,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           'CÓD: ${os.codprod}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                            fontSize: 10,
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       // Informação do múltiplo (1 CX = X UN)
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 6,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.amber[700],
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           '1 CX = ${os.multiplo} UN',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
+                            fontSize: 10,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     os.descricao,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 2,
@@ -560,14 +555,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
 
             // CARDS DE QUANTIDADE - REDESENHADO
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: Theme.of(
                     context,
@@ -582,28 +577,28 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                       Icon(
                         Icons.inventory_2,
                         color: Theme.of(context).colorScheme.primary,
-                        size: 20,
+                        size: 16,
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Text(
                         'QUANTIDADE A ABASTECER',
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          fontSize: 10,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Total em destaque
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: os.produtoBipado ? Colors.green : Colors.blue[700],
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
                       children: [
@@ -611,11 +606,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           'TOTAL SOLICITADO',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.8),
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
-                        const SizedBox(height: 4),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -625,16 +619,16 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                               os.qtSolicitada.toStringAsFixed(0),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 48,
+                                fontSize: 36,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             const Text(
                               'UNIDADES',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
+                                fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -644,11 +638,11 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Explicação: escolha como abastecer
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: Colors.amber.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
@@ -661,15 +655,15 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         Icon(
                           Icons.info_outline,
                           color: Colors.amber[700],
-                          size: 20,
+                          size: 16,
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            'Escolha como abastecer: por CAIXAS ou por UNIDADES',
+                            'Escolha: por CAIXAS ou por UNIDADES',
                             style: TextStyle(
                               color: Colors.amber[900],
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -678,7 +672,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Opções: Caixas ou Unidades
                   Row(
@@ -687,11 +681,11 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                       Expanded(
                         child: InkWell(
                           onTap: () => _mostrarCalculadora(context, os),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(12),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              vertical: 16,
-                              horizontal: 12,
+                              vertical: 12,
+                              horizontal: 10,
                             ),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
@@ -1256,10 +1250,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
   Widget _buildEnderecoBox(BuildContext context, String label, String value) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Column(
         children: [
@@ -1269,7 +1263,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               color: Theme.of(
                 context,
               ).colorScheme.onPrimary.withValues(alpha: 0.7),
-              fontSize: 9,
+              fontSize: 7,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -1278,7 +1272,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
             style: TextStyle(
               color: Theme.of(context).colorScheme.onPrimary,
               fontWeight: FontWeight.bold,
-              fontSize: 18,
+              fontSize: 14,
             ),
           ),
         ],
