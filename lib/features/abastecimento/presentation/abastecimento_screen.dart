@@ -35,27 +35,41 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
       return;
     }
 
-    // Consulta se tem OS ativa
-    final osAtiva = await ref.read(osAtivaProvider(user!.matricula!).future);
+    try {
+      // Consulta se tem OS ativa
+      final osAtiva = await ref.read(osAtivaProvider(user!.matricula!).future);
 
-    if (osAtiva != null && mounted && !_navegouParaOsAtiva) {
-      _navegouParaOsAtiva = true;
+      if (osAtiva != null && mounted && !_navegouParaOsAtiva) {
+        _navegouParaOsAtiva = true;
 
-      final faseNome = osAtiva.fase == 1 ? 'Empilhadeira' : 'Auxiliar';
+        final faseNome = osAtiva.fase == 1 ? 'Empilhadeira' : 'Auxiliar';
 
-      // SEMPRE volta para tela de bipar endereço (recomeça do início)
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OsEnderecoScreen(
-            fase: osAtiva.fase,
-            numos: osAtiva.numos,
-            faseNome: faseNome,
+        // SEMPRE volta para tela de bipar endereço (recomeça do início)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OsEnderecoScreen(
+              fase: osAtiva.fase,
+              numos: osAtiva.numos,
+              faseNome: faseNome,
+            ),
           ),
-        ),
-      );
-    } else {
-      setState(() => _verificandoOsAtiva = false);
+        );
+      } else {
+        setState(() => _verificandoOsAtiva = false);
+      }
+    } catch (e) {
+      // Erro de conexão - mostra mensagem e não deixa continuar
+      if (mounted) {
+        setState(() => _verificandoOsAtiva = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro de conexão: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 

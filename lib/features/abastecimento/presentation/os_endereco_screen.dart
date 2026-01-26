@@ -228,118 +228,83 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
     return SafeArea(
       child: GestureDetector(
         onTap: () => _focusNode.requestFocus(),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           child: Column(
             children: [
-              // Título
-              Text(
-                'VÁ ATÉ O ENDEREÇO',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              // RUA destacada
+              // Nome do produto (compacto, só pra identificar)
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(10),
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  'RUA ${os.enderecoOrigem.rua}',
+                  os.descricao,
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
-              ),
-
-              const SizedBox(height: 10),
-
-              // Endereço em caixas compactas
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildEnderecoBox(
-                    context,
-                    'PRÉDIO',
-                    os.enderecoOrigem.predio,
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Text(
-                      '.',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  _buildEnderecoBox(context, 'NÍVEL', os.enderecoOrigem.nivel),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Text(
-                      '.',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  _buildEnderecoBox(context, 'APTO', os.enderecoOrigem.apto),
-                ],
               ),
 
               const SizedBox(height: 8),
 
-              // Produto info compacto
+              // Endereço: RUA + PRÉDIO.NÍVEL.APTO com labels
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  color: Theme.of(context).colorScheme.secondaryContainer,
                   borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.secondary,
+                    width: 1,
+                  ),
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Cód: ${os.codprod}',
+                      'VÁ ATÉ O ENDEREÇO',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 11,
-                      ),
-                    ),
-                    Text(
-                      os.descricao,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
+                        fontSize: 9,
                         fontWeight: FontWeight.w500,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'QTD: ${os.qtSolicitada.toStringAsFixed(0)} ${os.unidade}',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                    const SizedBox(height: 6),
+                    // RUA
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondary,
+                        borderRadius: BorderRadius.circular(6),
                       ),
+                      child: Text(
+                        'RUA ${os.enderecoOrigem.rua}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSecondary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Prédio, Nível, Apto em caixas com labels
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildEnderecoBox(context, 'PRD', os.enderecoOrigem.predio),
+                        const SizedBox(width: 6),
+                        _buildEnderecoBox(context, 'NVL', os.enderecoOrigem.nivel),
+                        const SizedBox(width: 6),
+                        _buildEnderecoBox(context, 'APT', os.enderecoOrigem.apto),
+                      ],
                     ),
                   ],
                 ),
@@ -347,11 +312,11 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
 
               const SizedBox(height: 8),
 
-              // Campo de bipar endereço (para scanner físico)
+              // Campo de bipar endereço (área principal de ação)
               Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: _focusNode.hasFocus
                         ? Theme.of(context).colorScheme.primary
@@ -361,7 +326,6 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                 ),
                 child: Row(
                   children: [
-                    // Campo de texto (recebe input do scanner físico)
                     Expanded(
                       child: TextField(
                         controller: _enderecoController,
@@ -372,28 +336,28 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                         decoration: InputDecoration(
                           hintText: _tecladoLiberado
                               ? 'Digite o endereço...'
-                              : 'Aguardando leitura...',
+                              : 'Bipe o endereço',
+                          hintStyle: const TextStyle(fontSize: 13),
                           prefixIcon: Icon(
                             _tecladoLiberado
                                 ? Icons.keyboard
                                 : Icons.qr_code_scanner,
+                            size: 20,
                             color: _focusNode.hasFocus
                                 ? Theme.of(context).colorScheme.primary
                                 : null,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
+                            horizontal: 8,
+                            vertical: 10,
                           ),
                         ),
-                        // Só abre teclado se autorizado pelo supervisor
                         keyboardType: _tecladoLiberado
                             ? TextInputType.text
                             : TextInputType.none,
                         onSubmitted: (_) => _confirmarEndereco(os),
                         onChanged: (value) {
-                          // Scanner físico geralmente envia Enter no final
                           if (value.endsWith('\n') || value.endsWith('\r')) {
                             _enderecoController.text = value.trim();
                             _confirmarEndereco(os);
@@ -401,20 +365,18 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                         },
                       ),
                     ),
-                    // Botão para abrir câmera
                     if (!_isProcessing)
                       IconButton(
-                        icon: const Icon(Icons.camera_alt),
-                        tooltip: 'Escanear com câmera',
+                        icon: const Icon(Icons.camera_alt, size: 20),
+                        tooltip: 'Câmera',
                         onPressed: () => _abrirScannerCamera(os),
                       ),
-                    // Loading
                     if (_isProcessing)
                       const Padding(
-                        padding: EdgeInsets.all(12),
+                        padding: EdgeInsets.all(10),
                         child: SizedBox(
-                          width: 24,
-                          height: 24,
+                          width: 20,
+                          height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         ),
                       ),
@@ -422,49 +384,28 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                 ),
               ),
 
-              const SizedBox(height: 4),
-
-              // Dica
-              Text(
-                'Use o leitor ou toque na câmera',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 9,
-                ),
-              ),
-
               const SizedBox(height: 6),
 
-              // Botões: Digitar manualmente | Confirmar
+              // Botões: Digitar | Confirmar
               Row(
                 children: [
-                  // Botão para digitar manualmente (requer autorização)
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: _isProcessing
                           ? null
                           : () => _solicitarAutorizacaoDigitar(),
-                      icon: const Icon(
-                        Icons.keyboard,
-                        color: Colors.orange,
-                        size: 18,
-                      ),
-                      label: const Text(
-                        'DIGITAR',
-                        style: TextStyle(fontSize: 12),
-                      ),
+                      icon: const Icon(Icons.keyboard, size: 16),
+                      label: const Text('DIGITAR', style: TextStyle(fontSize: 11)),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.orange,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  // Botão confirmar
+                  const SizedBox(width: 6),
                   Expanded(
                     flex: 2,
                     child: FilledButton(
@@ -473,15 +414,15 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                           : () => _confirmarEndereco(os),
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: _isProcessing
                           ? const SizedBox(
-                              width: 20,
-                              height: 20,
+                              width: 18,
+                              height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: Colors.white,
@@ -490,7 +431,7 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                           : const Text(
                               'CONFIRMAR',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 13,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -500,6 +441,24 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
               ),
 
               const SizedBox(height: 8),
+
+              // Informações adicionais (colapsadas, menos destaque)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildInfoChip('Cód', os.codprod.toString()),
+                    _buildInfoChip('Estoque', os.qtEstoqueAtual.toStringAsFixed(0)),
+                    _buildInfoChip('Múltiplo', os.multiplo.toString()),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -507,27 +466,47 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
     );
   }
 
+  Widget _buildInfoChip(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            fontSize: 8,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildEnderecoBox(BuildContext context, String label, int value) {
     return Container(
-      width: 56,
-      height: 62,
+      width: 50,
+      padding: const EdgeInsets.symmetric(vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(8),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: Theme.of(context).colorScheme.primary,
-          width: 2,
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+          width: 1,
         ),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
             style: TextStyle(
-              color: Theme.of(
-                context,
-              ).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+              color: Theme.of(context).colorScheme.primary,
               fontSize: 8,
               fontWeight: FontWeight.w600,
             ),
@@ -535,8 +514,8 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
           Text(
             value.toString(),
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-              fontSize: 24,
+              color: Theme.of(context).colorScheme.onSecondaryContainer,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
