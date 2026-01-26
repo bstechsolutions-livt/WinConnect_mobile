@@ -38,27 +38,12 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
     // Esconde teclado quando foca (para scanner físico)
     _codigoFocusNode.addListener(_esconderTeclado);
 
-    // Atualiza UI quando texto muda
-    _codigoController.addListener(() {
-      if (mounted) setState(() {});
-    });
-
     _carregarUnitizadores();
     _carregarCarrinho();
-
-    // Foca no campo de scanner após build
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _codigoFocusNode.requestFocus();
-      // Esconde teclado após um pequeno delay
-      Future.delayed(const Duration(milliseconds: 100), () {
-        SystemChannels.textInput.invokeMethod('TextInput.hide');
-      });
-    });
   }
 
   void _esconderTeclado() {
     if (_codigoFocusNode.hasFocus) {
-      // Usa delay para garantir que esconde após o sistema tentar abrir
       Future.delayed(const Duration(milliseconds: 50), () {
         SystemChannels.textInput.invokeMethod('TextInput.hide');
       });
@@ -67,6 +52,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
 
   @override
   void dispose() {
+    _codigoFocusNode.removeListener(_esconderTeclado);
     _codigoController.dispose();
     _codigoFocusNode.dispose();
     super.dispose();
@@ -558,126 +544,120 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
             ],
           ),
           const SizedBox(height: 16),
+          // Campo de texto real para scanner físico
+          TextField(
+            controller: _codigoController,
+            focusNode: _codigoFocusNode,
+            showCursor: true,
+            autofocus: true,
+            keyboardType: TextInputType.none,
+            decoration: InputDecoration(
+              hintText: 'Aguardando unitizador...',
+              hintStyle: TextStyle(
+                color: isDark ? Colors.white38 : Colors.grey.shade400,
+              ),
+              prefixIcon: Icon(
+                Icons.local_shipping_rounded,
+                color: isDark ? Colors.white38 : Colors.grey.shade400,
+              ),
+              suffixIcon: _isProcessing
+                  ? Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.green,
+                        ),
+                      ),
+                    )
+                  : null,
+              filled: true,
+              fillColor: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.grey.shade100,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+            style: TextStyle(
+              fontSize: 16,
+              color: isDark ? Colors.white : Colors.grey.shade900,
+            ),
+            onSubmitted: (_) => _biparUnitizador(),
+          ),
+          const SizedBox(height: 12),
+          // Botões câmera e digitar lado a lado
           Row(
             children: [
-              // Campo de texto com KeyboardListener para scanner físico
+              // Botão câmera
               Expanded(
-                child: KeyboardListener(
-                  focusNode: _codigoFocusNode,
-                  onKeyEvent: (event) {
-                    if (event is KeyDownEvent) {
-                      final key = event.logicalKey;
-                      // Enter - confirmar
-                      if (key == LogicalKeyboardKey.enter) {
-                        _biparUnitizador();
-                        return;
-                      }
-                      // Backspace
-                      if (key == LogicalKeyboardKey.backspace) {
-                        if (_codigoController.text.isNotEmpty) {
-                          _codigoController.text = _codigoController.text
-                              .substring(0, _codigoController.text.length - 1);
-                        }
-                        return;
-                      }
-                      // Caracteres imprimíveis
-                      final char = event.character;
-                      if (char != null &&
-                          char.isNotEmpty &&
-                          char != '\n' &&
-                          char != '\r') {
-                        _codigoController.text += char;
-                      }
-                    }
-                  },
-                  child: GestureDetector(
-                    onTap: () {
-                      _codigoFocusNode.requestFocus();
-                      _esconderTeclado();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.local_shipping_rounded,
-                            color: isDark
-                                ? Colors.white38
-                                : Colors.grey.shade400,
+                child: GestureDetector(
+                  onTap: _isProcessing ? null : _abrirScannerCamera,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.green,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Câmera',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _codigoController.text.isEmpty
-                                  ? 'Aguardando leitura do unitizador...'
-                                  : _codigoController.text,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: _codigoController.text.isEmpty
-                                    ? (isDark
-                                          ? Colors.white38
-                                          : Colors.grey.shade400)
-                                    : (isDark
-                                          ? Colors.white
-                                          : Colors.grey.shade900),
-                              ),
-                            ),
-                          ),
-                          if (_isProcessing)
-                            SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.green,
-                              ),
-                            ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              // Botão câmera
-              GestureDetector(
-                onTap: _isProcessing ? null : _abrirScannerCamera,
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.camera_alt_rounded,
-                    color: Colors.green,
-                    size: 24,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               // Botão digitar (requer autorização)
-              GestureDetector(
-                onTap: _isProcessing ? null : _solicitarAutorizacaoDigitar,
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.keyboard_rounded,
-                    color: Colors.orange,
-                    size: 24,
+              Expanded(
+                child: GestureDetector(
+                  onTap: _isProcessing ? null : _solicitarAutorizacaoDigitar,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.keyboard_rounded,
+                          color: Colors.orange,
+                          size: 22,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Digitar',
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

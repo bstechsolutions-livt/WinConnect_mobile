@@ -854,7 +854,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                   readOnly: false,
                   showCursor: true,
                   decoration: InputDecoration(
-                    hintText: 'Aguardando leitura do produto...',
+                    hintText: 'Aguardando produto...',
                     prefixIcon: Icon(
                       Icons.qr_code_scanner,
                       color: _codigoFocusNode.hasFocus
