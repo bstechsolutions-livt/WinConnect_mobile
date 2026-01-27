@@ -1,7 +1,7 @@
 class AppConstants {
   // App Info
   static const String appName = 'WinConnect Mobile';
-  static const String appVersion = '1.0.0';
+  static const String appVersion = '1.1.0';
   
   // API Configuration - URL agora vem de ClientConfig
   // Use: ClientConfig.current.apiBaseUrl

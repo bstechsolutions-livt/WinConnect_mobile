@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-import '../../../core/constants/app_constants.dart';
+import '../../../shared/providers/app_info_provider.dart';
 import 'rua_list_screen.dart';
 import 'os_endereco_screen.dart';
 import '../../../shared/providers/auth_provider.dart';
@@ -195,12 +195,17 @@ class _AbastecimentoScreenState extends ConsumerState<AbastecimentoScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Center(
-              child: Text(
-                'v${AppConstants.appVersion}',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                ),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final versionAsync = ref.watch(appVersionProvider);
+                  return Text(
+                    'v${versionAsync.valueOrNull ?? "..."}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                    ),
+                  );
+                },
               ),
             ),
           ),

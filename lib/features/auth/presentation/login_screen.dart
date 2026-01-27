@@ -4,7 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../../core/config/client_config.dart';
-import '../../../core/constants/app_constants.dart';
+import '../../../shared/providers/app_info_provider.dart';
 import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/widgets/theme_selector.dart';
 
@@ -216,14 +216,19 @@ class LoginScreen extends HookConsumerWidget {
 
                 // Versão do app
                 Center(
-                  child: Text(
-                    'v${AppConstants.appVersion}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                    ),
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final versionAsync = ref.watch(appVersionProvider);
+                      return Text(
+                        'v${versionAsync.valueOrNull ?? "..."}',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        ),
+                      );
+                    },
                   ),
                 ),
 
