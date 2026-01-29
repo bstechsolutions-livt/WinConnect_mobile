@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
+import '../../../../shared/utils/scanner_protection.dart';
 import '../../../../shared/widgets/autorizar_digitacao_dialog.dart';
 import 'carrinho_screen.dart';
 
@@ -36,17 +37,34 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
   final _codigoController = TextEditingController();
   final _codigoFocusNode = FocusNode();
   bool _isProcessing = false;
+  bool _tecladoLiberado = false;
+
+  // Proteção contra digitação manual
+  late final ScannerProtection _scannerProtection;
 
   @override
   void initState() {
     super.initState();
 
+    // Inicializa proteção contra digitação manual
+    _scannerProtection = ScannerProtection(
+      onManualInputBlocked: () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Use o scanner ou solicite autorização para digitar',
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    );
+
     // Esconde teclado quando foca (para scanner físico)
-    _codigoFocusNode.addListener(() {
-      if (_codigoFocusNode.hasFocus) {
-        SystemChannels.textInput.invokeMethod('TextInput.hide');
-      }
-    });
+    _codigoFocusNode.addListener(_onFocusChange);
 
     _carregarUnitizador();
     _carregarCarrinho();
@@ -57,8 +75,16 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
     });
   }
 
+  void _onFocusChange() {
+    if (_codigoFocusNode.hasFocus && !_tecladoLiberado) {
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+    }
+  }
+
   @override
   void dispose() {
+    _scannerProtection.dispose();
+    _codigoFocusNode.removeListener(_onFocusChange);
     _codigoController.dispose();
     _codigoFocusNode.dispose();
     super.dispose();
@@ -352,6 +378,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
     );
 
     if (autorizado && mounted) {
+      setState(() => _tecladoLiberado = true);
       _codigoFocusNode.requestFocus();
       SystemChannels.textInput.invokeMethod('TextInput.show');
     }
@@ -867,12 +894,30 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                       vertical: 16,
                     ),
                   ),
-                  keyboardType: TextInputType.none, // SEM TECLADO
-                  onSubmitted: (value) => _processarCodigo(value.trim()),
+                  keyboardType: _tecladoLiberado
+                      ? TextInputType.text
+                      : TextInputType.none,
+                  onSubmitted: (value) {
+                    _scannerProtection.reset();
+                    _processarCodigo(value.trim());
+                  },
                   onChanged: (value) {
+                    // Verifica se é digitação manual não autorizada
+                    final permitido = _scannerProtection.checkInput(
+                      value,
+                      tecladoLiberado: _tecladoLiberado,
+                      clearCallback: () {
+                        _codigoController.clear();
+                        _scannerProtection.reset();
+                      },
+                    );
+
+                    if (!permitido) return;
+
                     // Scanner físico envia Enter no final
                     if (value.endsWith('\n') || value.endsWith('\r')) {
                       _codigoController.text = value.trim();
+                      _scannerProtection.reset();
                       _processarCodigo(value.trim());
                     }
                   },
@@ -1002,11 +1047,11 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
     super.initState();
     _caixasController.addListener(() => setState(() {}));
     _unidadesController.addListener(() => setState(() {}));
-    
+
     // Esconde teclado quando focar (para scanner físico)
     _caixasFocus.addListener(_esconderTeclado);
     _unidadesFocus.addListener(_esconderTeclado);
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _caixasFocus.requestFocus();
     });

@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
+import '../../../../shared/utils/scanner_protection.dart';
 import '../../../../shared/widgets/autorizar_digitacao_dialog.dart';
 
 /// Tela de entrega - mostra a rota e permite confirmar entregas
@@ -31,10 +32,30 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
   final _codigoFocusNode = FocusNode();
   bool _tecladoLiberado = false;
 
+  // Proteção contra digitação manual (só permite scanner rápido)
+  late final ScannerProtection _scannerProtection;
+
   @override
   void initState() {
     super.initState();
     _rota = List.from(widget.rota);
+
+    // Inicializa proteção contra digitação manual
+    _scannerProtection = ScannerProtection(
+      onManualInputBlocked: () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Use o scanner ou solicite autorização para digitar',
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    );
 
     // Esconde teclado quando foca (para scanner físico)
     _codigoFocusNode.addListener(_onFocusChange);
@@ -53,6 +74,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
   @override
   void dispose() {
+    _scannerProtection.dispose();
     _codigoController.dispose();
     _codigoFocusNode.removeListener(_onFocusChange);
     _codigoFocusNode.dispose();
@@ -1067,9 +1089,22 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                       : TextInputType.none,
                   onSubmitted: (_) => _processarCodigo(item, endereco),
                   onChanged: (value) {
+                    // Verifica se é digitação manual não autorizada
+                    final permitido = _scannerProtection.checkInput(
+                      value,
+                      tecladoLiberado: _tecladoLiberado,
+                      clearCallback: () {
+                        _codigoController.clear();
+                        _scannerProtection.reset();
+                      },
+                    );
+
+                    if (!permitido) return;
+
                     setState(() {}); // Atualiza botão CONFIRMAR
                     if (value.endsWith('\n') || value.endsWith('\r')) {
                       _codigoController.text = value.trim();
+                      _scannerProtection.reset();
                       _processarCodigo(item, endereco);
                     }
                   },
@@ -1714,8 +1749,21 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                           ? TextInputType.text
                           : TextInputType.none,
                       onSubmitted: (_) => _processarCodigo(item, endereco),
-                      onChanged: (_) =>
-                          setState(() {}), // Atualiza botão CONFIRMAR
+                      onChanged: (value) {
+                        // Verifica se é digitação manual não autorizada
+                        final permitido = _scannerProtection.checkInput(
+                          value,
+                          tecladoLiberado: _tecladoLiberado,
+                          clearCallback: () {
+                            _codigoController.clear();
+                            _scannerProtection.reset();
+                          },
+                        );
+
+                        if (!permitido) return;
+
+                        setState(() {}); // Atualiza botão CONFIRMAR
+                      },
                     ),
                   ),
                   // Botão câmera
@@ -1868,6 +1916,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
       if (!_validarCodigoEndereco(item, codigo, enderecoEsperado)) {
         _mostrarErro('Endereço incorreto! Esperado: $enderecoEsperado');
         _codigoController.clear();
+        _scannerProtection.reset();
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) _codigoFocusNode.requestFocus();
         });
@@ -1879,6 +1928,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         _codigoEndereco = codigo;
         _etapa = 1;
         _codigoController.clear();
+        _scannerProtection.reset();
         _tecladoLiberado = false;
       });
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -1900,6 +1950,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         final descricao = item['descricao'] ?? 'Produto $codprod';
         _mostrarErro('Produto incorreto! Esperado: $descricao');
         _codigoController.clear();
+        _scannerProtection.reset();
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) _codigoFocusNode.requestFocus();
         });
@@ -1911,6 +1962,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         _codigoProduto = codigo;
         _etapa = 2;
         _codigoController.clear();
+        _scannerProtection.reset();
         _tecladoLiberado = false;
       });
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -1921,6 +1973,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
       if (!_validarCodigoEndereco(item, codigo, enderecoEsperado)) {
         _mostrarErro('Endereço incorreto! Esperado: $enderecoEsperado');
         _codigoController.clear();
+        _scannerProtection.reset();
         Future.delayed(const Duration(milliseconds: 200), () {
           if (mounted) _codigoFocusNode.requestFocus();
         });
@@ -1960,6 +2013,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         _codigoEndereco = '';
         _codigoProduto = '';
         _codigoController.clear();
+        _scannerProtection.reset();
         _entregando = false;
         _tecladoLiberado = false;
       });
@@ -1975,6 +2029,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
       setState(() => _entregando = false);
       _mostrarErro(e.toString().replaceAll('Exception: ', ''));
       _codigoController.clear();
+      _scannerProtection.reset();
       // Refoca com delay para evitar conflito DOM no Flutter Web
       Future.delayed(const Duration(milliseconds: 200), () {
         if (mounted) _codigoFocusNode.requestFocus();

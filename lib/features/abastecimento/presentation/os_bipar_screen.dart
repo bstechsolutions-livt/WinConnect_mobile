@@ -7,6 +7,7 @@ import '../providers/os_detalhe_provider.dart';
 import '../../../shared/models/os_detalhe_model.dart';
 import '../../../shared/models/finalizacao_result_model.dart';
 import '../../../shared/providers/api_service_provider.dart';
+import '../../../shared/utils/scanner_protection.dart';
 import '../../../shared/widgets/autorizar_digitacao_dialog.dart';
 import 'os_endereco_screen.dart';
 import 'os_conferencia_quantidade_screen.dart';
@@ -36,6 +37,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   bool _isProcessing = false;
   bool _finalizacaoIniciada = false; // Evita chamar finalização múltiplas vezes
 
+  // Flags de teclado liberado (por campo)
+  bool _tecladoLiberadoEan = false;
+  bool _tecladoLiberadoUnitizador = false;
+
+  // Proteção contra digitação manual
+  late final ScannerProtection _scannerProtectionEan;
+  late final ScannerProtection _scannerProtectionUnitizador;
+
   // Cache da quantidade conferida (usado após vincular unitizador)
   int? _caixasConferidas;
   int? _unidadesConferidas;
@@ -44,25 +53,55 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   @override
   void initState() {
     super.initState();
+
+    // Inicializa proteção contra digitação manual
+    _scannerProtectionEan = ScannerProtection(
+      onManualInputBlocked: () => _mostrarAvisoDigitacao(),
+    );
+    _scannerProtectionUnitizador = ScannerProtection(
+      onManualInputBlocked: () => _mostrarAvisoDigitacao(),
+    );
+
     // Esconde teclado quando foca (para scanner físico)
-    _eanFocusNode.addListener(() {
-      if (_eanFocusNode.hasFocus) {
-        SystemChannels.textInput.invokeMethod('TextInput.hide');
-      }
-    });
-    _unitizadorFocusNode.addListener(() {
-      if (_unitizadorFocusNode.hasFocus) {
-        SystemChannels.textInput.invokeMethod('TextInput.hide');
-      }
-    });
+    _eanFocusNode.addListener(_onEanFocusChange);
+    _unitizadorFocusNode.addListener(_onUnitizadorFocusChange);
+
     // Foca no campo após build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _eanFocusNode.requestFocus();
     });
   }
 
+  void _onEanFocusChange() {
+    if (_eanFocusNode.hasFocus && !_tecladoLiberadoEan) {
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+    }
+  }
+
+  void _onUnitizadorFocusChange() {
+    if (_unitizadorFocusNode.hasFocus && !_tecladoLiberadoUnitizador) {
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+    }
+  }
+
+  void _mostrarAvisoDigitacao() {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Use o scanner ou solicite autorização para digitar'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
+    _scannerProtectionEan.dispose();
+    _scannerProtectionUnitizador.dispose();
+    _eanFocusNode.removeListener(_onEanFocusChange);
+    _unitizadorFocusNode.removeListener(_onUnitizadorFocusChange);
     _eanController.dispose();
     _unitizadorController.dispose();
     _eanFocusNode.dispose();
@@ -78,6 +117,12 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     );
 
     if (autorizado && mounted) {
+      // Define qual campo foi liberado
+      if (focusNode == _eanFocusNode) {
+        setState(() => _tecladoLiberadoEan = true);
+      } else if (focusNode == _unitizadorFocusNode) {
+        setState(() => _tecladoLiberadoUnitizador = true);
+      }
       focusNode.requestFocus();
       SystemChannels.textInput.invokeMethod('TextInput.show');
     }
@@ -393,8 +438,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                             Text(
                               'RUA',
                               style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimary
-                                    .withValues(alpha: 0.7),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onPrimary.withValues(alpha: 0.7),
                                 fontSize: 8,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -402,9 +448,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                             Text(
                               os.enderecoOrigem.rua,
                               style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onPrimary,
+                                color: Theme.of(context).colorScheme.onPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),
@@ -453,7 +497,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           Text(
                             'Estoque:',
                             style: TextStyle(
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                               fontSize: 9,
                             ),
                           ),
@@ -559,15 +605,33 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 hintText: 'Aguardando leitura do produto...',
                 icon: Icons.qr_code_scanner,
                 onCameraPressed: () => _abrirScannerCameraEan(os),
-                onDigitarPressed: () => _solicitarAutorizacaoDigitar(_eanFocusNode),
+                onDigitarPressed: () =>
+                    _solicitarAutorizacaoDigitar(_eanFocusNode),
                 onConfirmarPressed: () => _biparProduto(os),
-                onSubmitted: (_) => _biparProduto(os),
+                onSubmitted: (_) {
+                  _scannerProtectionEan.reset();
+                  _biparProduto(os);
+                },
                 onChanged: (value) {
+                  // Verifica se é digitação manual não autorizada
+                  final permitido = _scannerProtectionEan.checkInput(
+                    value,
+                    tecladoLiberado: _tecladoLiberadoEan,
+                    clearCallback: () {
+                      _eanController.clear();
+                      _scannerProtectionEan.reset();
+                    },
+                  );
+
+                  if (!permitido) return;
+
                   if (value.endsWith('\n') || value.endsWith('\r')) {
                     _eanController.text = value.trim();
+                    _scannerProtectionEan.reset();
                     _biparProduto(os);
                   }
                 },
+                tecladoLiberado: _tecladoLiberadoEan,
               ),
             ] else if (!os.unitizadorVinculado) ...[
               // Produto bipado com sucesso
@@ -604,15 +668,33 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 hintText: 'Aguardando leitura do unitizador...',
                 icon: Icons.local_shipping,
                 onCameraPressed: () => _abrirScannerCameraUnitizador(os),
-                onDigitarPressed: () => _solicitarAutorizacaoDigitar(_unitizadorFocusNode),
+                onDigitarPressed: () =>
+                    _solicitarAutorizacaoDigitar(_unitizadorFocusNode),
                 onConfirmarPressed: () => _vincularUnitizador(os),
-                onSubmitted: (_) => _vincularUnitizador(os),
+                onSubmitted: (_) {
+                  _scannerProtectionUnitizador.reset();
+                  _vincularUnitizador(os);
+                },
                 onChanged: (value) {
+                  // Verifica se é digitação manual não autorizada
+                  final permitido = _scannerProtectionUnitizador.checkInput(
+                    value,
+                    tecladoLiberado: _tecladoLiberadoUnitizador,
+                    clearCallback: () {
+                      _unitizadorController.clear();
+                      _scannerProtectionUnitizador.reset();
+                    },
+                  );
+
+                  if (!permitido) return;
+
                   if (value.endsWith('\n') || value.endsWith('\r')) {
                     _unitizadorController.text = value.trim();
+                    _scannerProtectionUnitizador.reset();
                     _vincularUnitizador(os);
                   }
                 },
+                tecladoLiberado: _tecladoLiberadoUnitizador,
               ),
             ] else ...[
               // Unitizador já vinculado - finalizar automaticamente
@@ -736,6 +818,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     required VoidCallback onConfirmarPressed,
     required Function(String) onSubmitted,
     required Function(String) onChanged,
+    bool tecladoLiberado = false,
   }) {
     return Column(
       children: [
@@ -774,7 +857,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                       vertical: 16,
                     ),
                   ),
-                  keyboardType: TextInputType.none,
+                  keyboardType: tecladoLiberado
+                      ? TextInputType.text
+                      : TextInputType.none,
                   onSubmitted: onSubmitted,
                   onChanged: onChanged,
                 ),
@@ -974,12 +1059,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     // Se o usuário confirmou a quantidade
     if (result != null && result.confirmado && mounted) {
-      await _confirmarBipagem(
-        codigoBarras,
-        os,
-        result.caixas,
-        result.unidades,
-      );
+      await _confirmarBipagem(codigoBarras, os, result.caixas, result.unidades);
     }
   }
 

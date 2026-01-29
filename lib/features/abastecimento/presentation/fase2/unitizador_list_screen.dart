@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../../shared/providers/api_service_provider.dart';
+import '../../../../shared/utils/scanner_protection.dart';
 import '../../../../shared/widgets/autorizar_digitacao_dialog.dart';
 import 'unitizador_itens_screen.dart';
 import 'carrinho_screen.dart';
@@ -31,9 +32,29 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
   final _codigoFocusNode = FocusNode();
   bool _isProcessing = false;
 
+  // Proteção contra digitação manual
+  late final ScannerProtection _scannerProtection;
+
   @override
   void initState() {
     super.initState();
+
+    // Inicializa proteção contra digitação manual
+    _scannerProtection = ScannerProtection(
+      onManualInputBlocked: () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Use o scanner ou solicite autorização para digitar',
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    );
 
     // Esconde teclado quando foca (para scanner físico)
     _codigoFocusNode.addListener(_esconderTeclado);
@@ -52,6 +73,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
 
   @override
   void dispose() {
+    _scannerProtection.dispose();
     _codigoFocusNode.removeListener(_esconderTeclado);
     _codigoController.dispose();
     _codigoFocusNode.dispose();
@@ -590,7 +612,31 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
               fontSize: 16,
               color: isDark ? Colors.white : Colors.grey.shade900,
             ),
-            onSubmitted: (_) => _biparUnitizador(),
+            onSubmitted: (_) {
+              _scannerProtection.reset();
+              _biparUnitizador();
+            },
+            onChanged: (value) {
+              // Verifica se é digitação manual não autorizada
+              // Este campo nunca libera teclado - usa dialog separado
+              final permitido = _scannerProtection.checkInput(
+                value,
+                tecladoLiberado: false,
+                clearCallback: () {
+                  _codigoController.clear();
+                  _scannerProtection.reset();
+                },
+              );
+
+              if (!permitido) return;
+
+              // Scanner físico envia Enter no final
+              if (value.endsWith('\n') || value.endsWith('\r')) {
+                _codigoController.text = value.trim();
+                _scannerProtection.reset();
+                _biparUnitizador();
+              }
+            },
           ),
           const SizedBox(height: 12),
           // Botões câmera e digitar lado a lado

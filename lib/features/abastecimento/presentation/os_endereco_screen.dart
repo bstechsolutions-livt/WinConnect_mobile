@@ -6,6 +6,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../providers/os_detalhe_provider.dart';
 import '../../../shared/models/os_detalhe_model.dart';
 import '../../../shared/providers/api_service_provider.dart';
+import '../../../shared/utils/scanner_protection.dart';
 import '../../../shared/widgets/autorizar_digitacao_dialog.dart';
 import 'os_bipar_screen.dart';
 
@@ -34,9 +35,30 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
   bool _tecladoLiberado =
       false; // Flag para controlar se digitação foi autorizada
 
+  // Proteção contra digitação manual
+  late final ScannerProtection _scannerProtection;
+
   @override
   void initState() {
     super.initState();
+
+    // Inicializa proteção contra digitação manual
+    _scannerProtection = ScannerProtection(
+      onManualInputBlocked: () {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Use o scanner ou solicite autorização para digitar',
+              ),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    );
+
     // Escuta input do scanner físico (funciona como teclado)
     _focusNode.addListener(_onFocusChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -55,6 +77,7 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
 
   @override
   void dispose() {
+    _scannerProtection.dispose();
     _focusNode.removeListener(_onFocusChange);
     _enderecoController.dispose();
     _focusNode.dispose();
@@ -272,7 +295,10 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                     Text(
                       'VÁ ATÉ O ENDEREÇO',
                       style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSecondaryContainer
+                            .withValues(alpha: 0.7),
                         fontSize: 9,
                         fontWeight: FontWeight.w500,
                       ),
@@ -280,7 +306,10 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                     const SizedBox(height: 6),
                     // RUA
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.secondary,
                         borderRadius: BorderRadius.circular(6),
@@ -299,11 +328,23 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _buildEnderecoBox(context, 'PRD', os.enderecoOrigem.predio),
+                        _buildEnderecoBox(
+                          context,
+                          'PRD',
+                          os.enderecoOrigem.predio,
+                        ),
                         const SizedBox(width: 6),
-                        _buildEnderecoBox(context, 'NVL', os.enderecoOrigem.nivel),
+                        _buildEnderecoBox(
+                          context,
+                          'NVL',
+                          os.enderecoOrigem.nivel,
+                        ),
                         const SizedBox(width: 6),
-                        _buildEnderecoBox(context, 'APT', os.enderecoOrigem.apto),
+                        _buildEnderecoBox(
+                          context,
+                          'APT',
+                          os.enderecoOrigem.apto,
+                        ),
                       ],
                     ),
                   ],
@@ -356,10 +397,26 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                         keyboardType: _tecladoLiberado
                             ? TextInputType.text
                             : TextInputType.none,
-                        onSubmitted: (_) => _confirmarEndereco(os),
+                        onSubmitted: (_) {
+                          _scannerProtection.reset();
+                          _confirmarEndereco(os);
+                        },
                         onChanged: (value) {
+                          // Verifica se é digitação manual não autorizada
+                          final permitido = _scannerProtection.checkInput(
+                            value,
+                            tecladoLiberado: _tecladoLiberado,
+                            clearCallback: () {
+                              _enderecoController.clear();
+                              _scannerProtection.reset();
+                            },
+                          );
+
+                          if (!permitido) return;
+
                           if (value.endsWith('\n') || value.endsWith('\r')) {
                             _enderecoController.text = value.trim();
+                            _scannerProtection.reset();
                             _confirmarEndereco(os);
                           }
                         },
@@ -395,7 +452,10 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                           ? null
                           : () => _solicitarAutorizacaoDigitar(),
                       icon: const Icon(Icons.keyboard, size: 16),
-                      label: const Text('DIGITAR', style: TextStyle(fontSize: 11)),
+                      label: const Text(
+                        'DIGITAR',
+                        style: TextStyle(fontSize: 11),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.orange,
                         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -447,14 +507,19 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildInfoChip('Cód', os.codprod.toString()),
-                    _buildInfoChip('Estoque', os.qtEstoqueAtual.toStringAsFixed(0)),
+                    _buildInfoChip(
+                      'Estoque',
+                      os.qtEstoqueAtual.toStringAsFixed(0),
+                    ),
                     _buildInfoChip('Múltiplo', os.multiplo.toString()),
                   ],
                 ),
