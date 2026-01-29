@@ -1885,7 +1885,28 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         if (mounted) _codigoFocusNode.requestFocus();
       });
     } else if (_etapa == 1) {
-      // Etapa 1: Bipar produto
+      // Etapa 1: Bipar produto - valida imediatamente se é o produto correto
+      final codauxiliar = item['codauxiliar']?.toString() ?? '';
+      final codprod = item['codprod']?.toString() ?? '';
+
+      // Valida se o código bipado corresponde ao produto esperado
+      final codigoValido =
+          codigo == codauxiliar ||
+          codigo == codprod ||
+          (codauxiliar.isNotEmpty && codigo.contains(codauxiliar)) ||
+          (codprod.isNotEmpty && codigo.contains(codprod));
+
+      if (!codigoValido) {
+        final descricao = item['descricao'] ?? 'Produto $codprod';
+        _mostrarErro('Produto incorreto! Esperado: $descricao');
+        _codigoController.clear();
+        Future.delayed(const Duration(milliseconds: 200), () {
+          if (mounted) _codigoFocusNode.requestFocus();
+        });
+        return;
+      }
+
+      // Produto OK, vai para etapa de confirmação de endereço
       setState(() {
         _codigoProduto = codigo;
         _etapa = 2;
@@ -2138,6 +2159,15 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
         return StatefulBuilder(
           builder: (context, setModalState) {
+            // Valida se o produto bipado está correto
+            bool validarProduto(String codigo) {
+              final codprod = item['codprod']?.toString() ?? '';
+              return codigo == codauxiliar ||
+                  codigo == codprod ||
+                  (codauxiliar.isNotEmpty && codigo.contains(codauxiliar)) ||
+                  (codprod.isNotEmpty && codigo.contains(codprod));
+            }
+
             Future<void> confirmarNaApi() async {
               setModalState(() {
                 etapa = 2;
@@ -2295,6 +2325,15 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                             erro: erro,
                             tecladoLiberado: tecladoLiberado,
                             onConfirmar: (codigo) {
+                              // Valida produto imediatamente antes de confirmar
+                              if (!validarProduto(codigo)) {
+                                setModalState(() {
+                                  erro =
+                                      'Produto incorreto! Esperado: $descricao';
+                                  produtoController.clear();
+                                });
+                                return;
+                              }
                               codigoProduto = codigo;
                               confirmarNaApi();
                             },
@@ -2311,6 +2350,15 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                                   'Aponte a câmera para o código de barras do produto',
                               onScanned: (codigo) {
                                 produtoController.text = codigo;
+                                // Valida produto imediatamente após escanear
+                                if (!validarProduto(codigo)) {
+                                  setModalState(() {
+                                    erro =
+                                        'Produto incorreto! Esperado: $descricao';
+                                    produtoController.clear();
+                                  });
+                                  return;
+                                }
                                 codigoProduto = codigo;
                                 confirmarNaApi();
                               },
