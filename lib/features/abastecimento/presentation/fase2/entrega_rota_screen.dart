@@ -1714,7 +1714,8 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                           ? TextInputType.text
                           : TextInputType.none,
                       onSubmitted: (_) => _processarCodigo(item, endereco),
-                      onChanged: (_) => setState(() {}), // Atualiza botão CONFIRMAR
+                      onChanged: (_) =>
+                          setState(() {}), // Atualiza botão CONFIRMAR
                     ),
                   ),
                   // Botão câmera
@@ -1818,6 +1819,42 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
   // Removido - já declarado acima
 
+  /// Valida se o código bipado corresponde ao endereço esperado
+  /// Aceita tanto o endereço formatado (ex: 14.17.0.101) quanto o codendereco numérico (ex: 72278)
+  bool _validarCodigoEndereco(
+    Map<String, dynamic> item,
+    String codigo,
+    String enderecoEsperado,
+  ) {
+    // Extrai o codendereco do item (pode estar em endereco ou endereco_destino)
+    String? codendereco;
+    final enderecoField = item['endereco'];
+    final enderecoDestinoField = item['endereco_destino'];
+
+    if (enderecoField is Map<String, dynamic>) {
+      codendereco = enderecoField['codendereco']?.toString();
+    } else if (enderecoDestinoField is Map<String, dynamic>) {
+      codendereco = enderecoDestinoField['codendereco']?.toString();
+    }
+
+    // Verifica se o código bipado corresponde ao codendereco numérico
+    if (codendereco != null && codendereco.isNotEmpty) {
+      final codigoLimpo = codigo.replaceAll(RegExp(r'[^0-9]'), '');
+      if (codigoLimpo == codendereco) {
+        return true;
+      }
+    }
+
+    // Verifica correspondência com endereço formatado
+    final enderecoFormatado = enderecoEsperado
+        .replaceAll('.', '')
+        .toUpperCase();
+    final codigoFormatado = codigo.replaceAll('.', '').toUpperCase();
+
+    return codigoFormatado.contains(enderecoFormatado) ||
+        enderecoFormatado.contains(codigoFormatado);
+  }
+
   /// Processa o código bipado
   Future<void> _processarCodigo(
     Map<String, dynamic> item,
@@ -1828,13 +1865,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
     if (_etapa == 0) {
       // Etapa 0: Bipar endereço (chegou no local)
-      final enderecoFormatado = enderecoEsperado
-          .replaceAll('.', '')
-          .toUpperCase();
-      final codigoFormatado = codigo.replaceAll('.', '').toUpperCase();
-
-      if (!codigoFormatado.contains(enderecoFormatado) &&
-          !enderecoFormatado.contains(codigoFormatado)) {
+      if (!_validarCodigoEndereco(item, codigo, enderecoEsperado)) {
         _mostrarErro('Endereço incorreto! Esperado: $enderecoEsperado');
         _codigoController.clear();
         Future.delayed(const Duration(milliseconds: 200), () {
@@ -1866,13 +1897,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
       });
     } else {
       // Etapa 2: Bipar endereço novamente - confirma entrega
-      final enderecoFormatado = enderecoEsperado
-          .replaceAll('.', '')
-          .toUpperCase();
-      final codigoFormatado = codigo.replaceAll('.', '').toUpperCase();
-
-      if (!codigoFormatado.contains(enderecoFormatado) &&
-          !enderecoFormatado.contains(codigoFormatado)) {
+      if (!_validarCodigoEndereco(item, codigo, enderecoEsperado)) {
         _mostrarErro('Endereço incorreto! Esperado: $enderecoEsperado');
         _codigoController.clear();
         Future.delayed(const Duration(milliseconds: 200), () {
