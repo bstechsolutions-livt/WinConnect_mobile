@@ -517,7 +517,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 context: context,
                 controller: _unitizadorController,
                 focusNode: _unitizadorFocusNode,
-                hintText: 'Aguardando leitura do unitizador...',
+                hintText: 'Bipe o unitizador...',
                 icon: Icons.local_shipping,
                 onCameraPressed: () => _abrirScannerCameraUnitizador(os),
                 onDigitarPressed: () =>
