@@ -1223,7 +1223,7 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
       ),
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1231,8 +1231,8 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
               // Handle
               Center(
                 child: Container(
-                  width: 40,
-                  height: 4,
+                  width: 32,
+                  height: 3,
                   decoration: BoxDecoration(
                     color: Colors.grey.shade400,
                     borderRadius: BorderRadius.circular(2),
@@ -1240,90 +1240,70 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                 ),
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
-              // Produto info
+              // Produto info - compacto
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
                   color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: Colors.green.withValues(alpha: 0.3),
                   ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Produto encontrado!',
-                          style: TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
+                    const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.descricao,
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.descricao,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                          Row(
+                            children: [
+                              Text(
+                                'Cód: ${widget.codprod}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                                child: Text(
+                                  '1 CX = ${widget.multiplo} UN',
+                                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          'Código: ${widget.codprod}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.amber,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            '1 CX = ${widget.multiplo} UN',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
 
               // Campo de scanner para bipar e incrementar
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
                 ),
                 child: Column(
@@ -1331,25 +1311,17 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                   children: [
                     Row(
                       children: [
-                        Icon(
-                          Icons.qr_code_scanner,
-                          color: Colors.blue,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
+                        Icon(Icons.qr_code_scanner, color: Colors.blue, size: 14),
+                        const SizedBox(width: 6),
                         const Expanded(
                           child: Text(
                             'Continue bipando para aumentar a contagem',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.blue,
-                            ),
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: Colors.blue),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     TextField(
                       controller: _scannerController,
                       focusNode: _scannerFocus,
@@ -1359,74 +1331,52 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                       decoration: InputDecoration(
                         hintText: 'Bipe unidade ou caixa...',
                         hintStyle: TextStyle(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          fontSize: 12,
                         ),
                         isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        prefixIcon: const Icon(Icons.barcode_reader, size: 20),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        prefixIcon: const Icon(Icons.barcode_reader, size: 16),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(
-                            color: Colors.blue.withValues(alpha: 0.3),
-                          ),
+                          borderRadius: BorderRadius.circular(6),
+                          borderSide: BorderSide(color: Colors.blue.withValues(alpha: 0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          borderSide: const BorderSide(
-                            color: Colors.blue,
-                            width: 2,
-                          ),
+                          borderRadius: BorderRadius.circular(6),
+                          borderSide: const BorderSide(color: Colors.blue, width: 2),
                         ),
                       ),
                       onSubmitted: (value) {
                         _processarBipagem(value);
                       },
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (widget.codauxiliar2.isNotEmpty) ...[
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.green.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(4),
+                              borderRadius: BorderRadius.circular(3),
                             ),
                             child: Text(
                               '📦 CX: ${widget.codauxiliar2}',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
+                              style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w500),
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                         ],
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.blue.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(3),
                           ),
                           child: Text(
                             '📋 UN: ${widget.codauxiliar}',
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w500,
-                            ),
+                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w500),
                           ),
                         ),
                       ],
@@ -1435,188 +1385,147 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 10),
 
               // Título
               Text(
                 'Informe a quantidade conferida:',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
-              // Campos caixas e unidades
+              // Campos caixas e unidades - compactos
               Row(
                 children: [
                   // Caixas
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'CAIXAS',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _caixasController,
-                          focusNode: _caixasFocus,
-                          keyboardType: TextInputType.none,
-                          showCursor: true,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(
-                              Icons.inventory_2_outlined,
-                              color: Colors.green,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.green),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Colors.green,
-                                width: 2,
-                              ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.inventory_2_outlined, color: Colors.green, size: 20),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('CAIXAS', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.green)),
+                                TextField(
+                                  controller: _caixasController,
+                                  focusNode: _caixasFocus,
+                                  keyboardType: TextInputType.none,
+                                  showCursor: true,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    border: InputBorder.none,
+                                  ),
+                                  onSubmitted: (_) => _unidadesFocus.requestFocus(),
+                                ),
+                              ],
                             ),
                           ),
-                          onSubmitted: (_) => _unidadesFocus.requestFocus(),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-
-                  const SizedBox(width: 16),
-
+                  const SizedBox(width: 10),
                   // Unidades
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'UNIDADES',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextField(
-                          controller: _unidadesController,
-                          focusNode: _unidadesFocus,
-                          keyboardType: TextInputType.none,
-                          showCursor: true,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                          decoration: InputDecoration(
-                            prefixIcon: const Icon(
-                              Icons.apps_outlined,
-                              color: Colors.blue,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Colors.blue),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(
-                                color: Colors.blue,
-                                width: 2,
-                              ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.blue.withValues(alpha: 0.5)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.apps_outlined, color: Colors.blue, size: 20),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('UNIDADES', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.blue)),
+                                TextField(
+                                  controller: _unidadesController,
+                                  focusNode: _unidadesFocus,
+                                  keyboardType: TextInputType.none,
+                                  showCursor: true,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                  decoration: const InputDecoration(
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    border: InputBorder.none,
+                                  ),
+                                  onSubmitted: (_) => _confirmar(),
+                                ),
+                              ],
                             ),
                           ),
-                          onSubmitted: (_) => _confirmar(),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
 
               // Total calculado
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.blue.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('Total: ', style: TextStyle(fontSize: 16)),
+                    const Text('Total: ', style: TextStyle(fontSize: 14)),
                     Text(
                       '$_totalUnidades',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
+                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue),
                     ),
-                    const Text(' unidades', style: TextStyle(fontSize: 16)),
+                    const Text(' unidades', style: TextStyle(fontSize: 14)),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
 
               // Botão confirmar
               FilledButton.icon(
                 onPressed: _isConfirmando ? null : _confirmar,
                 icon: _isConfirmando
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.add_shopping_cart),
-                label: Text(
-                  _isConfirmando ? 'Adicionando...' : 'ADICIONAR AO CARRINHO',
-                ),
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Icon(Icons.add_shopping_cart, size: 18),
+                label: Text(_isConfirmando ? 'Adicionando...' : 'ADICIONAR AO CARRINHO', style: const TextStyle(fontSize: 13)),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
-
-              const SizedBox(height: 8),
 
               // Botão cancelar
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
+                child: const Text('Cancelar', style: TextStyle(fontSize: 12)),
               ),
             ],
           ),

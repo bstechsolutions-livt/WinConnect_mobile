@@ -453,7 +453,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
           item,
           endereco,
           Colors.green,
-          'Aguardando leitura do endereço...',
+          'Bipe o endereço...',
         ),
 
         const Spacer(),
@@ -632,7 +632,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
           item,
           endereco,
           Colors.orange,
-          'Aguardando leitura do produto...',
+          'Bipe o produto...',
         ),
 
         const Spacer(),
@@ -1658,8 +1658,8 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         ? 'Bipe o produto: ${item['descricao']}'
         : 'Bipe o endereço: $endereco';
     final hintText = _etapa == 0
-        ? 'Aguardando leitura do produto...'
-        : 'Aguardando leitura do endereço...';
+        ? 'Bipe o produto...'
+        : 'Bipe o endereço...';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1944,13 +1944,16 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
     } else if (_etapa == 1) {
       // Etapa 1: Bipar produto - valida imediatamente se é o produto correto
       final codauxiliar = item['codauxiliar']?.toString() ?? '';
+      final codauxiliar2 = item['codauxiliar2']?.toString() ?? '';
       final codprod = item['codprod']?.toString() ?? '';
 
       // Valida se o código bipado corresponde ao produto esperado
       final codigoValido =
           codigo == codauxiliar ||
+          codigo == codauxiliar2 ||
           codigo == codprod ||
           (codauxiliar.isNotEmpty && codigo.contains(codauxiliar)) ||
+          (codauxiliar2.isNotEmpty && codigo.contains(codauxiliar2)) ||
           (codprod.isNotEmpty && codigo.contains(codprod));
 
       if (!codigoValido) {
@@ -2246,9 +2249,12 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
             // Valida se o produto bipado está correto
             bool validarProduto(String codigo) {
               final codprod = item['codprod']?.toString() ?? '';
+              final codauxiliar2 = item['codauxiliar2']?.toString() ?? '';
               return codigo == codauxiliar ||
+                  codigo == codauxiliar2 ||
                   codigo == codprod ||
                   (codauxiliar.isNotEmpty && codigo.contains(codauxiliar)) ||
+                  (codauxiliar2.isNotEmpty && codigo.contains(codauxiliar2)) ||
                   (codprod.isNotEmpty && codigo.contains(codprod));
             }
 
