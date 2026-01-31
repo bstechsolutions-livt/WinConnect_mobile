@@ -27,6 +27,7 @@ class OsConferenciaQuantidadeScreen extends StatefulWidget {
   final int qtSolicitada;
   final int caixasIniciais;
   final int unidadesIniciais;
+  final String? tipoBipado; // 'caixa' ou 'unidade' - tipo do código bipado
 
   const OsConferenciaQuantidadeScreen({
     super.key,
@@ -37,6 +38,7 @@ class OsConferenciaQuantidadeScreen extends StatefulWidget {
     required this.qtSolicitada,
     this.caixasIniciais = 0,
     this.unidadesIniciais = 0,
+    this.tipoBipado,
   });
 
   @override
@@ -51,8 +53,10 @@ class _OsConferenciaQuantidadeScreenState
 
   late TextEditingController _caixasController;
   late TextEditingController _unidadesController;
+  late TextEditingController _scannerController;
   final FocusNode _caixasFocusNode = FocusNode();
   final FocusNode _unidadesFocusNode = FocusNode();
+  final FocusNode _scannerFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -61,8 +65,9 @@ class _OsConferenciaQuantidadeScreenState
     _unidades = widget.unidadesIniciais;
     _caixasController = TextEditingController(text: '$_caixas');
     _unidadesController = TextEditingController(text: '$_unidades');
+    _scannerController = TextEditingController();
 
-    // Esconde teclado virtual ao focar
+    // Esconde teclado virtual ao focar (para scanner físico)
     _caixasFocusNode.addListener(() {
       if (_caixasFocusNode.hasFocus) {
         SystemChannels.textInput.invokeMethod('TextInput.hide');
@@ -73,14 +78,26 @@ class _OsConferenciaQuantidadeScreenState
         SystemChannels.textInput.invokeMethod('TextInput.hide');
       }
     });
+    _scannerFocusNode.addListener(() {
+      if (_scannerFocusNode.hasFocus) {
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+      }
+    });
+
+    // Foca no campo de scanner após build para permitir bipagem contínua
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scannerFocusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
     _caixasController.dispose();
     _unidadesController.dispose();
+    _scannerController.dispose();
     _caixasFocusNode.dispose();
     _unidadesFocusNode.dispose();
+    _scannerFocusNode.dispose();
     super.dispose();
   }
 
@@ -108,6 +125,46 @@ class _OsConferenciaQuantidadeScreenState
   int get _caixasEsperadas => widget.qtSolicitada ~/ widget.multiplo;
   int get _unidadesEsperadas => widget.qtSolicitada % widget.multiplo;
   bool get _temCaixaQuebrada => _unidadesEsperadas > 0;
+
+  /// Processa código de barras bipado na tela de quantidade
+  /// Incrementa CX se bipou código de caixa, ou UN se bipou código de unidade
+  void _processarBipagem(String codigo) {
+    if (codigo.isEmpty) return;
+
+    // Limpa o campo para próxima bipagem
+    _scannerController.clear();
+
+    // TODO: Validar se o código é o mesmo do produto
+    // Por enquanto, incrementa conforme o tipo inicial que foi bipado
+    if (widget.tipoBipado == 'caixa') {
+      _updateCaixas(_caixas + 1);
+      _mostrarFeedback('+ 1 CX', Colors.green);
+    } else {
+      _updateUnidades(_unidades + 1);
+      _mostrarFeedback('+ 1 UN', Colors.blue);
+    }
+
+    // Mantém foco no campo de scanner
+    _scannerFocusNode.requestFocus();
+  }
+
+  void _mostrarFeedback(String mensagem, Color cor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          mensagem,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: cor,
+        duration: const Duration(milliseconds: 500),
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.only(bottom: 100, left: 20, right: 20),
+      ),
+    );
+  }
 
   void _confirmar() {
     if (_totalDigitado == 0) {
@@ -143,34 +200,88 @@ class _OsConferenciaQuantidadeScreenState
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            children: [
-              // ========================================
-              // CARD: O QUE PRECISA PEGAR
-              // ========================================
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue[600]!, Colors.blue[800]!],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          children: [
+            // Campo invisível para capturar bipagens do scanner físico
+            Positioned(
+              left: -1000,
+              child: SizedBox(
+                width: 1,
+                height: 1,
+                child: TextField(
+                  controller: _scannerController,
+                  focusNode: _scannerFocusNode,
+                  autofocus: true,
+                  onSubmitted: (value) => _processarBipagem(value),
+                  onChanged: (value) {
+                    // Se terminou com Enter (scanner físico geralmente envia Enter)
+                    if (value.endsWith('\n') || value.endsWith('\r')) {
+                      _processarBipagem(value.trim());
+                    }
+                  },
                 ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'PEGUE',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
+              ),
+            ),
+            // Conteúdo principal
+            Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                children: [
+                  // Indicador de scanner ativo
+                  Container(
+                    width: double.infinity,
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.green.shade400),
                     ),
-                    const SizedBox(height: 6),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.qr_code_scanner,
+                          color: Colors.green.shade700,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Continue bipando para adicionar ${widget.tipoBipado == 'caixa' ? 'CAIXAS' : 'UNIDADES'}',
+                          style: TextStyle(
+                            color: Colors.green.shade700,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // ========================================
+                  // CARD: O QUE PRECISA PEGAR
+                  // ========================================
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.blue[600]!, Colors.blue[800]!],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text(
+                          'PEGUE',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
 
                     // Opções de como pegar
                     Row(
@@ -512,6 +623,8 @@ class _OsConferenciaQuantidadeScreenState
               ),
             ],
           ),
+        ),
+          ],
         ),
       ),
     );

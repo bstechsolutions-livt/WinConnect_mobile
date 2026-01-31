@@ -9,6 +9,7 @@ class OsDetalhe with _$OsDetalhe {
     required int numos,
     required int codprod,
     required String codauxiliar,
+    String? codauxiliar2, // Código de barras da CAIXA
     required String descricao,
     required String unidade,
     required int multiplo,
@@ -21,6 +22,7 @@ class OsDetalhe with _$OsDetalhe {
     @Default(false) bool unitizadorVinculado,
     String? codunitizador,
     String? divergencia,
+    String? tipoBipado, // 'caixa' ou 'unidade' - tipo do último código bipado
   }) = _OsDetalhe;
 
   factory OsDetalhe.fromJson(Map<String, dynamic> json) =>

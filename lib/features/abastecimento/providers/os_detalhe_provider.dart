@@ -31,6 +31,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
           _parseInt(osData['codprod']) ??
           0,
       codauxiliar: produtoData['codauxiliar']?.toString() ?? '',
+      codauxiliar2: produtoData['codauxiliar2']?.toString(),
       descricao: produtoData['descricao']?.toString() ?? 'Produto',
       unidade: produtoData['unidade']?.toString() ?? 'UN',
       multiplo: _parseInt(produtoData['qtunitcx']) ?? 1,
@@ -166,25 +167,38 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
 
   // Bipar produto (validar código de barras)
   // APENAS valida, NÃO atualiza estado local (o estado só muda ao finalizar)
-  // Retorna (sucesso, mensagemErro)
-  Future<(bool, String?)> biparProduto(String codigoBarras) async {
+  // Retorna BiparProdutoResult com tipo ('caixa' ou 'unidade') e qtunitcx
+  Future<BiparProdutoResult> biparProdutoComTipo(String codigoBarras) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase$fase/os/$numos/bipar', {
+      final response = await apiService.post('/wms/fase$fase/os/$numos/bipar', {
         'codigo_barras': codigoBarras,
       });
 
-      // NÃO atualiza estado local - só valida se o código está correto
-      return (true, null);
+      // API retorna: { tipo: 'caixa'|'unidade', qtunitcx: N }
+      final tipo = response['tipo']?.toString() ?? 'unidade';
+      final qtunitcx = (response['qtunitcx'] as num?)?.toInt() ?? 1;
+
+      return BiparProdutoResult.success(tipo: tipo, qtunitcx: qtunitcx);
     } catch (e) {
-      return (false, _extrairMensagemErro(e));
+      return BiparProdutoResult.error(_extrairMensagemErro(e));
     }
+  }
+
+  // Versão legada para compatibilidade
+  // Retorna (sucesso, mensagemErro)
+  Future<(bool, String?)> biparProduto(String codigoBarras) async {
+    final result = await biparProdutoComTipo(codigoBarras);
+    return (result.sucesso, result.erro);
   }
 
   // Marca produto como bipado (apenas atualiza estado local)
   // Chamado após conferência de quantidade, antes de vincular unitizador
-  Future<void> marcarProdutoBipado() async {
-    state = AsyncValue.data(state.value!.copyWith(produtoBipado: true));
+  Future<void> marcarProdutoBipado({String? tipoBipado}) async {
+    state = AsyncValue.data(state.value!.copyWith(
+      produtoBipado: true,
+      tipoBipado: tipoBipado,
+    ));
   }
 
   // Bipar produto COM conferência de quantidade
@@ -456,8 +470,6 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     }
 
     return cleaned.isEmpty ? 'Erro desconhecido' : cleaned;
-
-    return errorStr;
   }
 
   Future<void> refresh() async {
@@ -488,4 +500,41 @@ Future<List<EstoqueProduto>> consultaEstoque(
         ),
       )
       .toList();
+}
+
+/// Resultado da operação de bipar produto
+/// Retorna o tipo do código bipado ('caixa' ou 'unidade') e qtunitcx
+class BiparProdutoResult {
+  final bool sucesso;
+  final String? erro;
+  final String? tipo; // 'caixa' ou 'unidade'
+  final int qtunitcx;
+
+  const BiparProdutoResult._({
+    required this.sucesso,
+    this.erro,
+    this.tipo,
+    this.qtunitcx = 1,
+  });
+
+  factory BiparProdutoResult.success({
+    required String tipo,
+    required int qtunitcx,
+  }) =>
+      BiparProdutoResult._(
+        sucesso: true,
+        tipo: tipo,
+        qtunitcx: qtunitcx,
+      );
+
+  factory BiparProdutoResult.error(String mensagem) => BiparProdutoResult._(
+        sucesso: false,
+        erro: mensagem,
+      );
+
+  /// Retorna true se o código bipado foi da CAIXA
+  bool get isCaixa => tipo == 'caixa';
+
+  /// Retorna true se o código bipado foi da UNIDADE
+  bool get isUnidade => tipo == 'unidade';
 }

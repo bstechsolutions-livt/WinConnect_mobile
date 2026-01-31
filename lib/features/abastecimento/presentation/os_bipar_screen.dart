@@ -865,6 +865,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     );
   }
 
+  // Cache do tipo bipado (caixa ou unidade)
+  String? _tipoBipado;
+
   Future<void> _biparProduto(OsDetalhe os) async {
     final ean = _eanController.text.trim();
     if (ean.isEmpty) {
@@ -876,18 +879,31 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (!mounted) return;
     setState(() => _isProcessing = true);
 
-    final (sucesso, erro) = await ref
+    final result = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .biparProduto(ean);
+        .biparProdutoComTipo(ean);
 
     if (!mounted) return;
     setState(() => _isProcessing = false);
 
-    if (sucesso) {
-      // Produto válido, abre bottom sheet para conferência de quantidade
-      _mostrarConferenciaQuantidade(ean, os);
+    if (result.sucesso) {
+      // Guarda o tipo bipado para uso posterior
+      _tipoBipado = result.tipo;
+
+      // Produto válido, abre tela para conferência de quantidade
+      // Se bipou CAIXA, inicia com 1 CX, se bipou UNIDADE, inicia com 1 UN
+      final caixasIniciais = result.isCaixa ? 1 : 0;
+      final unidadesIniciais = result.isUnidade ? 1 : 0;
+
+      _mostrarConferenciaQuantidadeComValores(
+        ean,
+        os,
+        caixasIniciais,
+        unidadesIniciais,
+        tipoBipado: result.tipo,
+      );
     } else {
-      _mostrarErro(erro ?? 'Código de barras inválido!');
+      _mostrarErro(result.erro ?? 'Código de barras inválido!');
     }
   }
 
@@ -901,8 +917,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     String codigoBarras,
     OsDetalhe os,
     int caixasIniciais,
-    int unidadesIniciais,
-  ) async {
+    int unidadesIniciais, {
+    String? tipoBipado,
+  }) async {
     final result = await Navigator.push<ConferenciaQuantidadeResult>(
       context,
       MaterialPageRoute(
@@ -914,6 +931,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           qtSolicitada: os.qtSolicitada.toInt(),
           caixasIniciais: caixasIniciais,
           unidadesIniciais: unidadesIniciais,
+          tipoBipado: tipoBipado,
         ),
       ),
     );

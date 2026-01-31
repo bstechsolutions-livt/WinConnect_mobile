@@ -11,6 +11,7 @@ _$OsDetalheImpl _$$OsDetalheImplFromJson(Map<String, dynamic> json) =>
       numos: (json['numos'] as num).toInt(),
       codprod: (json['codprod'] as num).toInt(),
       codauxiliar: json['codauxiliar'] as String,
+      codauxiliar2: json['codauxiliar2'] as String?,
       descricao: json['descricao'] as String,
       unidade: json['unidade'] as String,
       multiplo: (json['multiplo'] as num).toInt(),
@@ -25,6 +26,7 @@ _$OsDetalheImpl _$$OsDetalheImplFromJson(Map<String, dynamic> json) =>
       unitizadorVinculado: json['unitizadorVinculado'] as bool? ?? false,
       codunitizador: json['codunitizador'] as String?,
       divergencia: json['divergencia'] as String?,
+      tipoBipado: json['tipoBipado'] as String?,
     );
 
 Map<String, dynamic> _$$OsDetalheImplToJson(_$OsDetalheImpl instance) =>
@@ -32,6 +34,7 @@ Map<String, dynamic> _$$OsDetalheImplToJson(_$OsDetalheImpl instance) =>
       'numos': instance.numos,
       'codprod': instance.codprod,
       'codauxiliar': instance.codauxiliar,
+      'codauxiliar2': instance.codauxiliar2,
       'descricao': instance.descricao,
       'unidade': instance.unidade,
       'multiplo': instance.multiplo,
@@ -44,6 +47,7 @@ Map<String, dynamic> _$$OsDetalheImplToJson(_$OsDetalheImpl instance) =>
       'unitizadorVinculado': instance.unitizadorVinculado,
       'codunitizador': instance.codunitizador,
       'divergencia': instance.divergencia,
+      'tipoBipado': instance.tipoBipado,
     };
 
 _$EnderecoOsImpl _$$EnderecoOsImplFromJson(Map<String, dynamic> json) =>

@@ -23,6 +23,8 @@ mixin _$OsDetalhe {
   int get numos => throw _privateConstructorUsedError;
   int get codprod => throw _privateConstructorUsedError;
   String get codauxiliar => throw _privateConstructorUsedError;
+  String? get codauxiliar2 =>
+      throw _privateConstructorUsedError; // Código de barras da CAIXA
   String get descricao => throw _privateConstructorUsedError;
   String get unidade => throw _privateConstructorUsedError;
   int get multiplo => throw _privateConstructorUsedError;
@@ -35,6 +37,7 @@ mixin _$OsDetalhe {
   bool get unitizadorVinculado => throw _privateConstructorUsedError;
   String? get codunitizador => throw _privateConstructorUsedError;
   String? get divergencia => throw _privateConstructorUsedError;
+  String? get tipoBipado => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -51,6 +54,7 @@ abstract class $OsDetalheCopyWith<$Res> {
       {int numos,
       int codprod,
       String codauxiliar,
+      String? codauxiliar2,
       String descricao,
       String unidade,
       int multiplo,
@@ -62,7 +66,8 @@ abstract class $OsDetalheCopyWith<$Res> {
       bool produtoBipado,
       bool unitizadorVinculado,
       String? codunitizador,
-      String? divergencia});
+      String? divergencia,
+      String? tipoBipado});
 
   $EnderecoOsCopyWith<$Res> get enderecoOrigem;
   $EnderecoOsCopyWith<$Res> get enderecoDestino;
@@ -84,6 +89,7 @@ class _$OsDetalheCopyWithImpl<$Res, $Val extends OsDetalhe>
     Object? numos = null,
     Object? codprod = null,
     Object? codauxiliar = null,
+    Object? codauxiliar2 = freezed,
     Object? descricao = null,
     Object? unidade = null,
     Object? multiplo = null,
@@ -96,6 +102,7 @@ class _$OsDetalheCopyWithImpl<$Res, $Val extends OsDetalhe>
     Object? unitizadorVinculado = null,
     Object? codunitizador = freezed,
     Object? divergencia = freezed,
+    Object? tipoBipado = freezed,
   }) {
     return _then(_value.copyWith(
       numos: null == numos
@@ -110,6 +117,10 @@ class _$OsDetalheCopyWithImpl<$Res, $Val extends OsDetalhe>
           ? _value.codauxiliar
           : codauxiliar // ignore: cast_nullable_to_non_nullable
               as String,
+      codauxiliar2: freezed == codauxiliar2
+          ? _value.codauxiliar2
+          : codauxiliar2 // ignore: cast_nullable_to_non_nullable
+              as String?,
       descricao: null == descricao
           ? _value.descricao
           : descricao // ignore: cast_nullable_to_non_nullable
@@ -157,6 +168,10 @@ class _$OsDetalheCopyWithImpl<$Res, $Val extends OsDetalhe>
       divergencia: freezed == divergencia
           ? _value.divergencia
           : divergencia // ignore: cast_nullable_to_non_nullable
+              as String?,
+      tipoBipado: freezed == tipoBipado
+          ? _value.tipoBipado
+          : tipoBipado // ignore: cast_nullable_to_non_nullable
               as String?,
     ) as $Val);
   }
@@ -190,6 +205,7 @@ abstract class _$$OsDetalheImplCopyWith<$Res>
       {int numos,
       int codprod,
       String codauxiliar,
+      String? codauxiliar2,
       String descricao,
       String unidade,
       int multiplo,
@@ -201,7 +217,8 @@ abstract class _$$OsDetalheImplCopyWith<$Res>
       bool produtoBipado,
       bool unitizadorVinculado,
       String? codunitizador,
-      String? divergencia});
+      String? divergencia,
+      String? tipoBipado});
 
   @override
   $EnderecoOsCopyWith<$Res> get enderecoOrigem;
@@ -223,6 +240,7 @@ class __$$OsDetalheImplCopyWithImpl<$Res>
     Object? numos = null,
     Object? codprod = null,
     Object? codauxiliar = null,
+    Object? codauxiliar2 = freezed,
     Object? descricao = null,
     Object? unidade = null,
     Object? multiplo = null,
@@ -235,6 +253,7 @@ class __$$OsDetalheImplCopyWithImpl<$Res>
     Object? unitizadorVinculado = null,
     Object? codunitizador = freezed,
     Object? divergencia = freezed,
+    Object? tipoBipado = freezed,
   }) {
     return _then(_$OsDetalheImpl(
       numos: null == numos
@@ -249,6 +268,10 @@ class __$$OsDetalheImplCopyWithImpl<$Res>
           ? _value.codauxiliar
           : codauxiliar // ignore: cast_nullable_to_non_nullable
               as String,
+      codauxiliar2: freezed == codauxiliar2
+          ? _value.codauxiliar2
+          : codauxiliar2 // ignore: cast_nullable_to_non_nullable
+              as String?,
       descricao: null == descricao
           ? _value.descricao
           : descricao // ignore: cast_nullable_to_non_nullable
@@ -297,6 +320,10 @@ class __$$OsDetalheImplCopyWithImpl<$Res>
           ? _value.divergencia
           : divergencia // ignore: cast_nullable_to_non_nullable
               as String?,
+      tipoBipado: freezed == tipoBipado
+          ? _value.tipoBipado
+          : tipoBipado // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -308,6 +335,7 @@ class _$OsDetalheImpl implements _OsDetalhe {
       {required this.numos,
       required this.codprod,
       required this.codauxiliar,
+      this.codauxiliar2,
       required this.descricao,
       required this.unidade,
       required this.multiplo,
@@ -319,7 +347,8 @@ class _$OsDetalheImpl implements _OsDetalhe {
       this.produtoBipado = false,
       this.unitizadorVinculado = false,
       this.codunitizador,
-      this.divergencia});
+      this.divergencia,
+      this.tipoBipado});
 
   factory _$OsDetalheImpl.fromJson(Map<String, dynamic> json) =>
       _$$OsDetalheImplFromJson(json);
@@ -330,6 +359,9 @@ class _$OsDetalheImpl implements _OsDetalhe {
   final int codprod;
   @override
   final String codauxiliar;
+  @override
+  final String? codauxiliar2;
+// Código de barras da CAIXA
   @override
   final String descricao;
   @override
@@ -356,10 +388,12 @@ class _$OsDetalheImpl implements _OsDetalhe {
   final String? codunitizador;
   @override
   final String? divergencia;
+  @override
+  final String? tipoBipado;
 
   @override
   String toString() {
-    return 'OsDetalhe(numos: $numos, codprod: $codprod, codauxiliar: $codauxiliar, descricao: $descricao, unidade: $unidade, multiplo: $multiplo, qtSolicitada: $qtSolicitada, qtEstoqueAtual: $qtEstoqueAtual, enderecoOrigem: $enderecoOrigem, enderecoDestino: $enderecoDestino, status: $status, produtoBipado: $produtoBipado, unitizadorVinculado: $unitizadorVinculado, codunitizador: $codunitizador, divergencia: $divergencia)';
+    return 'OsDetalhe(numos: $numos, codprod: $codprod, codauxiliar: $codauxiliar, codauxiliar2: $codauxiliar2, descricao: $descricao, unidade: $unidade, multiplo: $multiplo, qtSolicitada: $qtSolicitada, qtEstoqueAtual: $qtEstoqueAtual, enderecoOrigem: $enderecoOrigem, enderecoDestino: $enderecoDestino, status: $status, produtoBipado: $produtoBipado, unitizadorVinculado: $unitizadorVinculado, codunitizador: $codunitizador, divergencia: $divergencia, tipoBipado: $tipoBipado)';
   }
 
   @override
@@ -371,6 +405,8 @@ class _$OsDetalheImpl implements _OsDetalhe {
             (identical(other.codprod, codprod) || other.codprod == codprod) &&
             (identical(other.codauxiliar, codauxiliar) ||
                 other.codauxiliar == codauxiliar) &&
+            (identical(other.codauxiliar2, codauxiliar2) ||
+                other.codauxiliar2 == codauxiliar2) &&
             (identical(other.descricao, descricao) ||
                 other.descricao == descricao) &&
             (identical(other.unidade, unidade) || other.unidade == unidade) &&
@@ -392,7 +428,9 @@ class _$OsDetalheImpl implements _OsDetalhe {
             (identical(other.codunitizador, codunitizador) ||
                 other.codunitizador == codunitizador) &&
             (identical(other.divergencia, divergencia) ||
-                other.divergencia == divergencia));
+                other.divergencia == divergencia) &&
+            (identical(other.tipoBipado, tipoBipado) ||
+                other.tipoBipado == tipoBipado));
   }
 
   @JsonKey(ignore: true)
@@ -402,6 +440,7 @@ class _$OsDetalheImpl implements _OsDetalhe {
       numos,
       codprod,
       codauxiliar,
+      codauxiliar2,
       descricao,
       unidade,
       multiplo,
@@ -413,7 +452,8 @@ class _$OsDetalheImpl implements _OsDetalhe {
       produtoBipado,
       unitizadorVinculado,
       codunitizador,
-      divergencia);
+      divergencia,
+      tipoBipado);
 
   @JsonKey(ignore: true)
   @override
@@ -434,6 +474,7 @@ abstract class _OsDetalhe implements OsDetalhe {
       {required final int numos,
       required final int codprod,
       required final String codauxiliar,
+      final String? codauxiliar2,
       required final String descricao,
       required final String unidade,
       required final int multiplo,
@@ -445,7 +486,8 @@ abstract class _OsDetalhe implements OsDetalhe {
       final bool produtoBipado,
       final bool unitizadorVinculado,
       final String? codunitizador,
-      final String? divergencia}) = _$OsDetalheImpl;
+      final String? divergencia,
+      final String? tipoBipado}) = _$OsDetalheImpl;
 
   factory _OsDetalhe.fromJson(Map<String, dynamic> json) =
       _$OsDetalheImpl.fromJson;
@@ -457,6 +499,8 @@ abstract class _OsDetalhe implements OsDetalhe {
   @override
   String get codauxiliar;
   @override
+  String? get codauxiliar2;
+  @override // Código de barras da CAIXA
   String get descricao;
   @override
   String get unidade;
@@ -480,6 +524,8 @@ abstract class _OsDetalhe implements OsDetalhe {
   String? get codunitizador;
   @override
   String? get divergencia;
+  @override
+  String? get tipoBipado;
   @override
   @JsonKey(ignore: true)
   _$$OsDetalheImplCopyWith<_$OsDetalheImpl> get copyWith =>
