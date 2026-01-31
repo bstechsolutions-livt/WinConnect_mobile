@@ -363,161 +363,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
             const SizedBox(height: 8),
 
-            // Card: Endereço de Origem (COMPACTO)
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.outline.withValues(alpha: 0.3),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header do endereço
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        color: Theme.of(context).colorScheme.primary,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'ENDEREÇO ORIGEM',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'OS: ${os.numos}',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Endereço completo com labels
-                  Row(
-                    children: [
-                      // RUA
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(
-                              'RUA',
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onPrimary.withValues(alpha: 0.7),
-                                fontSize: 8,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            Text(
-                              os.enderecoOrigem.rua,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.onPrimary,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      // PRÉDIO
-                      _buildEnderecoBox(
-                        context,
-                        'PRÉDIO',
-                        os.enderecoOrigem.predio.toString().padLeft(2, '0'),
-                      ),
-                      const Text(
-                        '•',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      // NÍVEL
-                      _buildEnderecoBox(
-                        context,
-                        'NÍVEL',
-                        os.enderecoOrigem.nivel.toString().padLeft(2, '0'),
-                      ),
-                      const Text(
-                        '•',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      // APTO
-                      _buildEnderecoBox(
-                        context,
-                        'APTO',
-                        os.enderecoOrigem.apto.toString().padLeft(2, '0'),
-                      ),
-                      const Spacer(),
-                      // Estoque atual
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Estoque:',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                              fontSize: 9,
-                            ),
-                          ),
-                          Text(
-                            '${os.qtEstoqueAtual.toStringAsFixed(0)} UN',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            
 
             const SizedBox(height: 6),
 
@@ -602,7 +448,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 context: context,
                 controller: _eanController,
                 focusNode: _eanFocusNode,
-                hintText: 'Aguardando leitura do produto...',
+                hintText: 'Bipar Produto',
                 icon: Icons.qr_code_scanner,
                 onCameraPressed: () => _abrirScannerCameraEan(os),
                 onDigitarPressed: () =>
@@ -778,26 +624,6 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 },
               ),
             ],
-
-            const SizedBox(height: 16),
-
-            // Calculadora melhorada
-            OutlinedButton.icon(
-              onPressed: () => _mostrarCalculadora(context, os),
-              icon: const Icon(Icons.calculate),
-              label: const Text('CALCULADORA UN ↔ CX'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.amber[700],
-                side: BorderSide(color: Colors.amber[700]!),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
 
             const SizedBox(height: 16),
           ],
