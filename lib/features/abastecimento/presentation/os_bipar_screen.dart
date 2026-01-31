@@ -131,6 +131,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
   /// Solicita autorização do supervisor para digitar manualmente
   Future<void> _solicitarAutorizacaoDigitar(FocusNode focusNode) async {
+    // Remove foco antes de abrir o dialog para evitar conflitos no Flutter Web
+    FocusScope.of(context).unfocus();
+
     final resultado = await AutorizarDigitacaoDialog.mostrarComDados(
       context: context,
       apiService: ref.read(apiServiceProvider),
@@ -149,8 +152,11 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           _autorizadorMatriculaUnitizador = resultado.matriculaAutorizador;
         });
       }
-      focusNode.requestFocus();
-      SystemChannels.textInput.invokeMethod('TextInput.show');
+      // Pequeno delay para o Flutter Web processar a mudança de estado
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        focusNode.requestFocus();
+      }
     }
   }
 

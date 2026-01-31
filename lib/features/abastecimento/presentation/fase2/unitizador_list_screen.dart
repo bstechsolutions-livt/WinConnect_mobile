@@ -436,74 +436,37 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       );
     }
 
-    return Column(
-      children: [
-        // Campo de scanner para bipar unitizador
-        _buildScannerInput(isDark),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          // Campo de scanner para bipar unitizador
+          _buildScannerInput(isDark),
 
-        // Lista de unitizadores (apenas informativo)
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            itemCount: _unitizadores.length + 1,
-            itemBuilder: (context, index) {
-              // Header com total
-              if (index == 0) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: isDark ? Colors.white54 : Colors.grey.shade600,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Bipe o código de barras do unitizador',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: isDark ? Colors.white54 : Colors.grey.shade600,
-                        ),
-                      ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.white.withValues(alpha: 0.1)
-                              : Colors.grey.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${_unitizadores.length}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? Colors.white70
-                                : Colors.grey.shade700,
-                          ),
-                        ),
-                      ),
-                    ],
+          // Instrução
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 16,
+                color: isDark ? Colors.white54 : Colors.grey.shade600,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Bipe o código de barras do unitizador',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white54 : Colors.grey.shade600,
                   ),
-                );
-              }
-
-              final unit = _unitizadores[index - 1];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _UnitizadorCardInfo(unitizador: unit),
-              );
-            },
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -875,6 +838,9 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
 
   /// Solicita autorização do supervisor para digitar manualmente
   Future<void> _solicitarAutorizacaoDigitar() async {
+    // Remove foco antes de abrir o dialog para evitar conflitos no Flutter Web
+    FocusScope.of(context).unfocus();
+
     final resultado = await AutorizarDigitacaoDialog.mostrarComDados(
       context: context,
       apiService: ref.read(apiServiceProvider),
@@ -964,142 +930,6 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
             child: const Text('Confirmar'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Card informativo do unitizador (sem interação de tap)
-/// Operador deve bipar o código de barras ao invés de clicar
-class _UnitizadorCardInfo extends StatelessWidget {
-  final Map<String, dynamic> unitizador;
-
-  const _UnitizadorCardInfo({required this.unitizador});
-
-  Color _getStatusColor(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'EM_CONFERENCIA':
-        return Colors.orange;
-      case 'CONFERIDO':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  String _getStatusText(String? status) {
-    switch (status?.toUpperCase()) {
-      case 'EM_CONFERENCIA':
-        return 'Em conferência';
-      case 'CONFERIDO':
-        return 'Conferido';
-      default:
-        return 'Aguardando';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final qtdItens = unitizador['qtd_itens'] ?? 0;
-    final qtdConferidos = unitizador['qtd_conferidos'] ?? 0;
-    final codigo =
-        unitizador['codunitizador'] ?? unitizador['codigo_barras'] ?? '---';
-    final status = unitizador['status']?.toString();
-    final statusColor = _getStatusColor(status);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161B22) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.grey.withValues(alpha: 0.15),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // Ícone do unitizador
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                Icons.local_shipping_rounded,
-                color: statusColor,
-                size: 24,
-              ),
-            ),
-
-            const SizedBox(width: 14),
-
-            // Informações do unitizador
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Unitizador $codigo',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.grey.shade900,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.inventory_2_outlined,
-                        size: 14,
-                        color: isDark ? Colors.white54 : Colors.grey.shade500,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$qtdConferidos/$qtdItens conferidos',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.white54 : Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Status badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                _getStatusText(status),
-                style: TextStyle(
-                  color: statusColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 11,
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

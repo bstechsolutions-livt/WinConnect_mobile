@@ -244,10 +244,11 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
       return;
     }
 
-    // Encontra o item pelo código
+    // Encontra o item pelo código (unidade ou caixa)
     final item = _itens.firstWhere(
       (i) =>
           i['codauxiliar']?.toString() == codigo ||
+          i['codauxiliar2']?.toString() == codigo ||
           i['codprod']?.toString() == codigo ||
           i['ean']?.toString() == codigo,
       orElse: () => {},
@@ -260,12 +261,23 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
       return;
     }
 
+    // Determina se foi bipado caixa ou unidade
+    final codauxiliar = item['codauxiliar']?.toString() ?? '';
+    final codauxiliar2 = item['codauxiliar2']?.toString() ?? '';
+    final tipoBipagem = (codauxiliar2.isNotEmpty && codigo == codauxiliar2)
+        ? 'caixa'
+        : 'unidade';
+
     // Abre bottom sheet para digitar quantidades
-    _abrirQuantidadeSheet(codigo, item);
+    _abrirQuantidadeSheet(codigo, item, tipoBipagem: tipoBipagem);
   }
 
   /// Abre bottom sheet para digitar a quantidade
-  void _abrirQuantidadeSheet(String codigo, Map<String, dynamic> item) {
+  void _abrirQuantidadeSheet(
+    String codigo,
+    Map<String, dynamic> item, {
+    String tipoBipagem = 'unidade',
+  }) {
     // Trata multiplo como String ou int
     int multiplo = 1;
     final m = item['multiplo'];
@@ -279,6 +291,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
       }
     }
 
+    final codauxiliar = item['codauxiliar']?.toString() ?? '';
+    final codauxiliar2 = item['codauxiliar2']?.toString() ?? '';
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -288,6 +303,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
         descricao: item['descricao'] ?? 'Produto ${item['codprod']}',
         codprod: item['codprod']?.toString() ?? '---',
         multiplo: multiplo,
+        codauxiliar: codauxiliar,
+        codauxiliar2: codauxiliar2,
+        tipoBipagemInicial: tipoBipagem,
         onConfirmar: (quantidade) async {
           Navigator.pop(context);
           await _conferirProduto(codigo, item, quantidade);
@@ -384,6 +402,9 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
 
   /// Solicita autorização do supervisor para digitar manualmente
   Future<void> _solicitarAutorizacaoDigitar() async {
+    // Remove foco antes de abrir o dialog para evitar conflitos no Flutter Web
+    FocusScope.of(context).unfocus();
+
     final resultado = await AutorizarDigitacaoDialog.mostrarComDados(
       context: context,
       apiService: ref.read(apiServiceProvider),
@@ -394,8 +415,11 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
         _tecladoLiberado = true;
         _autorizadorMatricula = resultado.matriculaAutorizador;
       });
-      _codigoFocusNode.requestFocus();
-      SystemChannels.textInput.invokeMethod('TextInput.show');
+      // Pequeno delay para o Flutter Web processar a mudança de estado
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        _codigoFocusNode.requestFocus();
+      }
     }
   }
 
@@ -1031,12 +1055,18 @@ class _QuantidadeBottomSheet extends StatefulWidget {
   final String descricao;
   final String codprod;
   final int multiplo;
+  final String codauxiliar;
+  final String codauxiliar2;
+  final String tipoBipagemInicial;
   final Future<void> Function(int quantidade) onConfirmar;
 
   const _QuantidadeBottomSheet({
     required this.descricao,
     required this.codprod,
     required this.multiplo,
+    required this.codauxiliar,
+    required this.codauxiliar2,
+    required this.tipoBipagemInicial,
     required this.onConfirmar,
   });
 
@@ -1047,8 +1077,10 @@ class _QuantidadeBottomSheet extends StatefulWidget {
 class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
   final _caixasController = TextEditingController(text: '0');
   final _unidadesController = TextEditingController(text: '0');
+  final _scannerController = TextEditingController();
   final _caixasFocus = FocusNode();
   final _unidadesFocus = FocusNode();
+  final _scannerFocus = FocusNode();
   bool _isConfirmando = false;
 
   int get _totalUnidades {
@@ -1066,9 +1098,16 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
     // Esconde teclado quando focar (para scanner físico)
     _caixasFocus.addListener(_esconderTeclado);
     _unidadesFocus.addListener(_esconderTeclado);
+    _scannerFocus.addListener(_esconderTeclado);
 
+    // Se já veio de uma bipagem inicial, incrementa
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _caixasFocus.requestFocus();
+      if (widget.tipoBipagemInicial == 'caixa') {
+        _caixasController.text = '1';
+      } else {
+        _unidadesController.text = '1';
+      }
+      _scannerFocus.requestFocus();
     });
   }
 
@@ -1082,11 +1121,57 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
   void dispose() {
     _caixasFocus.removeListener(_esconderTeclado);
     _unidadesFocus.removeListener(_esconderTeclado);
+    _scannerFocus.removeListener(_esconderTeclado);
     _caixasController.dispose();
     _unidadesController.dispose();
+    _scannerController.dispose();
     _caixasFocus.dispose();
     _unidadesFocus.dispose();
+    _scannerFocus.dispose();
     super.dispose();
+  }
+
+  /// Processa bipagem do scanner para incrementar caixas ou unidades
+  void _processarBipagem(String codigo) {
+    if (codigo.isEmpty) return;
+
+    // Verifica se é caixa (codauxiliar2) ou unidade (codauxiliar)
+    if (widget.codauxiliar2.isNotEmpty && codigo == widget.codauxiliar2) {
+      // É caixa - incrementa caixas
+      final atual = int.tryParse(_caixasController.text) ?? 0;
+      _caixasController.text = (atual + 1).toString();
+      _mostrarFeedback('📦 +1 Caixa');
+    } else if (codigo == widget.codauxiliar || codigo == widget.codprod) {
+      // É unidade - incrementa unidades
+      final atual = int.tryParse(_unidadesController.text) ?? 0;
+      _unidadesController.text = (atual + 1).toString();
+      _mostrarFeedback('📋 +1 Unidade');
+    } else {
+      // Código não reconhecido
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Código não corresponde ao produto'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+
+    // Limpa campo e mantém foco
+    _scannerController.clear();
+    _scannerFocus.requestFocus();
+  }
+
+  void _mostrarFeedback(String msg) {
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.green,
+        duration: const Duration(milliseconds: 800),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _confirmar() async {
@@ -1200,6 +1285,125 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Campo de scanner para bipar e incrementar
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.qr_code_scanner,
+                          color: Colors.blue,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Continue bipando para aumentar a contagem',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _scannerController,
+                      focusNode: _scannerFocus,
+                      keyboardType: TextInputType.none,
+                      showCursor: false,
+                      style: const TextStyle(fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Bipe unidade ou caixa...',
+                        hintStyle: TextStyle(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                          fontSize: 13,
+                        ),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        prefixIcon: const Icon(Icons.barcode_reader, size: 20),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                            color: Colors.blue.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: const BorderSide(
+                            color: Colors.blue,
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                      onSubmitted: (value) {
+                        _processarBipagem(value);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (widget.codauxiliar2.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '📦 CX: ${widget.codauxiliar2}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '📋 UN: ${widget.codauxiliar}',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),

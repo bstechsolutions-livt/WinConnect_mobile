@@ -2078,6 +2078,9 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
     Map<String, dynamic> item,
     String endereco,
   ) async {
+    // Remove foco antes de abrir o dialog para evitar conflitos no Flutter Web
+    FocusScope.of(context).unfocus();
+
     final apiService = ref.read(apiServiceProvider);
 
     final resultado = await AutorizarDigitacaoDialog.mostrarComDados(
@@ -2090,10 +2093,11 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         _tecladoLiberado = true;
         _autorizadorMatricula = resultado.matriculaAutorizador;
       });
-      _codigoFocusNode.requestFocus();
-      Future.delayed(const Duration(milliseconds: 100), () {
-        SystemChannels.textInput.invokeMethod('TextInput.show');
-      });
+      // Pequeno delay para o Flutter Web processar a mudança de estado
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (mounted) {
+        _codigoFocusNode.requestFocus();
+      }
     }
   }
 

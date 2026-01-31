@@ -161,6 +161,9 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
 
   /// Solicita autorização do supervisor para digitar manualmente
   Future<void> _solicitarAutorizacaoDigitar() async {
+    // Remove foco antes de abrir o dialog para evitar conflitos no Flutter Web
+    FocusScope.of(context).unfocus();
+
     final resultado = await AutorizarDigitacaoDialog.mostrarComDados(
       context: context,
       apiService: ref.read(apiServiceProvider),
