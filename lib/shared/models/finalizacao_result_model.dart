@@ -38,6 +38,13 @@ class FinalizacaoResult {
   }
 
   factory FinalizacaoResult.fromResponse(Map<String, dynamic> response) {
+    // Debug: log do response para verificar o que a API retorna
+    print('=== FinalizacaoResult.fromResponse ===');
+    print('Response completo: $response');
+    print('proxima_os: ${response['proxima_os']}');
+    print('rua_concluida: ${response['rua_concluida']}');
+    print('rua_finalizada: ${response['rua_finalizada']}');
+    
     ProximaOs? proximaOs;
     if (response['proxima_os'] != null) {
       proximaOs = ProximaOs.fromJson(response['proxima_os']);
@@ -46,6 +53,10 @@ class FinalizacaoResult {
     // API retorna 'rua_concluida' ou 'rua_finalizada'
     final ruaFinalizada = response['rua_concluida'] == true || 
                           response['rua_finalizada'] == true;
+    
+    print('ruaFinalizada calculado: $ruaFinalizada');
+    print('proximaOs: $proximaOs');
+    print('=====================================');
 
     return FinalizacaoResult(
       sucesso: true,
