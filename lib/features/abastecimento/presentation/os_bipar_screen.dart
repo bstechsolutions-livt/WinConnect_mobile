@@ -335,37 +335,38 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           children: [
-            // Botões de ação
-            Row(
-              children: [
-                _buildActionButton(
-                  context,
-                  'BLOQUEAR',
-                  Colors.red,
-                  () => _mostrarDialogBloquear(context),
-                ),
-                const SizedBox(width: 8),
-                _buildActionButton(
-                  context,
-                  'DIVERGÊNCIA',
-                  Colors.orange,
-                  () => _mostrarDialogDivergencia(context),
-                ),
-                const SizedBox(width: 8),
-                _buildActionButton(
-                  context,
-                  'ESTOQUES',
-                  Colors.blue,
-                  () => _mostrarEstoques(context, os.codprod, os.descricao),
-                ),
-              ],
-            ),
+            // Botões de ação (esconde quando já bipou o produto)
+            if (!os.produtoBipado) ...[
+              Row(
+                children: [
+                  _buildActionButton(
+                    context,
+                    'BLOQUEAR',
+                    Colors.red,
+                    () => _mostrarDialogBloquear(context),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildActionButton(
+                    context,
+                    'DIVERGÊNCIA',
+                    Colors.orange,
+                    () => _mostrarDialogDivergencia(context),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildActionButton(
+                    context,
+                    'ESTOQUES',
+                    Colors.blue,
+                    () => _mostrarEstoques(context, os.codprod, os.descricao),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
 
-            const SizedBox(height: 12),
-
-            // Título BIPAR PRODUTO
+            // Título dinâmico
             Text(
-              'BIPAR PRODUTO',
+              os.produtoBipado ? 'BIPAR UNITIZADOR' : 'BIPAR PRODUTO',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -374,7 +375,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
             ),
             const SizedBox(height: 8),
 
-            // Card: Produto com destaque
+            // Card: Produto com destaque (mostra confirmado quando já bipou)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -382,12 +383,47 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: Colors.orange.withValues(alpha: 0.3),
+                  color: os.produtoBipado
+                      ? Colors.green.withValues(alpha: 0.5)
+                      : Colors.orange.withValues(alpha: 0.3),
                   width: 1.5,
                 ),
               ),
               child: Column(
                 children: [
+                  // Mostra badge de confirmado no card
+                  if (os.produtoBipado) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'PRODUTO CONFIRMADO ✓',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
                   Text(
                     os.descricao,
                     style: TextStyle(
@@ -486,33 +522,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                 tecladoLiberado: _tecladoLiberadoEan,
               ),
             ] else if (!os.unitizadorVinculado) ...[
-              // Produto bipado com sucesso
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.green),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.green, size: 28),
-                    SizedBox(width: 8),
-                    Text(
-                      'PRODUTO CONFIRMADO ✓',
-                      style: TextStyle(
-                        color: Colors.green,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Scanner para unitizador
+              // Scanner para unitizador (sem a caixinha separada de confirmado)
               _buildScannerInput(
                 context: context,
                 controller: _unitizadorController,
