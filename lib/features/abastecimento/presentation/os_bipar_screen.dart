@@ -96,6 +96,22 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     }
   }
 
+  /// Formata a quantidade separada mostrando caixas e/ou unidades
+  String _formatarQuantidadeSeparada() {
+    final caixas = _caixasConferidas ?? 0;
+    final unidades = _unidadesConferidas ?? 0;
+
+    if (caixas > 0 && unidades > 0) {
+      return 'SEPARADO: $caixas CX + $unidades UN';
+    } else if (caixas > 0) {
+      return 'SEPARADO: $caixas CX';
+    } else if (unidades > 0) {
+      return 'SEPARADO: $unidades UN';
+    } else {
+      return 'SEPARADO: 0 UN';
+    }
+  }
+
   @override
   void dispose() {
     _scannerProtectionEan.dispose();
@@ -402,18 +418,18 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.check_circle,
                             color: Colors.white,
                             size: 16,
                           ),
-                          SizedBox(width: 6),
+                          const SizedBox(width: 6),
                           Text(
-                            'PRODUTO CONFIRMADO ✓',
-                            style: TextStyle(
+                            _formatarQuantidadeSeparada(),
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
@@ -428,7 +444,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                     os.descricao,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: 25,
+                      fontSize: os.produtoBipado ? 15 : 25,
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
@@ -457,25 +473,28 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.amber[700],
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '1 CX = ${os.multiplo} UN',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
+                      // Só mostra o múltiplo quando ainda não bipou o produto
+                      if (!os.produtoBipado) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber[700],
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '1 CX = ${os.multiplo} UN',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],
