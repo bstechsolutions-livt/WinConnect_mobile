@@ -41,6 +41,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   bool _tecladoLiberadoEan = false;
   bool _tecladoLiberadoUnitizador = false;
 
+  // Dados de autorização para rastreabilidade (digitado vs escaneado)
+  int? _autorizadorMatriculaEan;
+  int? _autorizadorMatriculaUnitizador;
+
   // Proteção contra digitação manual
   late final ScannerProtection _scannerProtectionEan;
   late final ScannerProtection _scannerProtectionUnitizador;
@@ -127,17 +131,23 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
   /// Solicita autorização do supervisor para digitar manualmente
   Future<void> _solicitarAutorizacaoDigitar(FocusNode focusNode) async {
-    final autorizado = await AutorizarDigitacaoDialog.mostrar(
+    final resultado = await AutorizarDigitacaoDialog.mostrarComDados(
       context: context,
       apiService: ref.read(apiServiceProvider),
     );
 
-    if (autorizado && mounted) {
-      // Define qual campo foi liberado
+    if (resultado.autorizado && mounted) {
+      // Define qual campo foi liberado e armazena matrícula do autorizador
       if (focusNode == _eanFocusNode) {
-        setState(() => _tecladoLiberadoEan = true);
+        setState(() {
+          _tecladoLiberadoEan = true;
+          _autorizadorMatriculaEan = resultado.matriculaAutorizador;
+        });
       } else if (focusNode == _unitizadorFocusNode) {
-        setState(() => _tecladoLiberadoUnitizador = true);
+        setState(() {
+          _tecladoLiberadoUnitizador = true;
+          _autorizadorMatriculaUnitizador = resultado.matriculaAutorizador;
+        });
       }
       focusNode.requestFocus();
       SystemChannels.textInput.invokeMethod('TextInput.show');
@@ -879,12 +889,25 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (!mounted) return;
     setState(() => _isProcessing = true);
 
+    // Envia info de digitação para rastreabilidade
     final result = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .biparProdutoComTipo(ean);
+        .biparProdutoComTipo(
+          ean,
+          digitado: _tecladoLiberadoEan,
+          autorizadorMatricula: _autorizadorMatriculaEan,
+        );
 
     if (!mounted) return;
     setState(() => _isProcessing = false);
+
+    // Reseta flag de teclado após usar (só vale para uma bipagem)
+    if (_tecladoLiberadoEan) {
+      setState(() {
+        _tecladoLiberadoEan = false;
+        _autorizadorMatriculaEan = null;
+      });
+    }
 
     if (result.sucesso) {
       // Guarda o tipo bipado para uso posterior

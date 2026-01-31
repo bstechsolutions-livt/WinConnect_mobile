@@ -1,16 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Resultado da autorização de digitação manual
+class AutorizacaoDigitacao {
+  final bool autorizado;
+  final int? matriculaAutorizador;
+  final String? nomeAutorizador;
+
+  const AutorizacaoDigitacao({
+    required this.autorizado,
+    this.matriculaAutorizador,
+    this.nomeAutorizador,
+  });
+
+  /// Retorna uma autorização negada
+  static const negada = AutorizacaoDigitacao(autorizado: false);
+
+  /// Retorna uma autorização aprovada
+  factory AutorizacaoDigitacao.aprovada({
+    required int matricula,
+    String? nome,
+  }) {
+    return AutorizacaoDigitacao(
+      autorizado: true,
+      matriculaAutorizador: matricula,
+      nomeAutorizador: nome,
+    );
+  }
+}
+
 /// Dialog para solicitar autorização de supervisor para digitação manual.
 ///
 /// Uso:
 /// ```dart
-/// final autorizado = await AutorizarDigitacaoDialog.mostrar(
+/// final resultado = await AutorizarDigitacaoDialog.mostrar(
 ///   context: context,
 ///   apiService: ref.read(apiServiceProvider),
 /// );
-/// if (autorizado) {
+/// if (resultado.autorizado) {
 ///   // Liberar teclado para digitação
+///   // resultado.matriculaAutorizador contém a matrícula de quem autorizou
 /// }
 /// ```
 class AutorizarDigitacaoDialog extends StatefulWidget {
@@ -21,17 +50,30 @@ class AutorizarDigitacaoDialog extends StatefulWidget {
     required this.apiService,
   });
 
-  /// Mostra o dialog e retorna true se autorizado, false caso contrário
-  static Future<bool> mostrar({
+  /// Mostra o dialog e retorna AutorizacaoDigitacao com dados do autorizador
+  static Future<AutorizacaoDigitacao> mostrarComDados({
     required BuildContext context,
     required dynamic apiService,
   }) async {
-    final resultado = await showDialog<bool>(
+    final resultado = await showDialog<AutorizacaoDigitacao>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AutorizarDigitacaoDialog(apiService: apiService),
     );
-    return resultado ?? false;
+    return resultado ?? AutorizacaoDigitacao.negada;
+  }
+
+  /// Mostra o dialog e retorna true se autorizado, false caso contrário
+  /// (mantido para compatibilidade)
+  static Future<bool> mostrar({
+    required BuildContext context,
+    required dynamic apiService,
+  }) async {
+    final resultado = await mostrarComDados(
+      context: context,
+      apiService: apiService,
+    );
+    return resultado.autorizado;
   }
 
   @override
@@ -86,13 +128,26 @@ class _AutorizarDigitacaoDialogState extends State<AutorizarDigitacaoDialog> {
     });
 
     try {
-      await widget.apiService.post('/wms/autorizar-digitacao', {
+      final response = await widget.apiService.post('/wms/autorizar-digitacao', {
         'autorizador_matricula': int.tryParse(matricula) ?? matricula,
         'autorizador_senha': senha,
       });
 
       if (!mounted) return;
-      Navigator.pop(context, true);
+
+      // Extrai dados do autorizador da resposta
+      final autorizador = response['autorizador'] as Map<String, dynamic>?;
+      final matriculaAutorizador = autorizador?['matricula'] as int? ??
+          int.tryParse(matricula);
+      final nomeAutorizador = autorizador?['nome'] as String?;
+
+      Navigator.pop(
+        context,
+        AutorizacaoDigitacao.aprovada(
+          matricula: matriculaAutorizador!,
+          nome: nomeAutorizador,
+        ),
+      );
     } catch (e) {
       setState(() {
         _erro = e.toString().replaceAll('Exception: ', '');

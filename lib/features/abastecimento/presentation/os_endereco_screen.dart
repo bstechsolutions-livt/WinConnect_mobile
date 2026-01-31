@@ -34,6 +34,7 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
   bool _isProcessing = false;
   bool _tecladoLiberado =
       false; // Flag para controlar se digitação foi autorizada
+  int? _autorizadorMatricula; // Matrícula de quem autorizou digitação
 
   // Proteção contra digitação manual
   late final ScannerProtection _scannerProtection;
@@ -160,14 +161,15 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
 
   /// Solicita autorização do supervisor para digitar manualmente
   Future<void> _solicitarAutorizacaoDigitar() async {
-    final autorizado = await AutorizarDigitacaoDialog.mostrar(
+    final resultado = await AutorizarDigitacaoDialog.mostrarComDados(
       context: context,
       apiService: ref.read(apiServiceProvider),
     );
 
-    if (autorizado && mounted) {
+    if (resultado.autorizado && mounted) {
       setState(() {
         _tecladoLiberado = true;
+        _autorizadorMatricula = resultado.matriculaAutorizador;
       });
       // Aguarda um frame para garantir que o estado foi atualizado
       await Future.delayed(const Duration(milliseconds: 100));
@@ -600,10 +602,22 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
     if (!mounted) return;
     setState(() => _isProcessing = true);
 
-    // Chama bipar-endereco
+    // Chama bipar-endereco com info de digitação
     final (sucesso, erro) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .biparEndereco(codigo);
+        .biparEndereco(
+          codigo,
+          digitado: _tecladoLiberado,
+          autorizadorMatricula: _autorizadorMatricula,
+        );
+
+    // Reseta flag após usar
+    if (_tecladoLiberado) {
+      setState(() {
+        _tecladoLiberado = false;
+        _autorizadorMatricula = null;
+      });
+    }
 
     if (!sucesso) {
       if (!mounted) return;

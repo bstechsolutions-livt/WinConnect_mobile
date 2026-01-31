@@ -32,6 +32,11 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
   final _codigoFocusNode = FocusNode();
   bool _tecladoLiberado = false;
 
+  // Rastreabilidade de digitação (por etapa)
+  int? _autorizadorMatricula;
+  bool _digitadoEndereco = false;
+  bool _digitadoProduto = false;
+
   // Proteção contra digitação manual (só permite scanner rápido)
   late final ScannerProtection _scannerProtection;
 
@@ -1929,6 +1934,8 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         _etapa = 1;
         _codigoController.clear();
         _scannerProtection.reset();
+        // Rastreia se endereço foi digitado
+        _digitadoEndereco = _tecladoLiberado;
         _tecladoLiberado = false;
       });
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -1963,6 +1970,8 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         _etapa = 2;
         _codigoController.clear();
         _scannerProtection.reset();
+        // Rastreia se produto foi digitado
+        _digitadoProduto = _tecladoLiberado;
         _tecladoLiberado = false;
       });
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -1999,6 +2008,11 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
           .post('/wms/fase2/os/${item['numos']}/confirmar-entrega', {
             'codigo_barras_endereco': codigoEndereco,
             'codigo_barras_produto': codigoProduto,
+            'digitado_endereco': _digitadoEndereco,
+            'digitado_produto': _digitadoProduto,
+            if ((_digitadoEndereco || _digitadoProduto) &&
+                _autorizadorMatricula != null)
+              'autorizador_matricula': _autorizadorMatricula,
           });
 
       if (!mounted) return;
@@ -2016,6 +2030,10 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         _scannerProtection.reset();
         _entregando = false;
         _tecladoLiberado = false;
+        // Reseta flags de digitação
+        _digitadoEndereco = false;
+        _digitadoProduto = false;
+        _autorizadorMatricula = null;
       });
 
       // Se ainda tem itens, foca para próximo com delay
@@ -2062,13 +2080,16 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
   ) async {
     final apiService = ref.read(apiServiceProvider);
 
-    final autorizado = await AutorizarDigitacaoDialog.mostrar(
+    final resultado = await AutorizarDigitacaoDialog.mostrarComDados(
       context: context,
       apiService: apiService,
     );
 
-    if (autorizado == true && mounted) {
-      setState(() => _tecladoLiberado = true);
+    if (resultado.autorizado && mounted) {
+      setState(() {
+        _tecladoLiberado = true;
+        _autorizadorMatricula = resultado.matriculaAutorizador;
+      });
       _codigoFocusNode.requestFocus();
       Future.delayed(const Duration(milliseconds: 100), () {
         SystemChannels.textInput.invokeMethod('TextInput.show');
@@ -2208,6 +2229,10 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         bool isLoading = false;
         String? erro;
         bool tecladoLiberado = false;
+        // Rastreamento de digitação para log
+        bool digitadoEnderecoModal = false;
+        bool digitadoProdutoModal = false;
+        int? autorizadorMatriculaModal;
 
         final enderecoController = TextEditingController();
         final produtoController = TextEditingController();
@@ -2232,11 +2257,19 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
               try {
                 final apiService = ref.read(apiServiceProvider);
-                final response = await apiService
-                    .post('/wms/fase2/os/${item['numos']}/confirmar-entrega', {
-                      'codigo_barras_endereco': codigoEndereco,
-                      'codigo_barras_produto': codigoProduto,
-                    });
+                final body = <String, dynamic>{
+                  'codigo_barras_endereco': codigoEndereco,
+                  'codigo_barras_produto': codigoProduto,
+                  'digitado_endereco': digitadoEnderecoModal,
+                  'digitado_produto': digitadoProdutoModal,
+                };
+                if (autorizadorMatriculaModal != null) {
+                  body['autorizador_matricula'] = autorizadorMatriculaModal;
+                }
+                final response = await apiService.post(
+                  '/wms/fase2/os/${item['numos']}/confirmar-entrega',
+                  body,
+                );
 
                 // Salva resultado para usar depois de fechar o modal
                 resultadoApi = response;
@@ -2331,6 +2364,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                             onConfirmar: (codigo) {
                               setModalState(() {
                                 codigoEndereco = codigo;
+                                digitadoEnderecoModal = tecladoLiberado;
                                 etapa = 1;
                                 erro = null;
                                 tecladoLiberado =
@@ -2346,6 +2380,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                                 enderecoController.text = codigo;
                                 setModalState(() {
                                   codigoEndereco = codigo;
+                                  digitadoEnderecoModal = false;
                                   etapa = 1;
                                   erro = null;
                                   tecladoLiberado = false;
@@ -2354,14 +2389,19 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                             ),
                             onDigitar: () async {
                               final apiService = ref.read(apiServiceProvider);
-                              final autorizado =
-                                  await AutorizarDigitacaoDialog.mostrar(
+                              final autorizacao =
+                                  await AutorizarDigitacaoDialog.mostrarComDados(
                                     context: ctx,
                                     apiService: apiService,
                                   );
-                              if (autorizado) {
+                              if (autorizacao.autorizado) {
                                 setModalState(() {
                                   tecladoLiberado = true;
+                                  if (autorizacao.matriculaAutorizador !=
+                                      null) {
+                                    autorizadorMatriculaModal =
+                                        autorizacao.matriculaAutorizador;
+                                  }
                                 });
                               }
                             },
@@ -2390,6 +2430,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                                 return;
                               }
                               codigoProduto = codigo;
+                              digitadoProdutoModal = tecladoLiberado;
                               confirmarNaApi();
                             },
                             onVoltar: () {
@@ -2415,19 +2456,25 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                                   return;
                                 }
                                 codigoProduto = codigo;
+                                digitadoProdutoModal = false;
                                 confirmarNaApi();
                               },
                             ),
                             onDigitar: () async {
                               final apiService = ref.read(apiServiceProvider);
-                              final autorizado =
-                                  await AutorizarDigitacaoDialog.mostrar(
+                              final autorizacao =
+                                  await AutorizarDigitacaoDialog.mostrarComDados(
                                     context: ctx,
                                     apiService: apiService,
                                   );
-                              if (autorizado) {
+                              if (autorizacao.autorizado) {
                                 setModalState(() {
                                   tecladoLiberado = true;
+                                  if (autorizacao.matriculaAutorizador !=
+                                      null) {
+                                    autorizadorMatriculaModal =
+                                        autorizacao.matriculaAutorizador;
+                                  }
                                 });
                               }
                             },

@@ -38,6 +38,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
   final _codigoFocusNode = FocusNode();
   bool _isProcessing = false;
   bool _tecladoLiberado = false;
+  int? _autorizadorMatricula;
 
   // Proteção contra digitação manual
   late final ScannerProtection _scannerProtection;
@@ -309,7 +310,18 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
       await apiService.post('/wms/fase2/os/${item['numos']}/conferir-produto', {
         'codigo_barras': codigo,
         'quantidade': quantidade.toString(),
+        'digitado': _tecladoLiberado,
+        if (_tecladoLiberado && _autorizadorMatricula != null)
+          'autorizador_matricula': _autorizadorMatricula,
       });
+
+      // Reseta flags após usar
+      if (_tecladoLiberado) {
+        setState(() {
+          _tecladoLiberado = false;
+          _autorizadorMatricula = null;
+        });
+      }
 
       if (!mounted) return;
 
@@ -372,13 +384,16 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
 
   /// Solicita autorização do supervisor para digitar manualmente
   Future<void> _solicitarAutorizacaoDigitar() async {
-    final autorizado = await AutorizarDigitacaoDialog.mostrar(
+    final resultado = await AutorizarDigitacaoDialog.mostrarComDados(
       context: context,
       apiService: ref.read(apiServiceProvider),
     );
 
-    if (autorizado && mounted) {
-      setState(() => _tecladoLiberado = true);
+    if (resultado.autorizado && mounted) {
+      setState(() {
+        _tecladoLiberado = true;
+        _autorizadorMatricula = resultado.matriculaAutorizador;
+      });
       _codigoFocusNode.requestFocus();
       SystemChannels.textInput.invokeMethod('TextInput.show');
     }

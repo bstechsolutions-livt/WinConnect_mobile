@@ -32,6 +32,10 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
   final _codigoFocusNode = FocusNode();
   bool _isProcessing = false;
 
+  // Dados de autorização para rastreabilidade
+  bool _digitadoManualmente = false;
+  int? _autorizadorMatricula;
+
   // Proteção contra digitação manual
   late final ScannerProtection _scannerProtection;
 
@@ -728,9 +732,18 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.post('/wms/fase2/unitizador/bipar', {
         'codigo_barras': codigo,
+        'digitado': _digitadoManualmente,
+        if (_digitadoManualmente && _autorizadorMatricula != null)
+          'autorizador_matricula': _autorizadorMatricula,
       });
 
       _codigoController.clear();
+
+      // Reseta flags de digitação após usar
+      setState(() {
+        _digitadoManualmente = false;
+        _autorizadorMatricula = null;
+      });
 
       if (!mounted) return;
       setState(() => _isProcessing = false);
@@ -862,12 +875,17 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
 
   /// Solicita autorização do supervisor para digitar manualmente
   Future<void> _solicitarAutorizacaoDigitar() async {
-    final autorizado = await AutorizarDigitacaoDialog.mostrar(
+    final resultado = await AutorizarDigitacaoDialog.mostrarComDados(
       context: context,
       apiService: ref.read(apiServiceProvider),
     );
 
-    if (autorizado && mounted) {
+    if (resultado.autorizado && mounted) {
+      // Armazena dados de autorização para usar na próxima bipagem
+      setState(() {
+        _digitadoManualmente = true;
+        _autorizadorMatricula = resultado.matriculaAutorizador;
+      });
       _mostrarDialogDigitar();
     }
   }

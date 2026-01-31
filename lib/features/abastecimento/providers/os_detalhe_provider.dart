@@ -153,11 +153,21 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
 
   // Bipar endereço de origem
   // Retorna (sucesso, mensagemErro)
-  Future<(bool, String?)> biparEndereco(String codigoEndereco) async {
+  // Parâmetros opcionais para rastreabilidade:
+  // - digitado: true se foi digitado manualmente
+  // - autorizadorMatricula: matrícula de quem autorizou
+  Future<(bool, String?)> biparEndereco(
+    String codigoEndereco, {
+    bool digitado = false,
+    int? autorizadorMatricula,
+  }) async {
     try {
       final apiService = ref.read(apiServiceProvider);
       await apiService.post('/wms/fase$fase/os/$numos/bipar-endereco', {
         'codigo_endereco': codigoEndereco,
+        'digitado': digitado,
+        if (digitado && autorizadorMatricula != null)
+          'autorizador_matricula': autorizadorMatricula,
       });
       return (true, null);
     } catch (e) {
@@ -168,11 +178,21 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   // Bipar produto (validar código de barras)
   // APENAS valida, NÃO atualiza estado local (o estado só muda ao finalizar)
   // Retorna BiparProdutoResult com tipo ('caixa' ou 'unidade') e qtunitcx
-  Future<BiparProdutoResult> biparProdutoComTipo(String codigoBarras) async {
+  // Parâmetros opcionais para rastreabilidade:
+  // - digitado: true se foi digitado manualmente
+  // - autorizadorMatricula: matrícula de quem autorizou
+  Future<BiparProdutoResult> biparProdutoComTipo(
+    String codigoBarras, {
+    bool digitado = false,
+    int? autorizadorMatricula,
+  }) async {
     try {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.post('/wms/fase$fase/os/$numos/bipar', {
         'codigo_barras': codigoBarras,
+        'digitado': digitado,
+        if (digitado && autorizadorMatricula != null)
+          'autorizador_matricula': autorizadorMatricula,
       });
 
       // API retorna: { tipo: 'caixa'|'unidade', qtunitcx: N }
@@ -187,8 +207,16 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
 
   // Versão legada para compatibilidade
   // Retorna (sucesso, mensagemErro)
-  Future<(bool, String?)> biparProduto(String codigoBarras) async {
-    final result = await biparProdutoComTipo(codigoBarras);
+  Future<(bool, String?)> biparProduto(
+    String codigoBarras, {
+    bool digitado = false,
+    int? autorizadorMatricula,
+  }) async {
+    final result = await biparProdutoComTipo(
+      codigoBarras,
+      digitado: digitado,
+      autorizadorMatricula: autorizadorMatricula,
+    );
     return (result.sucesso, result.erro);
   }
 
