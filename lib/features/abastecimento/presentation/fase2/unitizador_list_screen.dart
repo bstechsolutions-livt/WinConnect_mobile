@@ -711,12 +711,44 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       if (!mounted) return;
       setState(() => _isProcessing = false);
 
+      // Verifica se a OS está bloqueada
+      if (response['bloqueada'] == true || 
+          response['status'] == 'BLOQUEADA' ||
+          response['os_bloqueada'] == true) {
+        final motivo = response['motivo'] ?? response['divergencia'] ?? 'Motivo não especificado';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.block, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text('OS bloqueada: $motivo'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          // Recarrega para remover o unitizador da lista (se a API filtra bloqueados)
+          _carregarUnitizadores();
+          // Refoca no scanner
+          Future.delayed(const Duration(milliseconds: 200), () {
+            if (mounted) _codigoFocusNode.requestFocus();
+          });
+        }
+        return;
+      }
+
       // Extrai os itens da resposta para passar à próxima tela
       final itens = (response['itens'] as List? ?? [])
           .cast<Map<String, dynamic>>();
 
       // Navega para a tela de conferência de itens
-      final resultado = await Navigator.push<bool>(
+      final resultado = await Navigator.push<dynamic>(
         context,
         MaterialPageRoute(
           builder: (context) => UnitizadorItensScreen(
@@ -727,26 +759,52 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
         ),
       );
 
-      if (resultado == true) {
+      // Trata o resultado da conferência
+      final sucesso = resultado is Map
+          ? resultado['sucesso'] == true
+          : resultado == true;
+      final bloqueada = resultado is Map
+          ? resultado['bloqueada'] == true
+          : false;
+
+      if (sucesso || bloqueada) {
+        // Sempre recarrega para atualizar a lista (remover bloqueados, atualizar status)
         _carregarUnitizadores();
         _carregarCarrinho();
 
-        // Mostra sucesso rápido
+        // Mostra mensagem apropriada
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('Produto adicionado ao carrinho!'),
-                ],
+          if (bloqueada) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                    SizedBox(width: 8),
+                    Expanded(child: Text('OS bloqueada. Bipe outro unitizador.')),
+                  ],
+                ),
+                backgroundColor: Colors.orange,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 2),
               ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              duration: const Duration(seconds: 1),
-            ),
-          );
+            );
+          } else if (sucesso) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    SizedBox(width: 8),
+                    Text('Produto adicionado ao carrinho!'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          }
         }
       }
 

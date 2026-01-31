@@ -325,7 +325,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
     try {
       final apiService = ref.read(apiServiceProvider);
 
-      await apiService.post('/wms/fase2/os/${item['numos']}/conferir-produto', {
+      final response = await apiService.post('/wms/fase2/os/${item['numos']}/conferir-produto', {
         'codigo_barras': codigo,
         'quantidade': quantidade.toString(),
         'digitado': _tecladoLiberado,
@@ -343,11 +343,33 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
 
       if (!mounted) return;
 
-      // Unitizador tem só 1 item, então volta para lista de unitizadores
-      // para bipar o próximo rapidamente
-      Navigator.of(context).pop(true);
+      // Verifica se a OS foi bloqueada pela API
+      if (response['bloqueada'] == true || response['status'] == 'BLOQUEADA') {
+        _mostrarErro('OS foi bloqueada. Retornando para bipar outro unitizador.');
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.of(context).pop({'sucesso': false, 'bloqueada': true});
+        }
+        return;
+      }
+
+      // Unitizador conferido com sucesso, volta para lista de unitizadores
+      Navigator.of(context).pop({'sucesso': true, 'bloqueada': false});
     } catch (e) {
-      _mostrarErro(e.toString().replaceAll('Exception: ', ''));
+      final errorMsg = e.toString().replaceAll('Exception: ', '');
+      _mostrarErro(errorMsg);
+
+      // Se foi bloqueada, volta para a tela de unitizadores
+      if (errorMsg.toLowerCase().contains('bloqueada') ||
+          errorMsg.toLowerCase().contains('bloqueou') ||
+          errorMsg.toLowerCase().contains('blocked')) {
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.of(context).pop({'sucesso': false, 'bloqueada': true});
+        }
+        return;
+      }
+
       if (mounted) {
         setState(() => _isProcessing = false);
       }
