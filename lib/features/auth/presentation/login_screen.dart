@@ -214,13 +214,13 @@ class LoginScreen extends HookConsumerWidget {
 
                 const SizedBox(height: 24),
 
-                // Versão do app
+                // Versão do app com patch do Shorebird
                 Center(
                   child: Consumer(
                     builder: (context, ref, _) {
-                      final versionAsync = ref.watch(appVersionProvider);
+                      final versionWithPatchAsync = ref.watch(appVersionWithPatchProvider);
                       return Text(
-                        'v${versionAsync.valueOrNull ?? "..."}',
+                        'v${versionWithPatchAsync.valueOrNull ?? "..."}',
                         style: TextStyle(
                           fontSize: 11,
                           color: Theme.of(

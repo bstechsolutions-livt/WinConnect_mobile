@@ -11,6 +11,8 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Flag para habilitar suporte às novas APIs de linguagem (necessário para ota_update)
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -28,6 +30,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Habilitar multiDex para compatibilidade
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -37,6 +42,12 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+dependencies {
+    // Desugaring de APIs Java (necessário para ota_update 7.0+)
+    // Versão 2.1.4+ necessária pelo ota_update
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {

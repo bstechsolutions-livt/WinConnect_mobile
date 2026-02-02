@@ -5,7 +5,7 @@
 ### Servidor Rofe (WinConnect API)
 - **Host**: 192.168.1.25
 - **Usuário SSH**: rofe
-- **Senha**: @X#891ccc
+- **Senha**: 
 - **Caminho do projeto**: /var/www/winconnect/
 - **Framework**: Laravel (PHP)
 

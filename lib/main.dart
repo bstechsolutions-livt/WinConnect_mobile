@@ -10,6 +10,7 @@ import 'features/abastecimento/presentation/abastecimento_screen.dart';
 import 'shared/providers/theme_provider.dart';
 import 'shared/providers/auth_provider.dart';
 import 'shared/models/user_model.dart';
+import 'shared/widgets/update_checker.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +46,7 @@ class WinConnectApp extends ConsumerWidget {
         
         home: authState.when(
           data: (user) => user != null 
-              ? const DashboardScreen()
+              ? const UpdateCheckerWrapper(child: DashboardScreen())
               : const LoginScreen(),
           loading: () => const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -130,19 +131,26 @@ class DashboardScreen extends ConsumerWidget {
 
                     const SizedBox(height: 40),
 
-                    // Versão do app
+                    // Versão do app com botão de atualização
                     Center(
-                      child: Consumer(
-                        builder: (context, ref, _) {
-                          final versionAsync = ref.watch(appVersionProvider);
-                          return Text(
-                            'v${versionAsync.valueOrNull ?? "..."}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isDark ? Colors.white38 : Colors.grey.shade400,
-                            ),
-                          );
-                        },
+                      child: Column(
+                        children: [
+                          // Botão de verificar atualização
+                          const CheckUpdateButton(iconOnly: false),
+                          const SizedBox(height: 8),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final versionAsync = ref.watch(appVersionProvider);
+                              return Text(
+                                'v${versionAsync.valueOrNull ?? "..."}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark ? Colors.white38 : Colors.grey.shade400,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
                       ),
                     ),
                   ],

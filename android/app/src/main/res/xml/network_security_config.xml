@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Permite tráfego HTTP para o servidor interno -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.1.25</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
+    
+    <!-- Para desenvolvimento com ngrok -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">ngrok.io</domain>
+        <domain includeSubdomains="true">ngrok-free.app</domain>
+    </domain-config>
+    
+    <!-- Produção com HTTPS -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">winconnect.bstechsolutions.com</domain>
+    </domain-config>
+</network-security-config>

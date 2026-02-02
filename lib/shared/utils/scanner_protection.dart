@@ -10,8 +10,9 @@ import 'dart:async';
 /// pelo supervisor.
 class ScannerProtection {
   /// Tempo máximo entre caracteres para considerar como scanner (em milissegundos).
-  /// Scanner físico digita muito rápido, então 50ms é um bom limite.
-  static const int maxIntervalMs = 50;
+  /// Scanner físico de coletor pode ser mais lento que o esperado.
+  /// 500ms é bem tolerante - na prática o scanner ainda é mais rápido.
+  static const int maxIntervalMs = 500;
 
   /// Comprimento mínimo para considerar como código válido de scanner.
   /// Códigos de barras geralmente têm pelo menos 4 caracteres.
