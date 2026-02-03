@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../providers/app_update_provider.dart';
-import 'update_dialog.dart';
+import 'update_screen.dart';
 
 /// Widget que envolve o app e verifica atualizações automaticamente
 /// 
@@ -26,10 +26,13 @@ class UpdateCheckerWrapper extends ConsumerStatefulWidget {
 class _UpdateCheckerWrapperState extends ConsumerState<UpdateCheckerWrapper> {
   bool _hasChecked = false;
 
+  // TODO: Reativar verificação automática quando tela de update estiver pronta
+  static const bool _updateCheckEnabled = false;
+
   @override
   void initState() {
     super.initState();
-    if (widget.checkOnStart) {
+    if (widget.checkOnStart && _updateCheckEnabled) {
       // Aguarda o widget estar montado antes de verificar
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _checkForUpdates();
@@ -38,11 +41,11 @@ class _UpdateCheckerWrapperState extends ConsumerState<UpdateCheckerWrapper> {
   }
 
   Future<void> _checkForUpdates() async {
-    if (_hasChecked) return;
+    if (_hasChecked || !_updateCheckEnabled) return;
     _hasChecked = true;
 
     try {
-      await UpdateDialogHelper.checkAndShowUpdate(context, ref);
+      await UpdateScreenHelper.checkAndShowUpdate(context, ref);
     } catch (e) {
       debugPrint('Erro ao verificar atualizações: $e');
     }
@@ -65,7 +68,7 @@ mixin UpdateCheckerMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        await UpdateDialogHelper.checkAndShowUpdate(context, ref);
+        await UpdateScreenHelper.checkAndShowUpdate(context, ref);
       } catch (e) {
         debugPrint('Erro ao verificar atualizações: $e');
       }
@@ -207,7 +210,7 @@ class CheckUpdateButton extends ConsumerWidget {
 
   void _onPressed(BuildContext context, WidgetRef ref, updateInfo) {
     if (updateInfo.hasUpdate) {
-      UpdateDialogHelper.checkAndShowUpdate(context, ref, showOnlyIfAvailable: false);
+      UpdateScreenHelper.checkAndShowUpdate(context, ref, showOnlyIfAvailable: false);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

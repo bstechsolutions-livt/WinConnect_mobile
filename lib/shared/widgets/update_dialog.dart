@@ -21,105 +21,83 @@ class UpdateAvailableDialog extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      insetPadding: const EdgeInsets.all(16),
-      child: Container(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+      child: Padding(
         padding: const EdgeInsets.all(16),
-        constraints: const BoxConstraints(maxWidth: 300),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Ícone compacto
+            // Ícone pequeno
             Icon(
               Icons.system_update_rounded,
-              size: 40,
+              size: 32,
               color: theme.colorScheme.primary,
             ),
             
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             
-            // Título
+            // Título simples
             Text(
               updateInfo.forceUpdate
                   ? 'Atualização Obrigatória'
-                  : 'Nova Versão Disponível',
-              style: theme.textTheme.titleMedium?.copyWith(
+                  : 'Atualização Disponível',
+              style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
             ),
             
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             
             // Versão
             Text(
               'v${updateInfo.latestVersion}',
               style: TextStyle(
                 color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
               ),
             ),
             
             const SizedBox(height: 12),
             
-            // Changelog compacto
-            if (updateInfo.changelog != null && updateInfo.changelog!.isNotEmpty)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  updateInfo.changelog!,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                    height: 1.3,
-                  ),
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            
-            const SizedBox(height: 16),
-            
-            // Botão único - Atualizar
+            // Botão Atualizar
             SizedBox(
               width: double.infinity,
-              child: FilledButton.icon(
+              child: FilledButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   onUpdate?.call();
                 },
-                icon: const Icon(Icons.download_rounded, size: 18),
-                label: const Text('Atualizar Agora'),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                 ),
+                child: const Text('Atualizar'),
               ),
             ),
             
-            // Link "Depois" discreto (se não for forçado)
+            // "Depois" só se não for obrigatório
             if (!updateInfo.forceUpdate) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               TextButton(
                 onPressed: () {
                   Navigator.of(context).pop();
                   onLater?.call();
                 },
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                ),
                 child: Text(
                   'Depois',
                   style: TextStyle(
                     color: theme.colorScheme.onSurface.withOpacity(0.5),
-                    fontSize: 12,
+                    fontSize: 11,
                   ),
                 ),
               ),
