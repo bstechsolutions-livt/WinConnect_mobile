@@ -1657,9 +1657,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
     final instrucao = _etapa == 0
         ? 'Bipe o produto: ${item['descricao']}'
         : 'Bipe o endereço: $endereco';
-    final hintText = _etapa == 0
-        ? 'Bipe o produto...'
-        : 'Bipe o endereço...';
+    final hintText = _etapa == 0 ? 'Bipe o produto...' : 'Bipe o endereço...';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1800,6 +1798,26 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
             // Botões auxiliares
             Row(
               children: [
+                // Botão divergência (discreto)
+                SizedBox(
+                  width: 44,
+                  child: IconButton(
+                    onPressed: _entregando
+                        ? null
+                        : () => _mostrarDialogDivergenciaEntrega(item),
+                    icon: const Icon(Icons.warning_amber_rounded, size: 20),
+                    style: IconButton.styleFrom(
+                      foregroundColor: Colors.orange.shade700,
+                      backgroundColor: Colors.orange.withValues(alpha: 0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.all(10),
+                    ),
+                    tooltip: 'Sinalizar problema',
+                  ),
+                ),
+                const SizedBox(width: 6),
                 // Botão digitar
                 Expanded(
                   child: OutlinedButton.icon(
@@ -2117,6 +2135,303 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         ),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _mostrarSucesso(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(msg)),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Dialog para sinalizar divergência durante a entrega
+  void _mostrarDialogDivergenciaEntrega(Map<String, dynamic> item) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final observacaoController = TextEditingController();
+    String? tipoSelecionado;
+    bool enviando = false;
+
+    // Tipos de divergência
+    final tiposDivergencia = [
+      {'value': 'quantidade_menor', 'label': 'Quantidade Menor'},
+      {'value': 'quantidade_maior', 'label': 'Quantidade Maior'},
+      {'value': 'produto_errado', 'label': 'Produto Errado'},
+      {'value': 'nao_encontrado', 'label': 'Não Encontrado'},
+      {'value': 'outro', 'label': 'Outro'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isOutro = tipoSelecionado == 'outro';
+
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Indicador de arraste
+                    Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Header compacto
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.warning_amber_rounded,
+                            size: 24,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Problema na Entrega',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? Colors.white
+                                      : Colors.grey.shade900,
+                                ),
+                              ),
+                              Text(
+                                'OS ${item['numos']}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isDark
+                                      ? Colors.white54
+                                      : Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Dropdown compacto
+                    DropdownButtonFormField<String>(
+                      value: tipoSelecionado,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: 'Tipo do problema',
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        filled: true,
+                        fillColor: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.grey.shade50,
+                      ),
+                      dropdownColor: isDark
+                          ? const Color(0xFF2A2A2A)
+                          : Colors.white,
+                      items: tiposDivergencia.map((tipo) {
+                        return DropdownMenuItem<String>(
+                          value: tipo['value'] as String,
+                          child: Text(
+                            tipo['label'] as String,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setModalState(() => tipoSelecionado = value);
+                      },
+                    ),
+
+                    // Campo observação (só se for "outro" ou sempre disponível)
+                    if (isOutro) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: observacaoController,
+                        maxLines: 2,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          labelText: 'Descrição *',
+                          hintText: 'Descreva o problema...',
+                          alignLabelWithHint: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.grey.shade50,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+
+                    // Botões compactos
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: enviando
+                                ? null
+                                : () => Navigator.pop(ctx),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: const Text('Cancelar'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: enviando
+                                ? null
+                                : () async {
+                                    if (tipoSelecionado == null) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Selecione o tipo'),
+                                          backgroundColor: Colors.orange,
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    if (tipoSelecionado == 'outro' &&
+                                        observacaoController.text
+                                            .trim()
+                                            .isEmpty) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Descreva o problema'),
+                                          backgroundColor: Colors.orange,
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    setModalState(() => enviando = true);
+
+                                    try {
+                                      final apiService = ref.read(
+                                        apiServiceProvider,
+                                      );
+                                      await apiService.post(
+                                        '/wms/fase2/os/${item['numos']}/divergencia',
+                                        {
+                                          'tipo': tipoSelecionado,
+                                          'observacao':
+                                              observacaoController.text
+                                                  .trim()
+                                                  .isNotEmpty
+                                              ? observacaoController.text.trim()
+                                              : null,
+                                          'momento': 'entrega',
+                                        },
+                                      );
+
+                                      if (!ctx.mounted) return;
+                                      Navigator.pop(ctx);
+
+                                      _mostrarSucesso('Problema registrado!');
+                                    } catch (e) {
+                                      setModalState(() => enviando = false);
+                                      ScaffoldMessenger.of(ctx).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            e.toString().replaceAll(
+                                              'Exception: ',
+                                              '',
+                                            ),
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: enviando
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text('Enviar'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
