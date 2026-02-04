@@ -2200,11 +2200,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
     // Tipos de divergência
     final tiposDivergencia = [
-      {'value': 'quantidade_menor', 'label': 'Quantidade Menor'},
-      {'value': 'quantidade_maior', 'label': 'Quantidade Maior'},
-      {'value': 'produto_errado', 'label': 'Produto Errado'},
-      {'value': 'nao_encontrado', 'label': 'Não Encontrado'},
-      {'value': 'outro', 'label': 'Outro'},
+      {'value': 'tamanho_picking', 'label': 'Tamanho do Picking'},
     ];
 
     showModalBottomSheet(
