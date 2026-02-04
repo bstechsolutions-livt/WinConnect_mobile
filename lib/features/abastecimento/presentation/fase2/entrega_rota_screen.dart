@@ -353,21 +353,21 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         // Check de produto confirmado (só na etapa 2) - inline com instrução
         if (mostrarCheckProduto)
           Container(
-            margin: const EdgeInsets.only(bottom: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            margin: const EdgeInsets.only(bottom: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: Colors.orange.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.check_circle, size: 12, color: Colors.orange),
-                const SizedBox(width: 4),
+                Icon(Icons.check_circle, size: 10, color: Colors.orange),
+                const SizedBox(width: 3),
                 Text(
                   'Produto ✓',
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: FontWeight.w600,
                     color: Colors.orange,
                   ),
@@ -381,31 +381,31 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
           instrucaoTitulo,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 13,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
 
         // RUA destacada
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
             color: Colors.green,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Text(
             'RUA $rua',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
 
         // Caixas de endereço
         Row(
@@ -419,24 +419,24 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
           ],
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 6),
 
         // Indicador
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: Colors.green.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.location_on, size: 14, color: Colors.green),
-              const SizedBox(width: 4),
+              Icon(Icons.location_on, size: 12, color: Colors.green),
+              const SizedBox(width: 3),
               Text(
                 'BIPE O ENDEREÇO',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: Colors.green,
                 ),
@@ -445,7 +445,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
 
         // Campo de scanner
         _buildCampoScanner(
@@ -479,20 +479,20 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
       children: [
         // Check de endereço confirmado
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
             color: Colors.green.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle, size: 16, color: Colors.green),
-              const SizedBox(width: 6),
+              Icon(Icons.check_circle, size: 12, color: Colors.green),
+              const SizedBox(width: 4),
               Text(
                 'Endereço: $endereco ✓',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 9,
                   fontWeight: FontWeight.w600,
                   color: Colors.green,
                 ),
@@ -501,27 +501,27 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 6),
 
         // Instrução
         Text(
           'CONFIRME O PRODUTO',
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 14,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 6),
 
-        // Card do produto
+        // Card do produto - mais compacto
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: Colors.orange.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
           ),
           child: Column(
@@ -530,19 +530,19 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
               // Unitizador
               Row(
                 children: [
-                  Icon(Icons.local_shipping, size: 16, color: Colors.blue),
-                  const SizedBox(width: 6),
+                  Icon(Icons.local_shipping, size: 12, color: Colors.blue),
+                  const SizedBox(width: 4),
                   Text(
                     'Unitizador: ',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 9,
                       color: isDark ? Colors.white54 : Colors.grey.shade600,
                     ),
                   ),
                   Text(
                     unitizador,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 10,
                       fontWeight: FontWeight.bold,
                       color: Colors.blue,
                     ),
@@ -550,14 +550,14 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 ],
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
 
               // Código do produto
               Text(
                 'Cód: ${item['codprod']}',
                 style: TextStyle(
                   color: isDark ? Colors.white54 : Colors.grey.shade600,
-                  fontSize: 11,
+                  fontSize: 9,
                 ),
               ),
 
@@ -566,30 +566,30 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 descricao,
                 style: TextStyle(
                   color: isDark ? Colors.white : Colors.grey.shade900,
-                  fontSize: 14,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
 
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
 
               // Quantidade
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 6,
+                  vertical: 2,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.orange.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
                   'QTD: ${qt.toStringAsFixed(0)} UN',
                   style: const TextStyle(
                     color: Colors.orange,
-                    fontSize: 14,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -598,24 +598,24 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 6),
 
         // Indicador
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.orange.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.inventory_2, size: 16, color: Colors.orange),
-              const SizedBox(width: 6),
+              Icon(Icons.inventory_2, size: 12, color: Colors.orange),
+              const SizedBox(width: 4),
               Text(
                 'BIPE O PRODUTO',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 10,
                   fontWeight: FontWeight.bold,
                   color: Colors.orange,
                 ),
@@ -1061,7 +1061,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: _codigoFocusNode.hasFocus
                   ? cor
@@ -1078,17 +1078,19 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                   enabled: !_entregando,
                   decoration: InputDecoration(
                     hintText: hintText,
-                    hintStyle: const TextStyle(fontSize: 13),
+                    hintStyle: const TextStyle(fontSize: 11),
                     prefixIcon: Icon(
                       Icons.qr_code_scanner,
+                      size: 18,
                       color: _codigoFocusNode.hasFocus ? cor : null,
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
+                      horizontal: 8,
+                      vertical: 8,
                     ),
                   ),
+                  style: const TextStyle(fontSize: 12),
                   keyboardType: _tecladoLiberado
                       ? TextInputType.text
                       : TextInputType.none,
@@ -1117,15 +1119,17 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
               ),
               if (!_entregando)
                 IconButton(
-                  icon: const Icon(Icons.camera_alt),
+                  icon: const Icon(Icons.camera_alt, size: 18),
+                  padding: const EdgeInsets.all(6),
+                  constraints: const BoxConstraints(),
                   onPressed: () => _abrirCameraEntrega(item, endereco),
                 ),
               if (_entregando)
                 const Padding(
-                  padding: EdgeInsets.all(12),
+                  padding: EdgeInsets.all(8),
                   child: SizedBox(
-                    width: 20,
-                    height: 20,
+                    width: 16,
+                    height: 16,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
@@ -1133,17 +1137,17 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
           ),
         ),
 
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
 
         Text(
           'Use o leitor ou toque na câmera',
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 9,
+            fontSize: 8,
           ),
         ),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
 
         // Botões
         Row(
@@ -1154,45 +1158,45 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 onPressed: () => _mostrarDialogDivergenciaEntrega(item),
                 icon: const Icon(
                   Icons.warning_amber_rounded,
-                  size: 18,
+                  size: 14,
                   color: Colors.white,
                 ),
                 label: const Text(
-                  'DIVERGÊNCIA',
+                  'DIVERG.',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 9,
                   ),
                 ),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.orange,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             // Botão digitar
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _entregando
                     ? null
                     : () => _solicitarAutorizacaoDigitar(item, endereco),
-                icon: Icon(Icons.keyboard, color: cor, size: 16),
-                label: const Text('DIGITAR', style: TextStyle(fontSize: 10)),
+                icon: Icon(Icons.keyboard, color: cor, size: 14),
+                label: const Text('DIGITAR', style: TextStyle(fontSize: 9)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: cor,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 4),
             // Botão confirmar
             Expanded(
               flex: 2,
@@ -1202,15 +1206,15 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                     : () => _processarCodigo(item, endereco),
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 6),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 ),
                 child: _entregando
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
+                        width: 14,
+                        height: 14,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Colors.white,
@@ -1219,7 +1223,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                     : const Text(
                         'CONFIRMAR',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1233,11 +1237,11 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
   Widget _buildEnderecoBoxEntrega(bool isDark, String label, String value) {
     return Container(
-      width: 54,
-      height: 58,
+      width: 46,
+      height: 50,
       decoration: BoxDecoration(
         color: Colors.green.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
         border: Border.all(color: Colors.green, width: 2),
       ),
       child: Column(
@@ -1247,7 +1251,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
             label,
             style: TextStyle(
               color: Colors.green.withValues(alpha: 0.7),
-              fontSize: 8,
+              fontSize: 7,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1255,7 +1259,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
             value,
             style: const TextStyle(
               color: Colors.green,
-              fontSize: 22,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1266,11 +1270,11 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
 
   Widget _buildPonto(bool isDark) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 2),
       child: Text(
         '.',
         style: TextStyle(
-          fontSize: 28,
+          fontSize: 22,
           fontWeight: FontWeight.bold,
           color: isDark ? Colors.white : Colors.grey.shade800,
         ),

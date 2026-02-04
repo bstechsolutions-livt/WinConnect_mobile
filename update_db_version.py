@@ -23,11 +23,11 @@ def main():
 \\App\\Models\\AppVersion::updateOrCreate(
     ['platform' => 'android', 'client_id' => 'all'],
     [
-        'version' => '2.2.0',
-        'build_number' => 12,
+        'version' => '2.2.1',
+        'build_number' => 13,
         'download_url' => 'http://192.168.1.25/systems/winconnect_mobile.apk',
-        'changelog' => 'Divergencia Fase 2 - Tamanho do Picking',
-        'file_size' => 81264640,
+        'changelog' => 'Validação unitizador único, UI compacta entrega, fix divergência tamanho picking',
+        'file_size' => 81271865,
         'is_active' => true,
         'force_update' => false,
         'released_at' => now()
