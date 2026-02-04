@@ -1148,13 +1148,41 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         // Botões
         Row(
           children: [
+            // Botão divergência (destacado e sempre visível)
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () => _mostrarDialogDivergenciaEntrega(item),
+                icon: const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
+                label: const Text(
+                  'DIVERGÊNCIA',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 10,
+                  ),
+                ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            // Botão digitar
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _entregando
                     ? null
                     : () => _solicitarAutorizacaoDigitar(item, endereco),
                 icon: Icon(Icons.keyboard, color: cor, size: 16),
-                label: const Text('DIGITAR', style: TextStyle(fontSize: 11)),
+                label: const Text('DIGITAR', style: TextStyle(fontSize: 10)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: cor,
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -1164,7 +1192,8 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
+            // Botão confirmar
             Expanded(
               flex: 2,
               child: FilledButton(
@@ -1172,7 +1201,7 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
                     ? null
                     : () => _processarCodigo(item, endereco),
                 style: FilledButton.styleFrom(
-                  backgroundColor: cor,
+                  backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -1798,26 +1827,32 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
             // Botões auxiliares
             Row(
               children: [
-                // Botão divergência (discreto)
-                SizedBox(
-                  width: 44,
-                  child: IconButton(
-                    onPressed: _entregando
-                        ? null
-                        : () => _mostrarDialogDivergenciaEntrega(item),
-                    icon: const Icon(Icons.warning_amber_rounded, size: 20),
-                    style: IconButton.styleFrom(
-                      foregroundColor: Colors.orange.shade700,
-                      backgroundColor: Colors.orange.withValues(alpha: 0.1),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.all(10),
+                // Botão divergência (destacado e sempre visível)
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () => _mostrarDialogDivergenciaEntrega(item),
+                    icon: const Icon(
+                      Icons.warning_amber_rounded,
+                      size: 22,
+                      color: Colors.white,
                     ),
-                    tooltip: 'Sinalizar problema',
+                    label: const Text(
+                      'DIVERGÊNCIA',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.orange,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 // Botão digitar
                 Expanded(
                   child: OutlinedButton.icon(
