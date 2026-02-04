@@ -456,13 +456,18 @@ class _RuaListScreenState extends ConsumerState<RuaListScreen> {
                         );
                       } else {
                         // Fase 2: Lista de Unitizadores
-                        Navigator.push(
+                        final result = await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
                                 UnitizadorListScreen(rua: rua.codigo),
                           ),
                         );
+                        // Atualiza lista ao voltar
+                        if (mounted) {
+                          ref.invalidate(ruaNotifierProvider(widget.fase));
+                          _carregarCarrinho();
+                        }
                       }
                     } catch (e) {
                       if (!context.mounted) return;

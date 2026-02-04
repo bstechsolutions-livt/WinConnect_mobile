@@ -942,7 +942,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
                   readOnly: false,
                   showCursor: true,
                   decoration: InputDecoration(
-                    hintText: 'Aguardando produto...',
+                    hintText: 'Bipe o produto',
                     prefixIcon: Icon(
                       Icons.qr_code_scanner,
                       color: _codigoFocusNode.hasFocus

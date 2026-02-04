@@ -541,7 +541,7 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
             autofocus: true,
             keyboardType: TextInputType.none,
             decoration: InputDecoration(
-              hintText: 'Aguardando unitizador...',
+              hintText: 'Bipe o unitizador',
               hintStyle: TextStyle(
                 color: isDark ? Colors.white38 : Colors.grey.shade400,
               ),

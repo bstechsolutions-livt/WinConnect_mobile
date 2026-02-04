@@ -364,7 +364,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   Widget _buildContent(BuildContext context, OsDetalhe os) {
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Column(
           children: [
             // Botões de ação (esconde quando já bipou o produto)
@@ -393,27 +393,27 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
             ],
 
             // Título dinâmico
             Text(
               os.produtoBipado ? 'BIPAR UNITIZADOR' : 'BIPAR PRODUTO',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
 
             // Card: Produto com destaque (mostra confirmado quando já bipou)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: os.produtoBipado
                       ? Colors.green.withValues(alpha: 0.5)
@@ -460,53 +460,74 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                     os.descricao,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurface,
-                      fontSize: os.produtoBipado ? 15 : 25,
+                      fontSize: os.produtoBipado ? 14 : 18,
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  const SizedBox(height: 6),
+                  // Badges: código, múltiplo e estoque do endereço origem
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 6,
+                    runSpacing: 4,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                          horizontal: 6,
+                          vertical: 3,
                         ),
                         decoration: BoxDecoration(
                           color: Colors.blue,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           'CÓD: ${os.codprod}',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
-                            fontSize: 11,
+                            fontSize: 10,
                           ),
                         ),
                       ),
-                      // Só mostra o múltiplo quando ainda não bipou o produto
+                      // Só mostra o múltiplo e estoque quando ainda não bipou o produto
                       if (!os.produtoBipado) ...[
-                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                            horizontal: 6,
+                            vertical: 3,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.amber[700],
-                            borderRadius: BorderRadius.circular(6),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             '1 CX = ${os.multiplo} UN',
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 11,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ),
+                        // Estoque no endereço de origem
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.green[700],
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'EST: ${os.qtEstoqueAtual.toInt()} UN',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
                             ),
                           ),
                         ),
@@ -517,7 +538,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
             // Campo de bipagem ou status
             if (!os.produtoBipado) ...[
@@ -703,7 +724,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
         Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: focusNode.hasFocus
                   ? Theme.of(context).colorScheme.primary
@@ -720,18 +741,21 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                   enabled: !_isProcessing,
                   readOnly: false,
                   showCursor: true,
+                  style: const TextStyle(fontSize: 14),
                   decoration: InputDecoration(
                     hintText: hintText,
+                    hintStyle: const TextStyle(fontSize: 14),
                     prefixIcon: Icon(
                       icon,
+                      size: 20,
                       color: focusNode.hasFocus
                           ? Theme.of(context).colorScheme.primary
                           : null,
                     ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 16,
+                      horizontal: 12,
+                      vertical: 12,
                     ),
                   ),
                   keyboardType: tecladoLiberado
@@ -743,64 +767,67 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               ),
               if (!_isProcessing)
                 IconButton(
-                  icon: const Icon(Icons.camera_alt),
+                  icon: const Icon(Icons.camera_alt, size: 20),
                   tooltip: 'Escanear com câmera',
                   onPressed: onCameraPressed,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(),
                 ),
               if (_isProcessing)
                 const Padding(
-                  padding: EdgeInsets.all(12),
+                  padding: EdgeInsets.all(8),
                   child: SizedBox(
-                    width: 24,
-                    height: 24,
+                    width: 20,
+                    height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   ),
                 ),
+              const SizedBox(width: 8),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Text(
           'Use o leitor de código de barras ou toque na câmera',
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 12,
+            fontSize: 11,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Row(
           children: [
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _isProcessing ? null : onDigitarPressed,
-                icon: const Icon(Icons.keyboard, color: Colors.orange),
-                label: const Text('DIGITAR'),
+                icon: const Icon(Icons.keyboard, color: Colors.orange, size: 18),
+                label: const Text('DIGITAR', style: TextStyle(fontSize: 12)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.orange,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Expanded(
               flex: 2,
               child: FilledButton(
                 onPressed: _isProcessing ? null : onConfirmarPressed,
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: _isProcessing
                     ? const SizedBox(
-                        width: 24,
-                        height: 24,
+                        width: 20,
+                        height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Colors.white,
@@ -809,7 +836,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                     : const Text(
                         'CONFIRMAR',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -1887,73 +1914,38 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
-        height: MediaQuery.of(context).size.height * 0.6,
+        height: MediaQuery.of(context).size.height * 0.5,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
         ),
         child: Column(
           children: [
-            // Header
+            // Header compacto
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.outline.withValues(alpha: 0.2),
+                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.inventory, color: Colors.blue[700], size: 28),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'ESTOQUES DO PRODUTO',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Cód: $codprod',
-                          style: TextStyle(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
+                  Text(
+                    'Estoques - Cód: $codprod',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(ctx),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(ctx),
+                    child: const Icon(Icons.close, size: 20),
                   ),
                 ],
-              ),
-            ),
-
-            // Descrição do produto
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Text(
-                descricao,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.w500,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
 
@@ -1961,66 +1953,37 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
             Expanded(
               child: Consumer(
                 builder: (context, ref, _) {
-                  final estoquesAsync = ref.watch(
-                    consultaEstoqueProvider(codprod),
-                  );
+                  final estoquesAsync = ref.watch(consultaEstoqueProvider(codprod));
                   return estoquesAsync.when(
                     data: (estoques) {
                       if (estoques.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.inventory_2_outlined,
-                                size: 64,
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Nenhum estoque encontrado',
-                                style: TextStyle(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
+                        return const Center(
+                          child: Text('Nenhum estoque encontrado'),
                         );
                       }
 
                       // Calcula total
-                      final total = estoques.fold<double>(
-                        0,
-                        (sum, e) => sum + e.quantidade,
-                      );
+                      final total = estoques.fold<double>(0, (sum, e) => sum + e.quantidade);
 
                       return Column(
                         children: [
-                          // Total
+                          // Total compacto
                           Container(
-                            margin: const EdgeInsets.all(16),
-                            padding: const EdgeInsets.all(12),
+                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.blue.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.blue.withValues(alpha: 0.3),
-                              ),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                const Icon(Icons.summarize, color: Colors.blue),
-                                const SizedBox(width: 8),
                                 Text(
-                                  'TOTAL EM ESTOQUE: ',
+                                  'TOTAL: ',
                                   style: TextStyle(
                                     color: Colors.blue[700],
                                     fontWeight: FontWeight.w500,
+                                    fontSize: 12,
                                   ),
                                 ),
                                 Text(
@@ -2028,135 +1991,58 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                   style: TextStyle(
                                     color: Colors.blue[700],
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                                    fontSize: 14,
                                   ),
                                 ),
                               ],
                             ),
                           ),
 
-                          // Header da lista
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: Text(
-                                    'ENDEREÇO',
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    'QTD',
-                                    textAlign: TextAlign.right,
-                                    style: TextStyle(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Divider(),
-
-                          // Lista
+                          // Lista simples
                           Expanded(
-                            child: ListView.builder(
+                            child: ListView.separated(
                               itemCount: estoques.length,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              separatorBuilder: (_, __) => Divider(
+                                height: 1,
+                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
                               ),
                               itemBuilder: (_, i) {
                                 final e = estoques[i];
-                                return Container(
-                                  margin: const EdgeInsets.only(bottom: 8),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
+                                final endereco = e.endereco.isNotEmpty
+                                    ? e.endereco
+                                    : '${e.rua}.${e.predio}.${e.nivel}.${e.apto}';
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 8),
                                   child: Row(
                                     children: [
-                                      // Ícone de localização
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary
-                                              .withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+                                      Icon(
+                                        Icons.location_on,
+                                        color: Theme.of(context).colorScheme.primary,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          endereco,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13,
                                           ),
                                         ),
-                                        child: Icon(
-                                          Icons.location_on,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          size: 20,
-                                        ),
                                       ),
-                                      const SizedBox(width: 12),
-                                      // Endereço
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              e.endereco.isNotEmpty
-                                                  ? e.endereco
-                                                  : '${e.rua}.${e.predio.toString().padLeft(2, '0')}.${e.nivel.toString().padLeft(2, '0')}.${e.apto.toString().padLeft(2, '0')}',
-                                              style: const TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            Text(
-                                              'Rua ${e.rua}',
-                                              style: TextStyle(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Quantidade
                                       Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                         decoration: BoxDecoration(
                                           color: Colors.green[700],
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
+                                          borderRadius: BorderRadius.circular(4),
                                         ),
                                         child: Text(
-                                          e.quantidade.toStringAsFixed(0),
+                                          '${e.quantidade.toStringAsFixed(0)}',
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 16,
+                                            fontSize: 12,
                                           ),
                                         ),
                                       ),
@@ -2169,41 +2055,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         ],
                       );
                     },
-                    loading: () =>
-                        const Center(child: CircularProgressIndicator()),
+                    loading: () => const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.error_outline,
-                              size: 64,
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'Erro ao carregar estoques',
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              e.toString(),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      child: Text('Erro: $e', style: const TextStyle(fontSize: 12)),
                     ),
                   );
                 },
