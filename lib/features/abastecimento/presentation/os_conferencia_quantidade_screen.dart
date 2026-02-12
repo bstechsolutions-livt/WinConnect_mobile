@@ -173,6 +173,311 @@ class _OsConferenciaQuantidadeScreenState
     });
   }
 
+  /// Abre calculadora simples em bottom sheet
+  void _abrirCalculadora() {
+    _scannerFocusNode.unfocus();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        String display = '0';
+        String operando1 = '';
+        String operador = '';
+        bool novoNumero = true;
+
+        void _calcular(StateSetter setCalcState) {
+          if (operando1.isEmpty || operador.isEmpty) return;
+          final a = double.tryParse(operando1) ?? 0;
+          final b = double.tryParse(display) ?? 0;
+          double resultado = 0;
+
+          switch (operador) {
+            case '+':
+              resultado = a + b;
+            case '-':
+              resultado = a - b;
+            case '×':
+              resultado = a * b;
+            case '÷':
+              resultado = b != 0 ? a / b : 0;
+          }
+
+          setCalcState(() {
+            display = resultado == resultado.roundToDouble()
+                ? resultado.toInt().toString()
+                : resultado.toStringAsFixed(2);
+            operando1 = '';
+            operador = '';
+            novoNumero = true;
+          });
+        }
+
+        return StatefulBuilder(
+          builder: (context, setCalcState) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+
+            Widget buildBtn(
+              String text, {
+              Color? color,
+              Color? textColor,
+              int flex = 1,
+            }) {
+              return Expanded(
+                flex: flex,
+                child: Padding(
+                  padding: const EdgeInsets.all(3),
+                  child: Material(
+                    color: color ??
+                        (isDark
+                            ? Colors.white.withValues(alpha: 0.1)
+                            : Colors.grey.shade200),
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () {
+                        if ('0123456789'.contains(text)) {
+                          setCalcState(() {
+                            if (novoNumero) {
+                              display = text;
+                              novoNumero = false;
+                            } else {
+                              display = display == '0' ? text : display + text;
+                            }
+                          });
+                        } else if (text == 'C') {
+                          setCalcState(() {
+                            display = '0';
+                            operando1 = '';
+                            operador = '';
+                            novoNumero = true;
+                          });
+                        } else if (text == '⌫') {
+                          setCalcState(() {
+                            if (display.length > 1) {
+                              display =
+                                  display.substring(0, display.length - 1);
+                            } else {
+                              display = '0';
+                            }
+                          });
+                        } else if ('+-×÷'.contains(text)) {
+                          if (operando1.isNotEmpty && !novoNumero) {
+                            _calcular(setCalcState);
+                          }
+                          setCalcState(() {
+                            operando1 = display;
+                            operador = text;
+                            novoNumero = true;
+                          });
+                        } else if (text == '=') {
+                          _calcular(setCalcState);
+                        }
+                      },
+                      child: Container(
+                        height: 48,
+                        alignment: Alignment.center,
+                        child: Text(
+                          text,
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: textColor ??
+                                (isDark ? Colors.white : Colors.black87),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            return Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Indicador de arraste
+                      Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color:
+                              isDark ? Colors.white24 : Colors.grey.shade300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Display
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 20,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (operando1.isNotEmpty)
+                              Text(
+                                '$operando1 $operador',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: isDark
+                                      ? Colors.white38
+                                      : Colors.grey.shade400,
+                                ),
+                              ),
+                            Text(
+                              display,
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Teclas
+                      Row(
+                        children: [
+                          buildBtn('C', textColor: Colors.red),
+                          buildBtn('⌫', textColor: Colors.orange),
+                          buildBtn(
+                            '÷',
+                            color: Colors.blue,
+                            textColor: Colors.white,
+                          ),
+                          buildBtn(
+                            '×',
+                            color: Colors.blue,
+                            textColor: Colors.white,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          buildBtn('7'),
+                          buildBtn('8'),
+                          buildBtn('9'),
+                          buildBtn(
+                            '-',
+                            color: Colors.blue,
+                            textColor: Colors.white,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          buildBtn('4'),
+                          buildBtn('5'),
+                          buildBtn('6'),
+                          buildBtn(
+                            '+',
+                            color: Colors.blue,
+                            textColor: Colors.white,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          buildBtn('1'),
+                          buildBtn('2'),
+                          buildBtn('3'),
+                          buildBtn(
+                            '=',
+                            color: Colors.green,
+                            textColor: Colors.white,
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          buildBtn('0', flex: 2),
+                          const Spacer(),
+                          const Spacer(),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Botões de aplicar
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () {
+                                final val =
+                                    int.tryParse(display) ??
+                                    double.tryParse(display)?.toInt() ??
+                                    0;
+                                _updateCaixas(val);
+                                Navigator.pop(ctx);
+                              },
+                              icon: const Icon(Icons.archive, size: 16),
+                              label: const Text('CX'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () {
+                                final val =
+                                    int.tryParse(display) ??
+                                    double.tryParse(display)?.toInt() ??
+                                    0;
+                                _updateUnidades(val);
+                                Navigator.pop(ctx);
+                              },
+                              icon: const Icon(Icons.inventory_2, size: 16),
+                              label: const Text('UN'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) => _scannerFocusNode.requestFocus());
+  }
+
   void _mostrarFeedback(String mensagem, Color cor) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -220,6 +525,13 @@ class _OsConferenciaQuantidadeScreenState
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.calculate_outlined),
+            tooltip: 'Calculadora',
+            onPressed: () => _abrirCalculadora(),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Stack(
