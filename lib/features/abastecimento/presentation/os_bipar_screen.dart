@@ -1590,13 +1590,21 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                     .bloquear(motivo);
 
                                 if (!mounted) return;
+
+                                // Fecha o bottom sheet primeiro
                                 Navigator.of(ctx).pop();
 
                                 if (sucesso) {
-                                  _mostrarSucesso('Tarefa bloqueada!');
-                                  Navigator.of(this.context).pop(true);
+                                  // Pop the bipar screen - must happen even if SnackBar fails
+                                  if (mounted) {
+                                    Navigator.of(this.context).pop(true);
+                                  }
                                 } else {
-                                  _mostrarErro(erro ?? 'Erro ao bloquear');
+                                  if (mounted) {
+                                    _mostrarErro(
+                                      erro ?? 'Erro ao bloquear',
+                                    );
+                                  }
                                 }
                               },
                               child: Container(

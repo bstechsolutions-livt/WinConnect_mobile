@@ -589,8 +589,15 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
       ),
     );
 
-    // Se retornou true, atualiza a lista
-    if (resultado == true) {
+    // Se retornou true (bloqueou ou finalizou), atualiza a lista
+    if (resultado == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tarefa atualizada!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 1),
+        ),
+      );
       ref.read(osNotifierProvider(widget.fase, widget.rua).notifier).refresh();
     }
   }
