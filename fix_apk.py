@@ -9,7 +9,7 @@ import os
 HOST = '192.168.1.25'
 USERNAME = 'rofe'
 PASSWORD = '@X#891ccc'
-LOCAL_APK = r'build\app\outputs\flutter-apk\app-release.apk'
+LOCAL_APK = 'build/app/outputs/flutter-apk/app-release.apk'
 REMOTE_PUBLIC = '/var/www/winconnect/public/systems/winconnect_mobile.apk'
 
 def main():
