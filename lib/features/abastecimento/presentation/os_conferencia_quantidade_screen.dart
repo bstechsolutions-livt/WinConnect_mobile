@@ -61,14 +61,8 @@ class _OsConferenciaQuantidadeScreenState
     _unidades = widget.unidadesIniciais;
     _scannerController = TextEditingController();
 
-    // Esconde teclado virtual ao focar (para usar apenas scanner/teclado físico)
-    _scannerFocusNode.addListener(() {
-      if (_scannerFocusNode.hasFocus) {
-        SystemChannels.textInput.invokeMethod('TextInput.hide');
-      }
-    });
-
     // Foca no campo de scanner após build para permitir bipagem contínua
+    // Teclado virtual NÃO abre pois usamos TextInputType.none
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scannerFocusNode.requestFocus();
     });
@@ -124,6 +118,59 @@ class _OsConferenciaQuantidadeScreenState
 
     // Mantém foco no campo de scanner
     _scannerFocusNode.requestFocus();
+  }
+
+  /// Abre dialog para digitar valor manualmente
+  void _editarValor(String titulo, int valorAtual, Function(int) onSave) {
+    // Remove foco do scanner enquanto o dialog está aberto
+    _scannerFocusNode.unfocus();
+
+    final controller = TextEditingController(
+      text: valorAtual > 0 ? '$valorAtual' : '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Digitar $titulo'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.none,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          decoration: InputDecoration(
+            hintText: '0',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onSubmitted: (value) {
+            final v = int.tryParse(value) ?? 0;
+            onSave(v);
+            Navigator.pop(ctx);
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('CANCELAR'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final v = int.tryParse(controller.text) ?? 0;
+              onSave(v);
+              Navigator.pop(ctx);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    ).then((_) {
+      // Restaura foco no scanner após fechar o dialog
+      _scannerFocusNode.requestFocus();
+    });
   }
 
   void _mostrarFeedback(String mensagem, Color cor) {
@@ -187,13 +234,10 @@ class _OsConferenciaQuantidadeScreenState
                   controller: _scannerController,
                   focusNode: _scannerFocusNode,
                   autofocus: true,
-                  onSubmitted: (value) => _processarBipagem(value),
-                  onChanged: (value) {
-                    // Se terminou com Enter (scanner físico geralmente envia Enter)
-                    if (value.endsWith('\n') || value.endsWith('\r')) {
-                      _processarBipagem(value.trim());
-                    }
-                  },
+                  showCursor: false,
+                  keyboardType: TextInputType.none,
+                  enableInteractiveSelection: false,
+                  onSubmitted: (value) => _processarBipagem(value.trim()),
                 ),
               ),
             ),
@@ -395,6 +439,11 @@ class _OsConferenciaQuantidadeScreenState
                             color: Colors.green,
                             onIncrement: () => _updateCaixas(_caixas + 1),
                             onDecrement: () => _updateCaixas(_caixas - 1),
+                            onEdit: () => _editarValor(
+                              'Caixas',
+                              _caixas,
+                              (v) => _updateCaixas(v),
+                            ),
                           ),
                           const SizedBox(height: 3),
                           // Input UNIDADES
@@ -404,6 +453,11 @@ class _OsConferenciaQuantidadeScreenState
                             color: Colors.blue,
                             onIncrement: () => _updateUnidades(_unidades + 1),
                             onDecrement: () => _updateUnidades(_unidades - 1),
+                            onEdit: () => _editarValor(
+                              'Unidades',
+                              _unidades,
+                              (v) => _updateUnidades(v),
+                            ),
                           ),
 
                           const Spacer(),
@@ -539,6 +593,7 @@ class _OsConferenciaQuantidadeScreenState
     required Color color,
     required VoidCallback onIncrement,
     required VoidCallback onDecrement,
+    VoidCallback? onEdit,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -573,13 +628,24 @@ class _OsConferenciaQuantidadeScreenState
             ),
           ),
           Expanded(
-            child: Text(
-              '$value',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: color,
+            child: GestureDetector(
+              onTap: onEdit,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: color.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  '$value',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
               ),
             ),
           ),
