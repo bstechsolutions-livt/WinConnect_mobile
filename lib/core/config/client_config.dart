@@ -52,7 +52,7 @@ class ClientConfig {
     'rofe': ClientConfig(
       id: 'rofe',
       name: 'Rofe',
-      apiBaseUrl: 'http://192.168.1.25/api', // Via hotspot no PC
+      apiBaseUrl: 'https://position-waves-merger-interested.trycloudflare.com/api', // Via Cloudflare Tunnel
       logoPath: 'assets/clients/rofe/logo.png',
       primaryColorHex: 0xFF1E88E5, // Azul
       secondaryColorHex: 0xFF43A047,

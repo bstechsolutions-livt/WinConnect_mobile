@@ -262,16 +262,22 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
                 ),
               );
 
-              // Quando retornar (bloqueou ou finalizou), atualiza a lista
+              // Quando retornar (bloqueou ou finalizou), navega para próxima OS
               if (mounted) {
                 await Future.delayed(const Duration(milliseconds: 500));
                 if (mounted) {
-                  _navegouParaOsEmAndamento = false;
-                  ref
+                  await ref
                       .read(
                         osNotifierProvider(widget.fase, widget.rua).notifier,
                       )
                       .refresh();
+
+                  // Auto-navega para próxima OS disponível
+                  if (mounted) {
+                    await _navegarParaProximaOs();
+                  }
+
+                  _navegouParaOsEmAndamento = false;
                 }
               }
             });
@@ -543,7 +549,37 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
   );
   }
 
-  void _navegarParaOs(OrdemServico os) async {
+  /// Verifica se há uma próxima OS disponível e navega automaticamente
+  Future<void> _navegarParaProximaOs() async {
+    if (!mounted) return;
+
+    final result = ref.read(osNotifierProvider(widget.fase, widget.rua)).value;
+    if (result == null) return;
+
+    // Se já tem OS em andamento, navega direto para ela
+    if (result.osEmAndamento != null) {
+      final emAndamento = result.ordens
+          .where((os) => os.numos == result.osEmAndamento)
+          .firstOrNull;
+      if (emAndamento != null) {
+        await _navegarParaOs(emAndamento);
+        return;
+      }
+    }
+
+    // Senão, navega para a primeira OS executável
+    final nextOs = result.ordens
+        .where(
+          (os) => os.podeExecutar && os.status.toUpperCase() != 'BLOQUEADA',
+        )
+        .firstOrNull;
+
+    if (nextOs != null && mounted) {
+      await _navegarParaOs(nextOs);
+    }
+  }
+
+  Future<void> _navegarParaOs(OrdemServico os) async {
     // Primeiro inicia a OS usando o provider (que trata erro de rua bloqueada)
     if (os.podeExecutar) {
       final result = await ref
@@ -589,7 +625,7 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
       ),
     );
 
-    // Se retornou true (bloqueou ou finalizou), atualiza a lista
+    // Se retornou true (bloqueou ou finalizou), navega para próxima OS
     if (resultado == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -598,7 +634,15 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
           duration: Duration(seconds: 1),
         ),
       );
-      ref.read(osNotifierProvider(widget.fase, widget.rua).notifier).refresh();
+
+      await ref
+          .read(osNotifierProvider(widget.fase, widget.rua).notifier)
+          .refresh();
+
+      // Auto-navega para próxima OS disponível
+      if (mounted) {
+        await _navegarParaProximaOs();
+      }
     }
   }
 
