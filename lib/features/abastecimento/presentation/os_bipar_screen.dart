@@ -1407,7 +1407,6 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
   void _mostrarDialogBloquear(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final motivoController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -1418,6 +1417,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       enableDrag: true,
       builder: (ctx) {
         bool isLoading = false;
+        String? motivoSelecionado;
 
         return StatefulBuilder(
           builder: (context, setModalState) => Container(
@@ -1502,7 +1502,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
                       // Descrição
                       Text(
-                        'A tarefa será bloqueada e voltará para a fila.\nEsta ação pode ser desfeita pelo supervisor.',
+                        'Selecione o tipo de bloqueio.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 14,
@@ -1511,22 +1511,106 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                       ),
                       const SizedBox(height: 20),
 
-                      // Campo de motivo
-                      TextField(
-                        controller: motivoController,
-                        maxLines: 3,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          labelText: 'Motivo do bloqueio *',
-                          hintText: 'Descreva o motivo do bloqueio...',
-                          alignLabelWithHint: true,
-                          border: OutlineInputBorder(
+                      // Opção Parcial
+                      GestureDetector(
+                        onTap: () => setModalState(
+                          () => motivoSelecionado = 'Parcial',
+                        ),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: motivoSelecionado == 'Parcial'
+                                ? Colors.orange.withValues(alpha: 0.15)
+                                : isDark
+                                    ? Colors.white.withValues(alpha: 0.05)
+                                    : Colors.grey.shade50,
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: motivoSelecionado == 'Parcial'
+                                  ? Colors.orange
+                                  : isDark
+                                      ? Colors.white12
+                                      : Colors.grey.shade300,
+                              width: motivoSelecionado == 'Parcial' ? 2 : 1,
+                            ),
                           ),
-                          filled: true,
-                          fillColor: isDark
-                              ? Colors.white.withValues(alpha: 0.05)
-                              : Colors.grey.shade50,
+                          child: Row(
+                            children: [
+                              Icon(
+                                motivoSelecionado == 'Parcial'
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_off,
+                                color: motivoSelecionado == 'Parcial'
+                                    ? Colors.orange
+                                    : Colors.grey,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Parcial',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? Colors.white
+                                      : Colors.grey.shade900,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Opção Total
+                      GestureDetector(
+                        onTap: () => setModalState(
+                          () => motivoSelecionado = 'Total',
+                        ),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: motivoSelecionado == 'Total'
+                                ? Colors.red.withValues(alpha: 0.15)
+                                : isDark
+                                    ? Colors.white.withValues(alpha: 0.05)
+                                    : Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: motivoSelecionado == 'Total'
+                                  ? Colors.red
+                                  : isDark
+                                      ? Colors.white12
+                                      : Colors.grey.shade300,
+                              width: motivoSelecionado == 'Total' ? 2 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                motivoSelecionado == 'Total'
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_off,
+                                color: motivoSelecionado == 'Total'
+                                    ? Colors.red
+                                    : Colors.grey,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Total',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? Colors.white
+                                      : Colors.grey.shade900,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -1564,20 +1648,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: GestureDetector(
-                              onTap: () async {
-                                final motivo = motivoController.text.trim();
-                                if (motivo.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Informe o motivo do bloqueio',
-                                      ),
-                                      backgroundColor: Colors.orange,
-                                    ),
-                                  );
-                                  return;
-                                }
-
+                              onTap: motivoSelecionado != null
+                                  ? () async {
                                 setModalState(() => isLoading = true);
 
                                 final (sucesso, erro) = await ref
@@ -1587,7 +1659,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                         widget.numos,
                                       ).notifier,
                                     )
-                                    .bloquear(motivo);
+                                    .bloquear(motivoSelecionado!);
 
                                 if (!mounted) return;
 
@@ -1606,29 +1678,39 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                     );
                                   }
                                 }
-                              },
-                              child: Container(
+                              }
+                                  : null,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.red,
+                                  color: motivoSelecionado != null
+                                      ? Colors.red
+                                      : Colors.grey.shade400,
                                   borderRadius: BorderRadius.circular(12),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.red.withValues(alpha: 0.4),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
+                                  boxShadow: motivoSelecionado != null
+                                      ? [
+                                          BoxShadow(
+                                            color: Colors.red.withValues(
+                                              alpha: 0.4,
+                                            ),
+                                            blurRadius: 12,
+                                            offset: const Offset(0, 4),
+                                          ),
+                                        ]
+                                      : [],
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Bloquear',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                    color: motivoSelecionado != null
+                                        ? Colors.white
+                                        : Colors.white70,
                                   ),
                                 ),
                               ),
