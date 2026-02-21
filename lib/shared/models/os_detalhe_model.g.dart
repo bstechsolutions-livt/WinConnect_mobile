@@ -57,6 +57,7 @@ _$EnderecoOsImpl _$$EnderecoOsImplFromJson(Map<String, dynamic> json) =>
       nivel: (json['nivel'] as num).toInt(),
       apto: (json['apto'] as num).toInt(),
       enderecoFormatado: json['enderecoFormatado'] as String? ?? '',
+      codendereco: (json['codendereco'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$EnderecoOsImplToJson(_$EnderecoOsImpl instance) =>
@@ -66,6 +67,7 @@ Map<String, dynamic> _$$EnderecoOsImplToJson(_$EnderecoOsImpl instance) =>
       'nivel': instance.nivel,
       'apto': instance.apto,
       'enderecoFormatado': instance.enderecoFormatado,
+      'codendereco': instance.codendereco,
     };
 
 _$EstoqueProdutoImpl _$$EstoqueProdutoImplFromJson(Map<String, dynamic> json) =>

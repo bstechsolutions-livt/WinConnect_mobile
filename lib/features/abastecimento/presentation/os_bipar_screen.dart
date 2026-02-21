@@ -11,6 +11,7 @@ import '../../../shared/utils/scanner_protection.dart';
 import '../../../shared/widgets/autorizar_digitacao_dialog.dart';
 import 'os_endereco_screen.dart';
 import 'os_conferencia_quantidade_screen.dart';
+import 'os_devolucao_sobra_screen.dart';
 
 /// 6ª TELA - Detalhes da OS após chegar no endereço
 class OsBiparScreen extends ConsumerStatefulWidget {
@@ -53,6 +54,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   int? _caixasConferidas;
   int? _unidadesConferidas;
   int? _qtConferida;
+
+  // Cache da sobra (preenchido quando retirou mais que o solicitado)
+  int? _qtRetirada;
+  int? _codenderecoDevolucao;
 
   @override
   void initState() {
@@ -994,6 +999,34 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     // Se o usuário confirmou a quantidade
     if (result != null && result.confirmado && mounted) {
+      // Se tem sobra, navegar para tela de devolução antes de confirmar
+      if (result.temSobra) {
+        final devolucaoResult = await Navigator.push<DevolucaoSobraResult>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OsDevolucaoSobraScreen(
+              fase: widget.fase,
+              numos: widget.numos,
+              qtSobra: result.qtSobra,
+              qtSolicitada: os.qtSolicitada.toInt(),
+              qtRetirada: result.totalRetirado!,
+              enderecoOrigemFormatado: os.enderecoOrigem.enderecoFormatado,
+              codenderecoOrigem: os.enderecoOrigem.codendereco,
+            ),
+          ),
+        );
+
+        if (devolucaoResult == null || !devolucaoResult.confirmado || !mounted) {
+          return; // Usuário cancelou a devolução
+        }
+
+        // Guarda dados da sobra no cache
+        setState(() {
+          _qtRetirada = result.totalRetirado;
+          _codenderecoDevolucao = devolucaoResult.codenderecoDevolucao;
+        });
+      }
+
       await _confirmarBipagem(codigoBarras, os, result.caixas, result.unidades);
     }
   }
@@ -1069,6 +1102,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           qtConferida: _qtConferida!,
           caixas: _caixasConferidas!,
           unidades: _unidadesConferidas!,
+          qtRetirada: _qtRetirada,
+          codenderecoDevolucao: _codenderecoDevolucao,
         );
 
     if (!mounted) return;
@@ -1107,6 +1142,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           _qtConferida!,
           _caixasConferidas!,
           _unidadesConferidas!,
+          qtRetirada: _qtRetirada,
+          codenderecoDevolucao: _codenderecoDevolucao,
         );
 
     if (!mounted) return;

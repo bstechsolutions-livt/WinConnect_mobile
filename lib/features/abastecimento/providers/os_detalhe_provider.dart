@@ -46,6 +46,7 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
         nivel: _parseInt(enderecoOrigemData['nivel']) ?? 0,
         apto: _parseInt(enderecoOrigemData['apto']) ?? 0,
         enderecoFormatado: enderecoOrigemData['endereco']?.toString() ?? '',
+        codendereco: _parseInt(enderecoOrigemData['codendereco']),
       ),
       enderecoDestino: EnderecoOs(
         rua: enderecoDestinoData['rua']?.toString() ?? '',
@@ -322,6 +323,8 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     required int qtConferida,
     required int caixas,
     required int unidades,
+    int? qtRetirada,
+    int? codenderecoDevolucao,
   }) async {
     try {
       final apiService = ref.read(apiServiceProvider);
@@ -332,9 +335,20 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
       });
 
       // 2. Finaliza a OS
+      final body = <String, dynamic>{
+        'qt_conferida': qtConferida,
+        'caixas': caixas,
+        'unidades': unidades,
+      };
+      if (qtRetirada != null && qtRetirada > qtConferida) {
+        body['qt_retirada'] = qtRetirada;
+      }
+      if (codenderecoDevolucao != null) {
+        body['codendereco_devolucao'] = codenderecoDevolucao;
+      }
       final response = await apiService.post(
         '/wms/fase$fase/os/$numos/finalizar',
-        {'qt_conferida': qtConferida, 'caixas': caixas, 'unidades': unidades},
+        body,
       );
 
       return FinalizacaoResult.fromResponse(response);
@@ -368,13 +382,26 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   Future<FinalizacaoResult> finalizarComQuantidadeResult(
     int qtConferida,
     int caixas,
-    int unidades,
-  ) async {
+    int unidades, {
+    int? qtRetirada,
+    int? codenderecoDevolucao,
+  }) async {
     try {
       final apiService = ref.read(apiServiceProvider);
+      final body = <String, dynamic>{
+        'qt_conferida': qtConferida,
+        'caixas': caixas,
+        'unidades': unidades,
+      };
+      if (qtRetirada != null && qtRetirada > qtConferida) {
+        body['qt_retirada'] = qtRetirada;
+      }
+      if (codenderecoDevolucao != null) {
+        body['codendereco_devolucao'] = codenderecoDevolucao;
+      }
       final response = await apiService.post(
         '/wms/fase$fase/os/$numos/finalizar',
-        {'qt_conferida': qtConferida, 'caixas': caixas, 'unidades': unidades},
+        body,
       );
       return FinalizacaoResult.fromResponse(response);
     } catch (e) {
@@ -419,6 +446,27 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
       return (true, null);
     } catch (e) {
       return (false, _extrairMensagemErro(e));
+    }
+  }
+
+  /// Valida endereço para devolução de sobra.
+  /// Retorna mapa com codendereco, endereco_formatado, is_origem, etc.
+  Future<ValidarEnderecoResult> validarEnderecoDevolucao(
+    String codigoEndereco,
+  ) async {
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final response = await apiService.post(
+        '/wms/fase$fase/os/$numos/validar-endereco-devolucao',
+        {'codigo_endereco': codigoEndereco},
+      );
+      return ValidarEnderecoResult.success(
+        codendereco: (response['codendereco'] as num).toInt(),
+        enderecoFormatado: response['endereco_formatado']?.toString() ?? '',
+        isOrigem: response['is_origem'] == true,
+      );
+    } catch (e) {
+      return ValidarEnderecoResult.error(_extrairMensagemErro(e));
     }
   }
 
@@ -565,4 +613,39 @@ class BiparProdutoResult {
 
   /// Retorna true se o código bipado foi da UNIDADE
   bool get isUnidade => tipo == 'unidade';
+}
+
+/// Resultado da validação de endereço para devolução de sobra
+class ValidarEnderecoResult {
+  final bool sucesso;
+  final String? erro;
+  final int? codendereco;
+  final String? enderecoFormatado;
+  final bool isOrigem;
+
+  const ValidarEnderecoResult._({
+    required this.sucesso,
+    this.erro,
+    this.codendereco,
+    this.enderecoFormatado,
+    this.isOrigem = false,
+  });
+
+  factory ValidarEnderecoResult.success({
+    required int codendereco,
+    required String enderecoFormatado,
+    required bool isOrigem,
+  }) =>
+      ValidarEnderecoResult._(
+        sucesso: true,
+        codendereco: codendereco,
+        enderecoFormatado: enderecoFormatado,
+        isOrigem: isOrigem,
+      );
+
+  factory ValidarEnderecoResult.error(String mensagem) =>
+      ValidarEnderecoResult._(
+        sucesso: false,
+        erro: mensagem,
+      );
 }

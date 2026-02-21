@@ -37,6 +37,7 @@ class EnderecoOs with _$EnderecoOs {
     required int nivel,
     required int apto,
     @Default('') String enderecoFormatado,
+    int? codendereco,
   }) = _EnderecoOs;
 
   factory EnderecoOs.fromJson(Map<String, dynamic> json) =>

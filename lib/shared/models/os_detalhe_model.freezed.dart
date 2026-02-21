@@ -543,6 +543,7 @@ mixin _$EnderecoOs {
   int get nivel => throw _privateConstructorUsedError;
   int get apto => throw _privateConstructorUsedError;
   String get enderecoFormatado => throw _privateConstructorUsedError;
+  int? get codendereco => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -557,7 +558,12 @@ abstract class $EnderecoOsCopyWith<$Res> {
       _$EnderecoOsCopyWithImpl<$Res, EnderecoOs>;
   @useResult
   $Res call(
-      {String rua, int predio, int nivel, int apto, String enderecoFormatado});
+      {String rua,
+      int predio,
+      int nivel,
+      int apto,
+      String enderecoFormatado,
+      int? codendereco});
 }
 
 /// @nodoc
@@ -578,6 +584,7 @@ class _$EnderecoOsCopyWithImpl<$Res, $Val extends EnderecoOs>
     Object? nivel = null,
     Object? apto = null,
     Object? enderecoFormatado = null,
+    Object? codendereco = freezed,
   }) {
     return _then(_value.copyWith(
       rua: null == rua
@@ -600,6 +607,10 @@ class _$EnderecoOsCopyWithImpl<$Res, $Val extends EnderecoOs>
           ? _value.enderecoFormatado
           : enderecoFormatado // ignore: cast_nullable_to_non_nullable
               as String,
+      codendereco: freezed == codendereco
+          ? _value.codendereco
+          : codendereco // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -613,7 +624,12 @@ abstract class _$$EnderecoOsImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String rua, int predio, int nivel, int apto, String enderecoFormatado});
+      {String rua,
+      int predio,
+      int nivel,
+      int apto,
+      String enderecoFormatado,
+      int? codendereco});
 }
 
 /// @nodoc
@@ -632,6 +648,7 @@ class __$$EnderecoOsImplCopyWithImpl<$Res>
     Object? nivel = null,
     Object? apto = null,
     Object? enderecoFormatado = null,
+    Object? codendereco = freezed,
   }) {
     return _then(_$EnderecoOsImpl(
       rua: null == rua
@@ -654,6 +671,10 @@ class __$$EnderecoOsImplCopyWithImpl<$Res>
           ? _value.enderecoFormatado
           : enderecoFormatado // ignore: cast_nullable_to_non_nullable
               as String,
+      codendereco: freezed == codendereco
+          ? _value.codendereco
+          : codendereco // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -666,7 +687,8 @@ class _$EnderecoOsImpl implements _EnderecoOs {
       required this.predio,
       required this.nivel,
       required this.apto,
-      this.enderecoFormatado = ''});
+      this.enderecoFormatado = '',
+      this.codendereco});
 
   factory _$EnderecoOsImpl.fromJson(Map<String, dynamic> json) =>
       _$$EnderecoOsImplFromJson(json);
@@ -682,10 +704,12 @@ class _$EnderecoOsImpl implements _EnderecoOs {
   @override
   @JsonKey()
   final String enderecoFormatado;
+  @override
+  final int? codendereco;
 
   @override
   String toString() {
-    return 'EnderecoOs(rua: $rua, predio: $predio, nivel: $nivel, apto: $apto, enderecoFormatado: $enderecoFormatado)';
+    return 'EnderecoOs(rua: $rua, predio: $predio, nivel: $nivel, apto: $apto, enderecoFormatado: $enderecoFormatado, codendereco: $codendereco)';
   }
 
   @override
@@ -698,13 +722,15 @@ class _$EnderecoOsImpl implements _EnderecoOs {
             (identical(other.nivel, nivel) || other.nivel == nivel) &&
             (identical(other.apto, apto) || other.apto == apto) &&
             (identical(other.enderecoFormatado, enderecoFormatado) ||
-                other.enderecoFormatado == enderecoFormatado));
+                other.enderecoFormatado == enderecoFormatado) &&
+            (identical(other.codendereco, codendereco) ||
+                other.codendereco == codendereco));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, rua, predio, nivel, apto, enderecoFormatado);
+  int get hashCode => Object.hash(
+      runtimeType, rua, predio, nivel, apto, enderecoFormatado, codendereco);
 
   @JsonKey(ignore: true)
   @override
@@ -726,7 +752,8 @@ abstract class _EnderecoOs implements EnderecoOs {
       required final int predio,
       required final int nivel,
       required final int apto,
-      final String enderecoFormatado}) = _$EnderecoOsImpl;
+      final String enderecoFormatado,
+      final int? codendereco}) = _$EnderecoOsImpl;
 
   factory _EnderecoOs.fromJson(Map<String, dynamic> json) =
       _$EnderecoOsImpl.fromJson;
@@ -741,6 +768,8 @@ abstract class _EnderecoOs implements EnderecoOs {
   int get apto;
   @override
   String get enderecoFormatado;
+  @override
+  int? get codendereco;
   @override
   @JsonKey(ignore: true)
   _$$EnderecoOsImplCopyWith<_$EnderecoOsImpl> get copyWith =>
