@@ -1422,7 +1422,7 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                                 TextField(
                                   controller: _caixasController,
                                   focusNode: _caixasFocus,
-                                  keyboardType: TextInputType.none,
+                                  keyboardType: TextInputType.number,
                                   showCursor: true,
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
@@ -1462,7 +1462,7 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
                                 TextField(
                                   controller: _unidadesController,
                                   focusNode: _unidadesFocus,
-                                  keyboardType: TextInputType.none,
+                                  keyboardType: TextInputType.number,
                                   showCursor: true,
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
@@ -1569,32 +1569,22 @@ class _DivergenciaBottomSheetState extends State<_DivergenciaBottomSheet> {
   String? _erro;
 
   static const _tipos = [
-    {
-      'value': 'quantidade_menor',
-      'label': 'Quantidade Menor',
-      'icon': Icons.remove_circle_outline,
-    },
-    {
-      'value': 'quantidade_maior',
-      'label': 'Quantidade Maior',
-      'icon': Icons.add_circle_outline,
-    },
-    {
-      'value': 'produto_errado',
-      'label': 'Produto Errado',
-      'icon': Icons.swap_horiz,
-    },
-    {
-      'value': 'nao_encontrado',
-      'label': 'Não Encontrado',
-      'icon': Icons.search_off,
-    },
-    {'value': 'outro', 'label': 'Outro', 'icon': Icons.more_horiz},
+    {'value': 'quantidade_menor', 'label': 'Quantidade Menor'},
+    {'value': 'quantidade_maior', 'label': 'Quantidade Maior'},
+    {'value': 'produto_errado', 'label': 'Produto Errado'},
+    {'value': 'nao_encontrado', 'label': 'Não Encontrado'},
+    {'value': 'outro', 'label': 'Outro (especificar)'},
   ];
 
   Future<void> _registrarDivergencia() async {
     if (_tipoSelecionado == null) {
       setState(() => _erro = 'Selecione o tipo de divergência');
+      return;
+    }
+
+    if (_tipoSelecionado == 'outro' &&
+        _observacaoController.text.trim().isEmpty) {
+      setState(() => _erro = 'Informe a observação para o tipo "Outro"');
       return;
     }
 
@@ -1775,41 +1765,35 @@ class _DivergenciaBottomSheetState extends State<_DivergenciaBottomSheet> {
                 ),
               ),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _tipos.map((tipo) {
-                  final isSelected = _tipoSelecionado == tipo['value'];
-                  return ChoiceChip(
-                    avatar: Icon(
-                      tipo['icon'] as IconData,
-                      size: 18,
-                      color: isSelected ? Colors.white : Colors.orange.shade700,
-                    ),
-                    label: Text(tipo['label'] as String),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        _tipoSelecionado = selected
-                            ? tipo['value'] as String
-                            : null;
-                        _erro = null;
-                      });
-                    },
-                    selectedColor: Colors.orange,
-                    backgroundColor: isDark
-                        ? Colors.white.withValues(alpha: 0.1)
-                        : Colors.grey.withValues(alpha: 0.1),
-                    labelStyle: TextStyle(
-                      color: isSelected
-                          ? Colors.white
-                          : (isDark ? Colors.white70 : Colors.grey.shade700),
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                    ),
+              DropdownButtonFormField<String>(
+                value: _tipoSelecionado,
+                decoration: InputDecoration(
+                  hintText: 'Selecione o tipo',
+                  prefixIcon: Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange.shade700,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+                dropdownColor: isDark ? const Color(0xFF1C2333) : Colors.white,
+                items: _tipos.map((tipo) {
+                  return DropdownMenuItem<String>(
+                    value: tipo['value'] as String,
+                    child: Text(tipo['label'] as String),
                   );
                 }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _tipoSelecionado = value;
+                    _erro = null;
+                  });
+                },
               ),
 
               const SizedBox(height: 20),
@@ -1841,33 +1825,34 @@ class _DivergenciaBottomSheetState extends State<_DivergenciaBottomSheet> {
                 ),
               ),
 
-              const SizedBox(height: 16),
-
-              // Observação (opcional)
-              Text(
-                'Observação (opcional)',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white70 : Colors.grey.shade700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _observacaoController,
-                maxLines: 3,
-                maxLength: 500,
-                decoration: InputDecoration(
-                  hintText: 'Descreva o problema encontrado...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 14,
+              // Observação (condicional - só aparece quando tipo = outro)
+              if (_tipoSelecionado == 'outro') ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Observação *',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white70 : Colors.grey.shade700,
                   ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _observacaoController,
+                  maxLines: 3,
+                  maxLength: 500,
+                  decoration: InputDecoration(
+                    hintText: 'Descreva o problema encontrado...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                  ),
+                ),
+              ],
 
               // Erro
               if (_erro != null) ...[

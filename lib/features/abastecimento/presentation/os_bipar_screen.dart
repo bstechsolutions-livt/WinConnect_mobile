@@ -55,8 +55,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   int? _unidadesConferidas;
   int? _qtConferida;
 
-  // Cache da sobra (preenchido quando retirou mais que o solicitado)
-  int? _qtRetirada;
+  // Cache da devolução de sobra (preenchido quando há sobra no endereço de origem)
   int? _codenderecoDevolucao;
 
   @override
@@ -999,34 +998,6 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     // Se o usuário confirmou a quantidade
     if (result != null && result.confirmado && mounted) {
-      // Se tem sobra, navegar para tela de devolução antes de confirmar
-      if (result.temSobra) {
-        final devolucaoResult = await Navigator.push<DevolucaoSobraResult>(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OsDevolucaoSobraScreen(
-              fase: widget.fase,
-              numos: widget.numos,
-              qtSobra: result.qtSobra,
-              qtSolicitada: os.qtSolicitada.toInt(),
-              qtRetirada: result.totalRetirado!,
-              enderecoOrigemFormatado: os.enderecoOrigem.enderecoFormatado,
-              codenderecoOrigem: os.enderecoOrigem.codendereco,
-            ),
-          ),
-        );
-
-        if (devolucaoResult == null || !devolucaoResult.confirmado || !mounted) {
-          return; // Usuário cancelou a devolução
-        }
-
-        // Guarda dados da sobra no cache
-        setState(() {
-          _qtRetirada = result.totalRetirado;
-          _codenderecoDevolucao = devolucaoResult.codenderecoDevolucao;
-        });
-      }
-
       await _confirmarBipagem(codigoBarras, os, result.caixas, result.unidades);
     }
   }
@@ -1094,15 +1065,60 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (!mounted) return;
     setState(() => _isProcessing = true);
 
-    // Chama o método que faz tudo junto: vincula + finaliza (com resultado detalhado)
+    // 1. Vincula o unitizador primeiro
+    final (vinculou, erroVinculo) = await ref
+        .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
+        .vincularUnitizador(codigo);
+
+    if (!vinculou) {
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+      _mostrarErro(erroVinculo ?? 'Erro ao vincular unitizador');
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _isProcessing = false);
+
+    // 2. Verifica sobra: estoque no endereço de origem - quantidade da OS
+    final estoqueOrigem = os.qtEstoqueAtual.toInt();
+    final qtSobra = estoqueOrigem - os.qtSolicitada.toInt();
+
+    if (qtSobra > 0) {
+      final devolucaoResult = await Navigator.push<DevolucaoSobraResult>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OsDevolucaoSobraScreen(
+            fase: widget.fase,
+            numos: widget.numos,
+            qtSobra: qtSobra,
+            qtSolicitada: os.qtSolicitada.toInt(),
+            qtEstoqueOrigem: estoqueOrigem,
+            enderecoOrigemFormatado: os.enderecoOrigem.enderecoFormatado,
+            codenderecoOrigem: os.enderecoOrigem.codendereco,
+          ),
+        ),
+      );
+
+      if (devolucaoResult == null || !devolucaoResult.confirmado || !mounted) {
+        return; // Usuário cancelou a devolução
+      }
+
+      setState(() {
+        _codenderecoDevolucao = devolucaoResult.codenderecoDevolucao;
+      });
+    }
+
+    // 3. Finaliza a OS
+    if (!mounted) return;
+    setState(() => _isProcessing = true);
+
     final result = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
-        .vincularUnitizadorEFinalizarComResult(
-          codigoBarrasUnitizador: codigo,
-          qtConferida: _qtConferida!,
-          caixas: _caixasConferidas!,
-          unidades: _unidadesConferidas!,
-          qtRetirada: _qtRetirada,
+        .finalizarComQuantidadeResult(
+          _qtConferida!,
+          _caixasConferidas!,
+          _unidadesConferidas!,
           codenderecoDevolucao: _codenderecoDevolucao,
         );
 
@@ -1142,7 +1158,6 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           _qtConferida!,
           _caixasConferidas!,
           _unidadesConferidas!,
-          qtRetirada: _qtRetirada,
           codenderecoDevolucao: _codenderecoDevolucao,
         );
 

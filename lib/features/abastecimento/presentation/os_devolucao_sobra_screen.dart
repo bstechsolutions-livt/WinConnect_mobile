@@ -28,7 +28,7 @@ class OsDevolucaoSobraScreen extends ConsumerStatefulWidget {
   final int numos;
   final int qtSobra;
   final int qtSolicitada;
-  final int qtRetirada;
+  final int qtEstoqueOrigem;
   final String? enderecoOrigemFormatado;
   final int? codenderecoOrigem;
 
@@ -38,7 +38,7 @@ class OsDevolucaoSobraScreen extends ConsumerStatefulWidget {
     required this.numos,
     required this.qtSobra,
     required this.qtSolicitada,
-    required this.qtRetirada,
+    required this.qtEstoqueOrigem,
     this.enderecoOrigemFormatado,
     this.codenderecoOrigem,
   });
@@ -54,12 +54,6 @@ class _OsDevolucaoSobraScreenState
   final FocusNode _enderecoFocusNode = FocusNode();
   bool _isProcessing = false;
   bool _tecladoLiberado = false;
-  int? _autorizadorMatricula;
-
-  // Endereço validado
-  int? _codenderecoValidado;
-  String? _enderecoFormatadoValidado;
-  bool _isOrigem = false;
 
   late final ScannerProtection _scannerProtection;
 
@@ -135,51 +129,20 @@ class _OsDevolucaoSobraScreenState
     setState(() => _isProcessing = false);
 
     if (result.sucesso) {
-      setState(() {
-        _codenderecoValidado = result.codendereco;
-        _enderecoFormatadoValidado = result.enderecoFormatado;
-        _isOrigem = result.isOrigem;
-      });
-
-      _mostrarSucesso(
-        result.isOrigem
-            ? 'Endereço de origem confirmado!'
-            : 'Endereço ${result.enderecoFormatado} validado!',
+      // Válido — retorna direto sem precisar de botão
+      Navigator.pop(
+        context,
+        DevolucaoSobraResult(
+          codenderecoDevolucao: result.codendereco!,
+          enderecoFormatado: result.enderecoFormatado ?? '',
+          isOrigem: result.isOrigem,
+          confirmado: true,
+        ),
       );
     } else {
       _mostrarErro(result.erro ?? 'Endereço inválido');
       _enderecoFocusNode.requestFocus();
     }
-  }
-
-  /// Confirma devolução e retorna resultado
-  void _confirmar() {
-    if (_codenderecoValidado == null) return;
-
-    Navigator.pop(
-      context,
-      DevolucaoSobraResult(
-        codenderecoDevolucao: _codenderecoValidado!,
-        enderecoFormatado: _enderecoFormatadoValidado ?? '',
-        isOrigem: _isOrigem,
-        confirmado: true,
-      ),
-    );
-  }
-
-  /// Atalho para devolver para o endereço de origem sem bipar
-  void _devolverParaOrigem() {
-    if (widget.codenderecoOrigem == null) return;
-
-    Navigator.pop(
-      context,
-      DevolucaoSobraResult(
-        codenderecoDevolucao: widget.codenderecoOrigem!,
-        enderecoFormatado: widget.enderecoOrigemFormatado ?? '',
-        isOrigem: true,
-        confirmado: true,
-      ),
-    );
   }
 
   /// Solicita autorização para digitação manual
@@ -194,25 +157,12 @@ class _OsDevolucaoSobraScreenState
     if (resultado.autorizado && mounted) {
       setState(() {
         _tecladoLiberado = true;
-        _autorizadorMatricula = resultado.matriculaAutorizador;
       });
       await Future.delayed(const Duration(milliseconds: 100));
       if (mounted) _enderecoFocusNode.requestFocus();
     } else if (mounted) {
       _enderecoFocusNode.requestFocus();
     }
-  }
-
-  void _mostrarSucesso(String msg) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   void _mostrarErro(String msg) {
@@ -227,10 +177,206 @@ class _OsDevolucaoSobraScreenState
     );
   }
 
+  void _mostrarSucesso(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _mostrarDialogDivergencia() {
+    final observacaoController = TextEditingController();
+    String? tipoSelecionado;
+
+    final tiposDivergencia = [
+      {'value': 'quantidade_menor', 'label': 'Quantidade Menor'},
+      {'value': 'quantidade_maior', 'label': 'Quantidade Maior'},
+      {'value': 'produto_errado', 'label': 'Produto Errado'},
+      {'value': 'nao_encontrado', 'label': 'Não Encontrado'},
+      {'value': 'outro', 'label': 'Outro (especificar)'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          final isOutro = tipoSelecionado == 'outro';
+
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(ctx).viewInsets.bottom,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(ctx).colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade400,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    const Icon(Icons.warning_amber_rounded,
+                        size: 32, color: Colors.orange),
+                    const SizedBox(height: 8),
+
+                    const Text(
+                      'Sinalizar Divergência',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+
+                    DropdownButtonFormField<String>(
+                      value: tipoSelecionado,
+                      decoration: InputDecoration(
+                        labelText: 'Tipo da divergência *',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 10),
+                      ),
+                      items: tiposDivergencia.map((tipo) {
+                        return DropdownMenuItem<String>(
+                          value: tipo['value'] as String,
+                          child: Text(tipo['label'] as String),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setModalState(() {
+                          tipoSelecionado = value;
+                          if (value != 'outro') {
+                            observacaoController.clear();
+                          }
+                        });
+                      },
+                    ),
+
+                    if (isOutro) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: observacaoController,
+                        maxLines: 2,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          labelText: 'Descreva a divergência *',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Cancelar'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () async {
+                              if (tipoSelecionado == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Selecione o tipo'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final observacao =
+                                  observacaoController.text.trim();
+
+                              if (tipoSelecionado == 'outro' &&
+                                  observacao.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text('Descreva a divergência'),
+                                    backgroundColor: Colors.orange,
+                                  ),
+                                );
+                                return;
+                              }
+
+                              Navigator.of(ctx).pop();
+                              final (sucesso, erro) = await ref
+                                  .read(
+                                    osDetalheNotifierProvider(
+                                      widget.fase,
+                                      widget.numos,
+                                    ).notifier,
+                                  )
+                                  .sinalizarDivergencia(
+                                    tipoSelecionado!,
+                                    observacao.isNotEmpty
+                                        ? observacao
+                                        : null,
+                                  );
+                              if (sucesso && mounted) {
+                                _mostrarSucesso('Divergência sinalizada!');
+                              } else if (mounted) {
+                                _mostrarErro(
+                                    erro ?? 'Erro ao sinalizar');
+                              }
+                            },
+                            style: FilledButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text('Confirmar'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       appBar: AppBar(
         title: Text('OS ${widget.numos} - Sobra'),
@@ -242,114 +388,66 @@ class _OsDevolucaoSobraScreenState
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Column(
             children: [
-              // Info da sobra
+              // Info da sobra - compacto
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.orange[600]!, Colors.orange[800]!],
                   ),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
+                child: Row(
                   children: [
-                    const Icon(Icons.warning_amber,
-                        color: Colors.white, size: 32),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'SOBRA DE PRODUTO',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    const Icon(Icons.warning_amber, color: Colors.white, size: 24),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildInfoCol(
-                              'Solicitado', '${widget.qtSolicitada}'),
-                          Container(
-                            width: 1,
-                            height: 24,
-                            color: Colors.white30,
+                          const Text(
+                            'SOBRA DE PRODUTO',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          _buildInfoCol('Retirado', '${widget.qtRetirada}'),
-                          Container(
-                            width: 1,
-                            height: 24,
-                            color: Colors.white30,
-                          ),
-                          _buildInfoCol(
-                            'Sobra',
-                            '+${widget.qtSobra}',
-                            destaque: true,
+                          const SizedBox(height: 2),
+                          Text(
+                            'Sobrou ${widget.qtSobra} UN — Bipe onde devolver',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 11,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Bipe o endereço onde vai devolver a sobra',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: 11,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '+${widget.qtSobra}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 12),
-
-              // Botão rápido: devolver para origem
-              if (widget.codenderecoOrigem != null)
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed:
-                        _codenderecoValidado == null ? _devolverParaOrigem : null,
-                    icon: const Icon(Icons.undo, size: 16),
-                    label: Text(
-                      'DEVOLVER P/ ORIGEM (${widget.enderecoOrigemFormatado ?? ''})',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.blue,
-                      side: const BorderSide(color: Colors.blue),
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                    ),
-                  ),
-                ),
-
-              if (widget.codenderecoOrigem != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(
-                    'ou bipe outro endereço:',
-                    style: TextStyle(
-                      color: isDark ? Colors.white60 : Colors.grey[600],
-                      fontSize: 10,
-                    ),
-                  ),
-                ),
+              const SizedBox(height: 10),
 
               // Campo de bipagem
               TextField(
@@ -358,37 +456,24 @@ class _OsDevolucaoSobraScreenState
                 keyboardType:
                     _tecladoLiberado ? TextInputType.text : TextInputType.none,
                 textInputAction: TextInputAction.done,
-                style: const TextStyle(
-                    fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
-                  hintText: 'Bipe o endereço',
+                  hintText: 'Bipe o endereço de devolução',
                   hintStyle: const TextStyle(fontSize: 13),
-                  prefixIcon:
-                      const Icon(Icons.qr_code_scanner, color: Colors.orange),
-                  suffixIcon: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (!_tecladoLiberado)
-                        IconButton(
+                  prefixIcon: const Icon(Icons.qr_code_scanner, color: Colors.orange),
+                  suffixIcon: !_tecladoLiberado
+                      ? IconButton(
                           icon: const Icon(Icons.keyboard, size: 20),
                           tooltip: 'Digitar manualmente',
                           onPressed: _solicitarAutorizacaoDigitacao,
-                        ),
-                      if (_enderecoController.text.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.send, color: Colors.orange),
-                          onPressed: () => _processarBipagem(
-                              _enderecoController.text),
-                        ),
-                    ],
-                  ),
+                        )
+                      : null,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide:
-                        const BorderSide(color: Colors.orange, width: 2),
+                    borderSide: const BorderSide(color: Colors.orange, width: 2),
                   ),
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -399,104 +484,29 @@ class _OsDevolucaoSobraScreenState
               ),
 
               if (_isProcessing) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 const LinearProgressIndicator(color: Colors.orange),
-              ],
-
-              // Endereço validado
-              if (_codenderecoValidado != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.green, width: 1.5),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle,
-                          color: Colors.green[700], size: 28),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _enderecoFormatadoValidado ?? '',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green[700],
-                              ),
-                            ),
-                            Text(
-                              _isOrigem
-                                  ? 'Endereço de origem'
-                                  : 'Outro endereço',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.green[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Botão para trocar
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            _codenderecoValidado = null;
-                            _enderecoFormatadoValidado = null;
-                            _isOrigem = false;
-                          });
-                          _enderecoFocusNode.requestFocus();
-                        },
-                        icon: const Icon(Icons.refresh, size: 20),
-                        tooltip: 'Trocar endereço',
-                      ),
-                    ],
-                  ),
-                ),
               ],
 
               const Spacer(),
 
-              // Botão confirmar
+              // Botão de divergência
               SizedBox(
                 width: double.infinity,
-                height: 48,
-                child: FilledButton(
-                  onPressed:
-                      _codenderecoValidado != null ? _confirmar : null,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    disabledBackgroundColor: Colors.grey[400],
+                height: 40,
+                child: OutlinedButton.icon(
+                  onPressed: () => _mostrarDialogDivergencia(),
+                  icon: const Icon(Icons.warning_amber, size: 18),
+                  label: const Text(
+                    'SINALIZAR DIVERGÊNCIA',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange,
+                    side: const BorderSide(color: Colors.orange),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _codenderecoValidado != null
-                            ? Icons.check_circle
-                            : Icons.block,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _codenderecoValidado != null
-                            ? 'CONFIRMAR DEVOLUÇÃO (${widget.qtSobra} UN)'
-                            : 'BIPE O ENDEREÇO PRIMEIRO',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -504,29 +514,6 @@ class _OsDevolucaoSobraScreenState
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildInfoCol(String label, String value, {bool destaque = false}) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: 9,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: destaque ? 18 : 14,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
     );
   }
 }

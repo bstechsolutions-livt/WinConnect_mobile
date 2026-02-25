@@ -8,24 +8,14 @@ class ConferenciaQuantidadeResult {
   final int totalUnidades;
   final bool confirmado;
 
-  /// Quantidade total retirada (pode ser > totalUnidades quando há sobra)
-  final int? totalRetirado;
-
   ConferenciaQuantidadeResult({
     required this.caixas,
     required this.unidades,
     required this.multiplo,
     this.confirmado = true,
-    this.totalRetirado,
   }) : totalUnidades = (caixas * multiplo) + unidades;
 
   final int multiplo;
-
-  /// Se houve sobra (retirou mais que o solicitado)
-  bool get temSobra => totalRetirado != null && totalRetirado! > totalUnidades;
-
-  /// Quantidade da sobra
-  int get qtSobra => temSobra ? totalRetirado! - totalUnidades : 0;
 }
 
 /// Tela de Conferência de Quantidade
@@ -100,8 +90,7 @@ class _OsConferenciaQuantidadeScreenState
   // Getters para cálculos
   int get _totalDigitado => (_caixas * widget.multiplo) + _unidades;
   bool get _quantidadeCorreta => _totalDigitado == widget.qtSolicitada;
-  bool get _quantidadeMaior => _totalDigitado > widget.qtSolicitada;
-  bool get _podeConfirmar => _quantidadeCorreta || _quantidadeMaior;
+  bool get _podeConfirmar => _quantidadeCorreta;
   bool get _temDiferenca => _totalDigitado != 0 && !_quantidadeCorreta;
   int get _diferenca => _totalDigitado - widget.qtSolicitada;
 
@@ -516,27 +505,6 @@ class _OsConferenciaQuantidadeScreenState
       return;
     }
 
-    // Se pegou a mais, a tela retorna totalRetirado = totalDigitado
-    // e caixas/unidades referentes à qtd da OS (qtSolicitada)
-    if (_quantidadeMaior) {
-      final totalRetirado = _totalDigitado;
-      // A qtd para a OS continua sendo a solicitada
-      final caixasOs = widget.qtSolicitada ~/ widget.multiplo;
-      final unidadesOs = widget.qtSolicitada % widget.multiplo;
-
-      Navigator.pop(
-        context,
-        ConferenciaQuantidadeResult(
-          caixas: caixasOs,
-          unidades: unidadesOs,
-          multiplo: widget.multiplo,
-          confirmado: true,
-          totalRetirado: totalRetirado,
-        ),
-      );
-      return;
-    }
-
     Navigator.pop(
       context,
       ConferenciaQuantidadeResult(
@@ -817,8 +785,6 @@ class _OsConferenciaQuantidadeScreenState
                             decoration: BoxDecoration(
                               color: _quantidadeCorreta
                                   ? Colors.green[50]
-                                  : _quantidadeMaior
-                                  ? Colors.orange[50]
                                   : _temDiferenca
                                   ? Colors.red[50]
                                   : Theme.of(
@@ -828,8 +794,6 @@ class _OsConferenciaQuantidadeScreenState
                               border: Border.all(
                                 color: _quantidadeCorreta
                                     ? Colors.green
-                                    : _quantidadeMaior
-                                    ? Colors.orange
                                     : _temDiferenca
                                     ? Colors.red
                                     : Colors.grey,
@@ -847,13 +811,7 @@ class _OsConferenciaQuantidadeScreenState
                                         color: Colors.green[700],
                                         size: 14,
                                       ),
-                                    if (_quantidadeMaior)
-                                      Icon(
-                                        Icons.warning_amber,
-                                        color: Colors.orange[700],
-                                        size: 14,
-                                      ),
-                                    if (_temDiferenca && !_quantidadeMaior)
+                                    if (_temDiferenca)
                                       Icon(
                                         Icons.error,
                                         color: Colors.red[700],
@@ -867,14 +825,12 @@ class _OsConferenciaQuantidadeScreenState
                                         fontWeight: FontWeight.bold,
                                         color: _quantidadeCorreta
                                             ? Colors.green[700]
-                                            : _quantidadeMaior
-                                            ? Colors.orange[700]
                                             : _temDiferenca
                                             ? Colors.red[700]
                                             : null,
                                       ),
                                     ),
-                                    if (_temDiferenca && !_quantidadeMaior)
+                                    if (_temDiferenca)
                                       Text(
                                         '  (${_diferenca > 0 ? '+' : ''}$_diferenca)',
                                         style: TextStyle(
@@ -894,17 +850,6 @@ class _OsConferenciaQuantidadeScreenState
                                       ),
                                   ],
                                 ),
-                                if (_quantidadeMaior) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Sobra: +$_diferenca UN (vai pedir endere\u00e7o de devolu\u00e7\u00e3o)',
-                                    style: TextStyle(
-                                      fontSize: 9,
-                                      color: Colors.orange[700],
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
                               ],
                             ),
                           ),
@@ -922,9 +867,7 @@ class _OsConferenciaQuantidadeScreenState
                     child: FilledButton(
                       onPressed: _podeConfirmar ? _confirmar : null,
                       style: FilledButton.styleFrom(
-                        backgroundColor: _quantidadeMaior
-                            ? Colors.orange
-                            : Colors.green,
+                        backgroundColor: Colors.green,
                         disabledBackgroundColor: Colors.grey[400],
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(6),
@@ -935,18 +878,14 @@ class _OsConferenciaQuantidadeScreenState
                         children: [
                           Icon(
                             _podeConfirmar
-                                ? (_quantidadeMaior
-                                    ? Icons.warning_amber
-                                    : Icons.check_circle)
+                                ? Icons.check_circle
                                 : Icons.block,
                             size: 14,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            _quantidadeMaior
-                                ? 'CONFIRMAR (COM SOBRA)'
-                                : 'CONFIRMAR',
-                            style: const TextStyle(
+                          const Text(
+                            'CONFIRMAR',
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 11,
                             ),

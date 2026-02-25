@@ -323,7 +323,6 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     required int qtConferida,
     required int caixas,
     required int unidades,
-    int? qtRetirada,
     int? codenderecoDevolucao,
   }) async {
     try {
@@ -340,9 +339,6 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
         'caixas': caixas,
         'unidades': unidades,
       };
-      if (qtRetirada != null && qtRetirada > qtConferida) {
-        body['qt_retirada'] = qtRetirada;
-      }
       if (codenderecoDevolucao != null) {
         body['codendereco_devolucao'] = codenderecoDevolucao;
       }
@@ -383,7 +379,6 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
     int qtConferida,
     int caixas,
     int unidades, {
-    int? qtRetirada,
     int? codenderecoDevolucao,
   }) async {
     try {
@@ -393,9 +388,6 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
         'caixas': caixas,
         'unidades': unidades,
       };
-      if (qtRetirada != null && qtRetirada > qtConferida) {
-        body['qt_retirada'] = qtRetirada;
-      }
       if (codenderecoDevolucao != null) {
         body['codendereco_devolucao'] = codenderecoDevolucao;
       }
