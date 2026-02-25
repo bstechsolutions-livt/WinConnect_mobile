@@ -1,7 +1,7 @@
 name: winconnect_mobile
 description: "A new Flutter project with modern stack"
 publish_to: 'none'
-version: 2.4.1+17
+version: 2.5.0+18
 
 environment:
   sdk: ^3.10.4
