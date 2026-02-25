@@ -46,3 +46,8 @@ app.*.map.json
 
 # Projeto Laravel API (clonado para desenvolvimento)
 WinConnect/
+
+# Node
+node_modules/
+package-lock.json
+capture_test.js
