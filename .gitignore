@@ -50,4 +50,5 @@ WinConnect/
 # Node
 node_modules/
 package-lock.json
+package.json
 capture_test.js
