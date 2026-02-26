@@ -1096,6 +1096,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
             qtEstoqueOrigem: estoqueOrigem,
             enderecoOrigemFormatado: os.enderecoOrigem.enderecoFormatado,
             codenderecoOrigem: os.enderecoOrigem.codendereco,
+            ruaOrigem: os.enderecoOrigem.rua,
+            predioOrigem: os.enderecoOrigem.predio,
+            nivelOrigem: os.enderecoOrigem.nivel,
+            aptoOrigem: os.enderecoOrigem.apto,
           ),
         ),
       );
