@@ -1999,23 +1999,19 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
         if (mounted) _codigoFocusNode.requestFocus();
       });
     } else if (_etapa == 1) {
-      // Etapa 1: Bipar produto - valida imediatamente se é o produto correto
+      // Etapa 1: Bipar produto - valida IMEDIATAMENTE se é o produto correto
+      // Aceita apenas código de barras real: codauxiliar (unidade) ou codauxiliar2 (caixa)
       final codauxiliar = item['codauxiliar']?.toString() ?? '';
       final codauxiliar2 = item['codauxiliar2']?.toString() ?? '';
-      final codprod = item['codprod']?.toString() ?? '';
 
-      // Valida se o código bipado corresponde ao produto esperado
+      // Validação estrita: comparação exata com códigos de barras do produto da OS
       final codigoValido =
-          codigo == codauxiliar ||
-          codigo == codauxiliar2 ||
-          codigo == codprod ||
-          (codauxiliar.isNotEmpty && codigo.contains(codauxiliar)) ||
-          (codauxiliar2.isNotEmpty && codigo.contains(codauxiliar2)) ||
-          (codprod.isNotEmpty && codigo.contains(codprod));
+          (codauxiliar.isNotEmpty && codigo == codauxiliar) ||
+          (codauxiliar2.isNotEmpty && codigo == codauxiliar2);
 
       if (!codigoValido) {
-        final descricao = item['descricao'] ?? 'Produto $codprod';
-        _mostrarErro('Produto incorreto! Esperado: $descricao');
+        final descricao = item['descricao'] ?? 'Produto desconhecido';
+        _mostrarErro('Produto incorreto! Este EAN não pertence à OS.\nEsperado: $descricao');
         _codigoController.clear();
         _scannerProtection.reset();
         Future.delayed(const Duration(milliseconds: 200), () {

@@ -11,6 +11,7 @@ class ConferenciaScreen extends ConsumerStatefulWidget {
   final int codprod;
   final String descricao;
   final String codauxiliar;
+  final String? codauxiliar2;
   final double quantidade;
   final String unidade;
 
@@ -20,6 +21,7 @@ class ConferenciaScreen extends ConsumerStatefulWidget {
     required this.codprod,
     required this.descricao,
     required this.codauxiliar,
+    this.codauxiliar2,
     required this.quantidade,
     required this.unidade,
   });
@@ -36,6 +38,7 @@ class _ConferenciaScreenState extends ConsumerState<ConferenciaScreen> {
   bool _produtoBipado = false;
   bool _isProcessing = false;
   int _tentativas = 0;
+  String _codigoBipado = ''; // Guarda o código realmente bipado pelo operador
 
   @override
   void dispose() {
@@ -273,14 +276,17 @@ class _ConferenciaScreenState extends ConsumerState<ConferenciaScreen> {
       return;
     }
 
-    // Valida localmente primeiro
-    if (ean != widget.codauxiliar) {
-      _mostrarErro('Código de barras incorreto!');
+    // Validação estrita: aceita codauxiliar (unidade) ou codauxiliar2 (caixa)
+    final codauxiliar2 = widget.codauxiliar2 ?? '';
+    if (ean != widget.codauxiliar && (codauxiliar2.isEmpty || ean != codauxiliar2)) {
+      _mostrarErro('Produto incorreto! Este EAN não pertence a esta OS.');
+      _eanController.clear();
       return;
     }
 
     setState(() {
       _produtoBipado = true;
+      _codigoBipado = ean; // Salva o código realmente bipado
     });
     
     _mostrarSucesso('Produto bipado com sucesso!');
@@ -307,7 +313,7 @@ class _ConferenciaScreenState extends ConsumerState<ConferenciaScreen> {
     try {
       final apiService = ref.read(apiServiceProvider);
       await apiService.post('/wms/fase2/os/${widget.numos}/conferir', {
-        'codigo_barras': widget.codauxiliar,
+        'codigo_barras': _codigoBipado.isNotEmpty ? _codigoBipado : widget.codauxiliar,
         'quantidade': qtd,
       });
 

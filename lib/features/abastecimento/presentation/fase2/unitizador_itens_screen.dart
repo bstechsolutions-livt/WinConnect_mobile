@@ -244,25 +244,23 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
       return;
     }
 
-    // Encontra o item pelo código (unidade ou caixa)
+    // Encontra o item pelo código de barras (unidade ou caixa)
+    // Validação estrita: aceita apenas codauxiliar e codauxiliar2 (EAN reais)
     final item = _itens.firstWhere(
       (i) =>
           i['codauxiliar']?.toString() == codigo ||
-          i['codauxiliar2']?.toString() == codigo ||
-          i['codprod']?.toString() == codigo ||
-          i['ean']?.toString() == codigo,
+          i['codauxiliar2']?.toString() == codigo,
       orElse: () => {},
     );
 
     if (item.isEmpty) {
-      _mostrarErro('Produto não encontrado neste unitizador');
+      _mostrarErro('Produto incorreto! Este EAN não pertence a nenhuma OS deste unitizador.');
       _codigoController.clear();
       _codigoFocusNode.requestFocus();
       return;
     }
 
     // Determina se foi bipado caixa ou unidade
-    final codauxiliar = item['codauxiliar']?.toString() ?? '';
     final codauxiliar2 = item['codauxiliar2']?.toString() ?? '';
     final tipoBipagem = (codauxiliar2.isNotEmpty && codigo == codauxiliar2)
         ? 'caixa'
