@@ -1614,7 +1614,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         isDark: isDark,
                         label: 'Código Ilegível',
                         descricao: 'Código de barras danificado',
-                        icon: Icons.qr_code_off,
+                        icon: Icons.no_photography_outlined,
                         cor: Colors.purple,
                         selecionado: motivoSelecionado == 'Código Ilegível',
                         onTap: () => setModalState(
