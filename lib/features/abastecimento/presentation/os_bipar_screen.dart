@@ -1568,105 +1568,57 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                       const SizedBox(height: 20),
 
                       // Opção Parcial
-                      GestureDetector(
+                      _buildOpcaoBloqueio(
+                        isDark: isDark,
+                        label: 'Parcial',
+                        descricao: 'Parte dos itens tem problema',
+                        icon: Icons.pie_chart_outline,
+                        cor: Colors.orange,
+                        selecionado: motivoSelecionado == 'Parcial',
                         onTap: () => setModalState(
                           () => motivoSelecionado = 'Parcial',
-                        ),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: motivoSelecionado == 'Parcial'
-                                ? Colors.orange.withValues(alpha: 0.15)
-                                : isDark
-                                    ? Colors.white.withValues(alpha: 0.05)
-                                    : Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: motivoSelecionado == 'Parcial'
-                                  ? Colors.orange
-                                  : isDark
-                                      ? Colors.white12
-                                      : Colors.grey.shade300,
-                              width: motivoSelecionado == 'Parcial' ? 2 : 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                motivoSelecionado == 'Parcial'
-                                    ? Icons.check_circle
-                                    : Icons.radio_button_off,
-                                color: motivoSelecionado == 'Parcial'
-                                    ? Colors.orange
-                                    : Colors.grey,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Parcial',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? Colors.white
-                                      : Colors.grey.shade900,
-                                ),
-                              ),
-                            ],
-                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
 
                       // Opção Total
-                      GestureDetector(
+                      _buildOpcaoBloqueio(
+                        isDark: isDark,
+                        label: 'Total',
+                        descricao: 'Todos os itens tem problema',
+                        icon: Icons.block_rounded,
+                        cor: Colors.red,
+                        selecionado: motivoSelecionado == 'Total',
                         onTap: () => setModalState(
                           () => motivoSelecionado = 'Total',
                         ),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: motivoSelecionado == 'Total'
-                                ? Colors.red.withValues(alpha: 0.15)
-                                : isDark
-                                    ? Colors.white.withValues(alpha: 0.05)
-                                    : Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: motivoSelecionado == 'Total'
-                                  ? Colors.red
-                                  : isDark
-                                      ? Colors.white12
-                                      : Colors.grey.shade300,
-                              width: motivoSelecionado == 'Total' ? 2 : 1,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                motivoSelecionado == 'Total'
-                                    ? Icons.check_circle
-                                    : Icons.radio_button_off,
-                                color: motivoSelecionado == 'Total'
-                                    ? Colors.red
-                                    : Colors.grey,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Total',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? Colors.white
-                                      : Colors.grey.shade900,
-                                ),
-                              ),
-                            ],
-                          ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Opção Cadastro
+                      _buildOpcaoBloqueio(
+                        isDark: isDark,
+                        label: 'Cadastro',
+                        descricao: 'Produto sem EAN cadastrado',
+                        icon: Icons.app_registration,
+                        cor: Colors.blue,
+                        selecionado: motivoSelecionado == 'Cadastro',
+                        onTap: () => setModalState(
+                          () => motivoSelecionado = 'Cadastro',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Opção Código Ilegível
+                      _buildOpcaoBloqueio(
+                        isDark: isDark,
+                        label: 'Código Ilegível',
+                        descricao: 'Código de barras danificado',
+                        icon: Icons.qr_code_off,
+                        cor: Colors.purple,
+                        selecionado: motivoSelecionado == 'Código Ilegível',
+                        onTap: () => setModalState(
+                          () => motivoSelecionado = 'Código Ilegível',
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -1782,6 +1734,72 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildOpcaoBloqueio({
+    required bool isDark,
+    required String label,
+    required String descricao,
+    required IconData icon,
+    required Color cor,
+    required bool selecionado,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: selecionado
+              ? cor.withValues(alpha: 0.15)
+              : isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selecionado
+                ? cor
+                : isDark
+                    ? Colors.white12
+                    : Colors.grey.shade300,
+            width: selecionado ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selecionado ? Icons.check_circle : Icons.radio_button_off,
+              color: selecionado ? cor : Colors.grey,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : Colors.grey.shade900,
+                    ),
+                  ),
+                  Text(
+                    descricao,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark ? Colors.white38 : Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
