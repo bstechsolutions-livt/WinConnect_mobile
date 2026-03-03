@@ -711,6 +711,32 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       if (!mounted) return;
       setState(() => _isProcessing = false);
 
+      // Verifica se a OS foi concluída no Winthor (cleanup automático)
+      if (response['os_concluida'] == true) {
+        final message = response['message'] ?? 'OS concluída no Winthor. Unitizador liberado.';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(message)),
+                ],
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          _carregarUnitizadores();
+          Future.delayed(const Duration(milliseconds: 200), () {
+            if (mounted) _codigoFocusNode.requestFocus();
+          });
+        }
+        return;
+      }
+
       // Verifica se a OS está bloqueada
       if (response['bloqueada'] == true || 
           response['status'] == 'BLOQUEADA' ||
