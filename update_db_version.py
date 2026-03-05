@@ -24,16 +24,16 @@ def main():
     ['platform' => 'android', 'client_id' => 'all'],
     [
         'version' => '2.8.0',
-        'build_number' => 21,
+        'build_number' => 22,
         'download_url' => 'http://192.168.1.25/systems/winconnect_mobile.apk',
-        'changelog' => 'Auto-liberar operador da rua ao concluir todas as OSs pendentes',
+        'changelog' => 'Fix: Ao bloquear OS, navegar direto para a próxima OS da rua',
         'file_size' => 70903013,
         'is_active' => true,
         'force_update' => true,
         'released_at' => now()
     ]
 );
-echo 'Versão 2.8.0 (build 21) registrada com sucesso!';
+echo 'Versão 2.8.0 (build 22) registrada com sucesso!';
 "'''
         
         stdin, stdout, stderr = ssh.exec_command(cmd)
