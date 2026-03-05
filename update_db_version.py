@@ -23,17 +23,17 @@ def main():
 \\App\\Models\\AppVersion::updateOrCreate(
     ['platform' => 'android', 'client_id' => 'all'],
     [
-        'version' => '2.7.0',
-        'build_number' => 20,
+        'version' => '2.8.0',
+        'build_number' => 21,
         'download_url' => 'http://192.168.1.25/systems/winconnect_mobile.apk',
-        'changelog' => 'Novos tipos de bloqueio (Cadastro, Código Ilegível), validação estrita de EAN na bipagem',
+        'changelog' => 'Auto-liberar operador da rua ao concluir todas as OSs pendentes',
         'file_size' => 70903013,
         'is_active' => true,
         'force_update' => true,
         'released_at' => now()
     ]
 );
-echo 'Versão 2.7.0 (build 20) registrada com sucesso!';
+echo 'Versão 2.8.0 (build 21) registrada com sucesso!';
 "'''
         
         stdin, stdout, stderr = ssh.exec_command(cmd)

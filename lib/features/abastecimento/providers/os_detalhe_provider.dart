@@ -463,15 +463,17 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   }
 
   // Bloquear OS
-  Future<(bool, String?)> bloquear(String motivo) async {
+  // Retorna (sucesso, erro, ruaConcluida)
+  Future<(bool, String?, bool)> bloquear(String motivo) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase$fase/os/$numos/bloquear', {
+      final response = await apiService.post('/wms/fase$fase/os/$numos/bloquear', {
         'motivo': motivo,
       });
-      return (true, null);
+      final ruaConcluida = response is Map && response['rua_concluida'] == true;
+      return (true, null, ruaConcluida);
     } catch (e) {
-      return (false, _extrairMensagemErro(e));
+      return (false, _extrairMensagemErro(e), false);
     }
   }
 

@@ -1660,7 +1660,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                   ? () async {
                                 setModalState(() => isLoading = true);
 
-                                final (sucesso, erro) = await ref
+                                final (sucesso, erro, ruaConcluida) = await ref
                                     .read(
                                       osDetalheNotifierProvider(
                                         widget.fase,
@@ -1675,9 +1675,16 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                 Navigator.of(ctx).pop();
 
                                 if (sucesso) {
-                                  // Pop the bipar screen - must happen even if SnackBar fails
-                                  if (mounted) {
-                                    Navigator.of(this.context).pop(true);
+                                  if (ruaConcluida) {
+                                    // Rua sem mais OS - mostra dialog de rua finalizada
+                                    if (mounted) {
+                                      await _mostrarDialogRuaFinalizada();
+                                    }
+                                  } else {
+                                    // Pop the bipar screen - must happen even if SnackBar fails
+                                    if (mounted) {
+                                      Navigator.of(this.context).pop(true);
+                                    }
                                   }
                                 } else {
                                   if (mounted) {
