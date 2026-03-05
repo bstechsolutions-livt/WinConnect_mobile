@@ -224,10 +224,9 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   // Marca produto como bipado (apenas atualiza estado local)
   // Chamado após conferência de quantidade, antes de vincular unitizador
   Future<void> marcarProdutoBipado({String? tipoBipado}) async {
-    state = AsyncValue.data(state.value!.copyWith(
-      produtoBipado: true,
-      tipoBipado: tipoBipado,
-    ));
+    state = AsyncValue.data(
+      state.value!.copyWith(produtoBipado: true, tipoBipado: tipoBipado),
+    );
   }
 
   // Bipar produto COM conferência de quantidade
@@ -463,17 +462,24 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   }
 
   // Bloquear OS
-  // Retorna (sucesso, erro, ruaConcluida)
-  Future<(bool, String?, bool)> bloquear(String motivo) async {
+  // Retorna (sucesso, erro, ruaConcluida, proximaOs)
+  Future<(bool, String?, bool, ProximaOs?)> bloquear(String motivo) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      final response = await apiService.post('/wms/fase$fase/os/$numos/bloquear', {
-        'motivo': motivo,
-      });
+      final response = await apiService.post(
+        '/wms/fase$fase/os/$numos/bloquear',
+        {'motivo': motivo},
+      );
       final ruaConcluida = response is Map && response['rua_concluida'] == true;
-      return (true, null, ruaConcluida);
+      ProximaOs? proximaOs;
+      if (response is Map && response['proxima_os'] != null) {
+        proximaOs = ProximaOs.fromJson(
+          Map<String, dynamic>.from(response['proxima_os']),
+        );
+      }
+      return (true, null, ruaConcluida, proximaOs);
     } catch (e) {
-      return (false, _extrairMensagemErro(e), false);
+      return (false, _extrairMensagemErro(e), false, null);
     }
   }
 
@@ -590,17 +596,10 @@ class BiparProdutoResult {
   factory BiparProdutoResult.success({
     required String tipo,
     required int qtunitcx,
-  }) =>
-      BiparProdutoResult._(
-        sucesso: true,
-        tipo: tipo,
-        qtunitcx: qtunitcx,
-      );
+  }) => BiparProdutoResult._(sucesso: true, tipo: tipo, qtunitcx: qtunitcx);
 
-  factory BiparProdutoResult.error(String mensagem) => BiparProdutoResult._(
-        sucesso: false,
-        erro: mensagem,
-      );
+  factory BiparProdutoResult.error(String mensagem) =>
+      BiparProdutoResult._(sucesso: false, erro: mensagem);
 
   /// Retorna true se o código bipado foi da CAIXA
   bool get isCaixa => tipo == 'caixa';
@@ -629,17 +628,13 @@ class ValidarEnderecoResult {
     required int codendereco,
     required String enderecoFormatado,
     required bool isOrigem,
-  }) =>
-      ValidarEnderecoResult._(
-        sucesso: true,
-        codendereco: codendereco,
-        enderecoFormatado: enderecoFormatado,
-        isOrigem: isOrigem,
-      );
+  }) => ValidarEnderecoResult._(
+    sucesso: true,
+    codendereco: codendereco,
+    enderecoFormatado: enderecoFormatado,
+    isOrigem: isOrigem,
+  );
 
   factory ValidarEnderecoResult.error(String mensagem) =>
-      ValidarEnderecoResult._(
-        sucesso: false,
-        erro: mensagem,
-      );
+      ValidarEnderecoResult._(sucesso: false, erro: mensagem);
 }

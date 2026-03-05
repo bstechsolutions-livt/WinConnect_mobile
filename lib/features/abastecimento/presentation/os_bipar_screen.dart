@@ -805,7 +805,11 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: _isProcessing ? null : onDigitarPressed,
-                icon: const Icon(Icons.keyboard, color: Colors.orange, size: 18),
+                icon: const Icon(
+                  Icons.keyboard,
+                  color: Colors.orange,
+                  size: 18,
+                ),
                 label: const Text('DIGITAR', style: TextStyle(fontSize: 12)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.orange,
@@ -1575,9 +1579,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         icon: Icons.pie_chart_outline,
                         cor: Colors.orange,
                         selecionado: motivoSelecionado == 'Parcial',
-                        onTap: () => setModalState(
-                          () => motivoSelecionado = 'Parcial',
-                        ),
+                        onTap: () =>
+                            setModalState(() => motivoSelecionado = 'Parcial'),
                       ),
                       const SizedBox(height: 10),
 
@@ -1589,9 +1592,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         icon: Icons.block_rounded,
                         cor: Colors.red,
                         selecionado: motivoSelecionado == 'Total',
-                        onTap: () => setModalState(
-                          () => motivoSelecionado = 'Total',
-                        ),
+                        onTap: () =>
+                            setModalState(() => motivoSelecionado = 'Total'),
                       ),
                       const SizedBox(height: 10),
 
@@ -1603,9 +1605,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         icon: Icons.app_registration,
                         cor: Colors.blue,
                         selecionado: motivoSelecionado == 'Cadastro',
-                        onTap: () => setModalState(
-                          () => motivoSelecionado = 'Cadastro',
-                        ),
+                        onTap: () =>
+                            setModalState(() => motivoSelecionado = 'Cadastro'),
                       ),
                       const SizedBox(height: 10),
 
@@ -1658,42 +1659,56 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                             child: GestureDetector(
                               onTap: motivoSelecionado != null
                                   ? () async {
-                                setModalState(() => isLoading = true);
+                                      setModalState(() => isLoading = true);
 
-                                final (sucesso, erro, ruaConcluida) = await ref
-                                    .read(
-                                      osDetalheNotifierProvider(
-                                        widget.fase,
-                                        widget.numos,
-                                      ).notifier,
-                                    )
-                                    .bloquear(motivoSelecionado!);
+                                      final (
+                                        sucesso,
+                                        erro,
+                                        ruaConcluida,
+                                        proximaOs,
+                                      ) = await ref
+                                          .read(
+                                            osDetalheNotifierProvider(
+                                              widget.fase,
+                                              widget.numos,
+                                            ).notifier,
+                                          )
+                                          .bloquear(motivoSelecionado!);
 
-                                if (!mounted) return;
+                                      if (!mounted) return;
 
-                                // Fecha o bottom sheet primeiro
-                                Navigator.of(ctx).pop();
+                                      // Fecha o bottom sheet primeiro
+                                      Navigator.of(ctx).pop();
 
-                                if (sucesso) {
-                                  if (ruaConcluida) {
-                                    // Rua sem mais OS - mostra dialog de rua finalizada
-                                    if (mounted) {
-                                      await _mostrarDialogRuaFinalizada();
+                                      if (sucesso) {
+                                        if (ruaConcluida) {
+                                          // Rua sem mais OS - mostra dialog de rua finalizada
+                                          if (mounted) {
+                                            await _mostrarDialogRuaFinalizada();
+                                          }
+                                        } else if (proximaOs != null) {
+                                          // Navega direto para a próxima OS
+                                          if (mounted) {
+                                            await _mostrarDialogProximaOs(
+                                              proximaOs,
+                                            );
+                                          }
+                                        } else {
+                                          // Fallback: volta pra lista
+                                          if (mounted) {
+                                            Navigator.of(
+                                              this.context,
+                                            ).pop(true);
+                                          }
+                                        }
+                                      } else {
+                                        if (mounted) {
+                                          _mostrarErro(
+                                            erro ?? 'Erro ao bloquear',
+                                          );
+                                        }
+                                      }
                                     }
-                                  } else {
-                                    // Pop the bipar screen - must happen even if SnackBar fails
-                                    if (mounted) {
-                                      Navigator.of(this.context).pop(true);
-                                    }
-                                  }
-                                } else {
-                                  if (mounted) {
-                                    _mostrarErro(
-                                      erro ?? 'Erro ao bloquear',
-                                    );
-                                  }
-                                }
-                              }
                                   : null,
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
@@ -1762,15 +1777,15 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
           color: selecionado
               ? cor.withValues(alpha: 0.15)
               : isDark
-                  ? Colors.white.withValues(alpha: 0.05)
-                  : Colors.grey.shade50,
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.grey.shade50,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selecionado
                 ? cor
                 : isDark
-                    ? Colors.white12
-                    : Colors.grey.shade300,
+                ? Colors.white12
+                : Colors.grey.shade300,
             width: selecionado ? 2 : 1,
           ),
         ),
@@ -2098,7 +2113,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
-                    color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.2),
                   ),
                 ),
               ),
@@ -2124,7 +2141,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
             Expanded(
               child: Consumer(
                 builder: (context, ref, _) {
-                  final estoquesAsync = ref.watch(consultaEstoqueProvider(codprod));
+                  final estoquesAsync = ref.watch(
+                    consultaEstoqueProvider(codprod),
+                  );
                   return estoquesAsync.when(
                     data: (estoques) {
                       if (estoques.isEmpty) {
@@ -2134,14 +2153,23 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                       }
 
                       // Calcula total
-                      final total = estoques.fold<double>(0, (sum, e) => sum + e.quantidade);
+                      final total = estoques.fold<double>(
+                        0,
+                        (sum, e) => sum + e.quantidade,
+                      );
 
                       return Column(
                         children: [
                           // Total compacto
                           Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.blue.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
@@ -2173,10 +2201,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           Expanded(
                             child: ListView.separated(
                               itemCount: estoques.length,
-                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
                               separatorBuilder: (_, __) => Divider(
                                 height: 1,
-                                color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.outline.withValues(alpha: 0.2),
                               ),
                               itemBuilder: (_, i) {
                                 final e = estoques[i];
@@ -2184,12 +2216,16 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                     ? e.endereco
                                     : '${e.rua}.${e.predio}.${e.nivel}.${e.apto}';
                                 return Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 8,
+                                  ),
                                   child: Row(
                                     children: [
                                       Icon(
                                         Icons.location_on,
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                         size: 16,
                                       ),
                                       const SizedBox(width: 8),
@@ -2203,10 +2239,15 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                         ),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: Colors.green[700],
-                                          borderRadius: BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
                                         child: Text(
                                           '${e.quantidade.toStringAsFixed(0)}',
@@ -2226,9 +2267,13 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         ],
                       );
                     },
-                    loading: () => const Center(child: CircularProgressIndicator()),
+                    loading: () =>
+                        const Center(child: CircularProgressIndicator()),
                     error: (e, _) => Center(
-                      child: Text('Erro: $e', style: const TextStyle(fontSize: 12)),
+                      child: Text(
+                        'Erro: $e',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                     ),
                   );
                 },
