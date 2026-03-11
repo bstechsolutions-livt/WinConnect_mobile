@@ -9,7 +9,6 @@ import '../../../shared/models/finalizacao_result_model.dart';
 import '../../../shared/providers/api_service_provider.dart';
 import '../../../shared/utils/scanner_protection.dart';
 import '../../../shared/widgets/autorizar_digitacao_dialog.dart';
-import 'os_endereco_screen.dart';
 import 'os_conferencia_quantidade_screen.dart';
 import 'os_devolucao_sobra_screen.dart';
 
@@ -1304,45 +1303,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     );
   }
 
-  /// Vai direto para a próxima OS (sem diálogo)
+  /// Retorna para a lista e deixa OsListScreen navegar para a próxima OS
   Future<void> _mostrarDialogProximaOs(ProximaOs proximaOs) async {
     if (!mounted) return;
-
-    // Primeiro inicia a próxima OS via API
-    final result = await ref
-        .read(osDetalheNotifierProvider(widget.fase, proximaOs.numos).notifier)
-        .iniciarOs();
-
-    if (!result.sucesso) {
-      // Mostra erro e volta para a lista
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.erro ?? 'Erro ao iniciar próxima OS'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        Navigator.of(context).pop(true);
-      }
-      return;
-    }
-
-    // Navega direto para a próxima OS
     Navigator.of(context).pop(true);
-    // Aguarda um pouco para garantir que a navegação anterior complete
-    await Future.delayed(const Duration(milliseconds: 100));
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OsEnderecoScreen(
-            fase: widget.fase,
-            numos: proximaOs.numos,
-            faseNome: widget.faseNome,
-          ),
-        ),
-      );
-    }
   }
 
   /// Mostra dialog informando que deve registrar divergência antes de finalizar
