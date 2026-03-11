@@ -321,14 +321,13 @@ class _OsDevolucaoSobraScreenState
         widget.nivelOrigem != null &&
         widget.aptoOrigem != null;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
       appBar: AppBar(
         title: Text('OS ${widget.numos} - Sobra'),
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
+        automaticallyImplyLeading: false,
       ),
       body: SafeArea(
         child: Padding(
@@ -648,6 +647,7 @@ class _OsDevolucaoSobraScreenState
             ],
           ),
         ),
+      ),
       ),
     );
   }
