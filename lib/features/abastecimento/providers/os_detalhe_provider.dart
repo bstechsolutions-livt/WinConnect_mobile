@@ -291,13 +291,13 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
   }
 
   // Vincular unitizador
-  // Retorna (sucesso, mensagemErro)
-  Future<(bool, String?)> vincularUnitizador(
+  // Retorna (sucesso, mensagemErro, estacao, mensagemEstacao)
+  Future<(bool, String?, int?, String?)> vincularUnitizador(
     String codigoBarrasUnitizador,
   ) async {
     try {
       final apiService = ref.read(apiServiceProvider);
-      await apiService.post('/wms/fase$fase/os/$numos/vincular-unitizador', {
+      final response = await apiService.post('/wms/fase$fase/os/$numos/vincular-unitizador', {
         'codigo_barras_unitizador': codigoBarrasUnitizador,
       });
 
@@ -308,9 +308,15 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
           codunitizador: codigoBarrasUnitizador,
         ),
       );
-      return (true, null);
+
+      final estacao = response['estacao'] != null
+          ? int.tryParse(response['estacao'].toString())
+          : null;
+      final mensagemEstacao = response['mensagem_estacao']?.toString();
+
+      return (true, null, estacao, mensagemEstacao);
     } catch (e) {
-      return (false, _extrairMensagemErro(e));
+      return (false, _extrairMensagemErro(e), null, null);
     }
   }
 

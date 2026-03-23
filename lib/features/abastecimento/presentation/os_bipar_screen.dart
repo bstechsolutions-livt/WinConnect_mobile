@@ -1069,7 +1069,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     setState(() => _isProcessing = true);
 
     // 1. Vincula o unitizador primeiro
-    final (vinculou, erroVinculo) = await ref
+    final (vinculou, erroVinculo, estacao, mensagemEstacao) = await ref
         .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
         .vincularUnitizador(codigo);
 
@@ -1082,6 +1082,29 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     if (!mounted) return;
     setState(() => _isProcessing = false);
+
+    // Exibe estação se retornada pela API
+    if (estacao != null && mounted) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          icon: const Icon(Icons.location_on, color: Colors.blue, size: 48),
+          title: Text('Estação $estacao'),
+          content: Text(
+            mensagemEstacao ?? 'Alocar no pallet da estação $estacao.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
 
     // 2. Verifica sobra: estoque no endereço de origem - quantidade da OS
     final estoqueOrigem = os.qtEstoqueAtual.toInt();

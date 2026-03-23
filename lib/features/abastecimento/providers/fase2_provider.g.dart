@@ -206,7 +206,7 @@ class _UnitizadoresFase2NotifierProviderElement
 }
 
 String _$unitizadorSelecionadoNotifierHash() =>
-    r'88bc5b2e15cc4f043704699c0dc8eec9514eda34';
+    r'c2bb007e56b9f6ae077f21694a4ab559a92189f8';
 
 /// Provider para gerenciar o unitizador selecionado e seus itens
 ///
@@ -217,7 +217,9 @@ final unitizadorSelecionadoNotifierProvider = NotifierProvider<
     ({
       Unitizador? unitizador,
       List<ItemUnitizador> itens,
-      int totalConferidos
+      int totalConferidos,
+      int? estacao,
+      String? mensagemEstacao
     })>.internal(
   UnitizadorSelecionadoNotifier.new,
   name: r'unitizadorSelecionadoNotifierProvider',
@@ -232,7 +234,9 @@ typedef _$UnitizadorSelecionadoNotifier = Notifier<
     ({
       Unitizador? unitizador,
       List<ItemUnitizador> itens,
-      int totalConferidos
+      int totalConferidos,
+      int? estacao,
+      String? mensagemEstacao
     })>;
 String _$carrinhoNotifierHash() => r'8b95a91d5d89b60882191c45a3a6fb6c551e094e';
 

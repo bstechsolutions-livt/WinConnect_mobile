@@ -773,6 +773,37 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
       final itens = (response['itens'] as List? ?? [])
           .cast<Map<String, dynamic>>();
 
+      // Extrai estação do endereço de destino
+      final estacao = response['estacao'] != null
+          ? int.tryParse(response['estacao'].toString())
+          : null;
+      final mensagemEstacao = response['mensagem_estacao']?.toString();
+
+      // Exibe estação se retornada pela API
+      if (estacao != null && mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            icon: const Icon(Icons.location_on, color: Colors.blue, size: 48),
+            title: Text('Estação $estacao'),
+            content: Text(
+              mensagemEstacao ?? 'Alocar no pallet da estação $estacao.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16),
+            ),
+            actions: [
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+
+      if (!mounted) return;
+
       // Navega para a tela de conferência de itens
       final resultado = await Navigator.push<dynamic>(
         context,

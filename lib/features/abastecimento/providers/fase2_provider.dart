@@ -270,13 +270,14 @@ class UnitizadoresFase2Notifier extends _$UnitizadoresFase2Notifier {
 @Riverpod(keepAlive: true)
 class UnitizadorSelecionadoNotifier extends _$UnitizadorSelecionadoNotifier {
   @override
-  ({Unitizador? unitizador, List<ItemUnitizador> itens, int totalConferidos})
+  ({Unitizador? unitizador, List<ItemUnitizador> itens, int totalConferidos, int? estacao, String? mensagemEstacao})
       build() {
-    return (unitizador: null, itens: [], totalConferidos: 0);
+    return (unitizador: null, itens: [], totalConferidos: 0, estacao: null, mensagemEstacao: null);
   }
 
   /// Bipa/seleciona um unitizador pelo código de barras
-  Future<(bool, String?)> biparUnitizador(String codigoBarras) async {
+  /// Retorna (sucesso, mensagemErro, estacao, mensagemEstacao)
+  Future<(bool, String?, int?, String?)> biparUnitizador(String codigoBarras) async {
     try {
       final apiService = ref.read(apiServiceProvider);
       final response = await apiService.post('/wms/fase2/unitizador/bipar', {
@@ -288,16 +289,22 @@ class UnitizadorSelecionadoNotifier extends _$UnitizadorSelecionadoNotifier {
           .map((e) => ItemUnitizador.fromJson(e))
           .toList();
       final totalConferidos = response['total_conferidos'] ?? 0;
+      final estacao = response['estacao'] != null
+          ? int.tryParse(response['estacao'].toString())
+          : null;
+      final mensagemEstacao = response['mensagem_estacao']?.toString();
 
       state = (
         unitizador: unitizador,
         itens: itens,
-        totalConferidos: totalConferidos
+        totalConferidos: totalConferidos,
+        estacao: estacao,
+        mensagemEstacao: mensagemEstacao,
       );
 
-      return (true, null);
+      return (true, null, estacao, mensagemEstacao);
     } catch (e) {
-      return (false, e.toString().replaceAll('Exception: ', ''));
+      return (false, e.toString().replaceAll('Exception: ', ''), null, null);
     }
   }
 
@@ -337,7 +344,9 @@ class UnitizadorSelecionadoNotifier extends _$UnitizadorSelecionadoNotifier {
       state = (
         unitizador: state.unitizador,
         itens: itensAtualizados,
-        totalConferidos: state.totalConferidos + 1
+        totalConferidos: state.totalConferidos + 1,
+        estacao: state.estacao,
+        mensagemEstacao: state.mensagemEstacao,
       );
 
       return (true, response['message']?.toString(), response);
@@ -347,7 +356,7 @@ class UnitizadorSelecionadoNotifier extends _$UnitizadorSelecionadoNotifier {
   }
 
   void limpar() {
-    state = (unitizador: null, itens: [], totalConferidos: 0);
+    state = (unitizador: null, itens: [], totalConferidos: 0, estacao: null, mensagemEstacao: null);
   }
 }
 
