@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../shared/models/os_detalhe_model.dart';
@@ -396,11 +397,29 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
       if (codenderecoDevolucao != null) {
         body['codendereco_devolucao'] = codenderecoDevolucao;
       }
-      final response = await apiService.post(
+      final response = await apiService.postRaw(
         '/wms/fase$fase/os/$numos/finalizar',
         body,
       );
       return FinalizacaoResult.fromResponse(response);
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data is Map<String, dynamic> && data['requer_devolucao'] == true) {
+        final qtSobra = data['qt_sobra'];
+        final qtEstoqueOrigem = data['qt_estoque_origem'];
+        return FinalizacaoResult.error(
+          data['message'] ?? 'Sobra detectada',
+          requerDevolucao: true,
+          qtSobra: qtSobra is num ? qtSobra.toInt() : null,
+          qtEstoqueOrigem: qtEstoqueOrigem is num ? qtEstoqueOrigem.toInt() : null,
+        );
+      }
+      final errorMsg = _extrairMensagemErro(e.response?.data?['message'] ?? e.toString());
+      final deveRegistrarDivergencia = _verificarDeveRegistrarDivergencia(e);
+      return FinalizacaoResult.error(
+        errorMsg,
+        deveRegistrarDivergencia: deveRegistrarDivergencia,
+      );
     } catch (e) {
       final errorMsg = _extrairMensagemErro(e);
       final deveRegistrarDivergencia = _verificarDeveRegistrarDivergencia(e);

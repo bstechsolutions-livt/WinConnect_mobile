@@ -88,6 +88,7 @@ class _OsDevolucaoSobraScreenState
 
   @override
   void dispose() {
+    _scannerProtection.dispose();
     _enderecoController.dispose();
     _enderecoFocusNode.removeListener(_onFocusChange);
     _enderecoFocusNode.dispose();
@@ -112,15 +113,6 @@ class _OsDevolucaoSobraScreenState
     if (trimmed.isEmpty) return;
     _enderecoController.clear();
 
-    if (!_tecladoLiberado) {
-      final isScanner = _scannerProtection.checkInput(
-        trimmed,
-        tecladoLiberado: false,
-        clearCallback: () => _enderecoController.clear(),
-      );
-      if (!isScanner) return;
-    }
-
     await _validarEndereco(trimmed);
   }
 
@@ -140,6 +132,7 @@ class _OsDevolucaoSobraScreenState
     if (result.sucesso) {
       if (result.isOrigem) {
         // Endereço de origem — retorna direto sem popup
+        ScaffoldMessenger.of(context).clearSnackBars();
         Navigator.pop(
           context,
           DevolucaoSobraResult(
@@ -155,6 +148,7 @@ class _OsDevolucaoSobraScreenState
           result.enderecoFormatado ?? codigoEndereco,
         );
         if (confirmou && mounted) {
+          ScaffoldMessenger.of(context).clearSnackBars();
           Navigator.pop(
             context,
             DevolucaoSobraResult(
@@ -269,6 +263,7 @@ class _OsDevolucaoSobraScreenState
 
   /// Confirma bipagem via botão
   void _confirmarBipagem() {
+    if (_isProcessing) return;
     final codigo = _enderecoController.text.trim();
     if (codigo.isEmpty) {
       _mostrarErro('Bipe o código do endereço');
@@ -280,8 +275,8 @@ class _OsDevolucaoSobraScreenState
 
   Widget _buildEnderecoBox(BuildContext context, String label, int value) {
     return Container(
-      width: 50,
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      width: 42,
+      padding: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
@@ -297,7 +292,7 @@ class _OsDevolucaoSobraScreenState
             label,
             style: TextStyle(
               color: Theme.of(context).colorScheme.primary,
-              fontSize: 8,
+              fontSize: 7,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -305,7 +300,7 @@ class _OsDevolucaoSobraScreenState
             value.toString(),
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSecondaryContainer,
-              fontSize: 18,
+              fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -324,32 +319,36 @@ class _OsDevolucaoSobraScreenState
     return PopScope(
       canPop: false,
       child: Scaffold(
-      appBar: AppBar(
-        title: Text('OS ${widget.numos} - Sobra'),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(36),
+        child: AppBar(
+          title: Text('OS ${widget.numos} - Sobra', style: const TextStyle(fontSize: 14)),
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          toolbarHeight: 36,
+        ),
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           child: Column(
             children: [
               // Info da sobra - compacto
               Container(
                 width: double.infinity,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [Colors.orange[600]!, Colors.orange[800]!],
                   ),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
                   children: [
                     const Icon(Icons.warning_amber,
-                        color: Colors.white, size: 24),
-                    const SizedBox(width: 8),
+                        color: Colors.white, size: 18),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,16 +357,15 @@ class _OsDevolucaoSobraScreenState
                             'SOBRA DE PRODUTO',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 12,
+                              fontSize: 11,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const SizedBox(height: 2),
                           Text(
                             'Sobrou ${widget.qtSobra} UN — Bipe o endereço',
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 11,
+                              fontSize: 10,
                             ),
                           ),
                         ],
@@ -375,7 +373,7 @@ class _OsDevolucaoSobraScreenState
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(6),
@@ -384,7 +382,7 @@ class _OsDevolucaoSobraScreenState
                         '+${widget.qtSobra}',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -393,13 +391,13 @@ class _OsDevolucaoSobraScreenState
                 ),
               ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
               // Endereço de origem — visual RUA + PRD/NVL/APT
               if (temEndereco)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.secondaryContainer,
                     borderRadius: BorderRadius.circular(10),
@@ -417,16 +415,16 @@ class _OsDevolucaoSobraScreenState
                               .colorScheme
                               .onSecondaryContainer
                               .withValues(alpha: 0.7),
-                          fontSize: 9,
+                          fontSize: 8,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       // RUA badge
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 4,
+                          horizontal: 10,
+                          vertical: 2,
                         ),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.secondary,
@@ -436,12 +434,12 @@ class _OsDevolucaoSobraScreenState
                           'RUA ${widget.ruaOrigem}',
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSecondary,
-                            fontSize: 16,
+                            fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       // PRD / NVL / APT
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -506,7 +504,7 @@ class _OsDevolucaoSobraScreenState
                   ),
                 ),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
 
               // Campo de bipar endereço
               Container(
@@ -529,25 +527,27 @@ class _OsDevolucaoSobraScreenState
                         enabled: !_isProcessing,
                         readOnly: false,
                         showCursor: true,
+                        style: const TextStyle(fontSize: 13),
                         decoration: InputDecoration(
                           hintText: _tecladoLiberado
                               ? 'Digite o endereço...'
                               : 'Bipe o endereço',
-                          hintStyle: const TextStyle(fontSize: 13),
+                          hintStyle: const TextStyle(fontSize: 12),
                           prefixIcon: Icon(
                             _tecladoLiberado
                                 ? Icons.keyboard
                                 : Icons.qr_code_scanner,
-                            size: 20,
+                            size: 18,
                             color: _enderecoFocusNode.hasFocus
                                 ? Theme.of(context).colorScheme.primary
                                 : null,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 10,
+                            horizontal: 6,
+                            vertical: 8,
                           ),
+                          isDense: true,
                         ),
                         keyboardType: _tecladoLiberado
                             ? TextInputType.text
@@ -598,14 +598,14 @@ class _OsDevolucaoSobraScreenState
                     child: OutlinedButton.icon(
                       onPressed:
                           _isProcessing ? null : _solicitarAutorizacaoDigitacao,
-                      icon: const Icon(Icons.keyboard, size: 16),
+                      icon: const Icon(Icons.keyboard, size: 14),
                       label: const Text(
                         'DIGITAR',
-                        style: TextStyle(fontSize: 11),
+                        style: TextStyle(fontSize: 10),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.orange,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -619,15 +619,15 @@ class _OsDevolucaoSobraScreenState
                       onPressed: _isProcessing ? null : _confirmarBipagem,
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: _isProcessing
                           ? const SizedBox(
-                              width: 18,
-                              height: 18,
+                              width: 16,
+                              height: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 color: Colors.white,
@@ -636,7 +636,7 @@ class _OsDevolucaoSobraScreenState
                           : const Text(
                               'CONFIRMAR',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),

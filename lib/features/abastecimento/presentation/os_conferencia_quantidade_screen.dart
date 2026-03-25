@@ -61,15 +61,25 @@ class _OsConferenciaQuantidadeScreenState
     _unidades = widget.unidadesIniciais;
     _scannerController = TextEditingController();
 
+    // Esconde teclado virtual sempre que o campo do scanner ganhar foco
+    // TextInputType.none não funciona em alguns coletores Zebra
+    _scannerFocusNode.addListener(_esconderTecladoVirtual);
+
     // Foca no campo de scanner após build para permitir bipagem contínua
-    // Teclado virtual NÃO abre pois usamos TextInputType.none
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scannerFocusNode.requestFocus();
     });
   }
 
+  void _esconderTecladoVirtual() {
+    if (_scannerFocusNode.hasFocus) {
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+    }
+  }
+
   @override
   void dispose() {
+    _scannerFocusNode.removeListener(_esconderTecladoVirtual);
     _scannerController.dispose();
     _scannerFocusNode.dispose();
     super.dispose();
@@ -117,8 +127,9 @@ class _OsConferenciaQuantidadeScreenState
       _mostrarFeedback('+ 1 UN', Colors.blue);
     }
 
-    // Mantém foco no campo de scanner
+    // Mantém foco no campo de scanner e esconde teclado
     _scannerFocusNode.requestFocus();
+    SystemChannels.textInput.invokeMethod('TextInput.hide');
   }
 
   /// Abre dialog para digitar valor manualmente
@@ -171,6 +182,7 @@ class _OsConferenciaQuantidadeScreenState
     ).then((_) {
       // Restaura foco no scanner após fechar o dialog
       _scannerFocusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
     });
   }
 
@@ -476,7 +488,10 @@ class _OsConferenciaQuantidadeScreenState
           },
         );
       },
-    ).then((_) => _scannerFocusNode.requestFocus());
+    ).then((_) {
+      _scannerFocusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod('TextInput.hide');
+    });
   }
 
   void _mostrarFeedback(String mensagem, Color cor) {
@@ -520,18 +535,24 @@ class _OsConferenciaQuantidadeScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('OS ${widget.numos}'),
+        toolbarHeight: 36,
+        title: Text('OS ${widget.numos}', style: const TextStyle(fontSize: 13)),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, size: 18),
           onPressed: () => Navigator.pop(context),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.calculate_outlined),
+            icon: const Icon(Icons.calculate_outlined, size: 18),
             tooltip: 'Calculadora',
             onPressed: () => _abrirCalculadora(),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: SafeArea(
@@ -556,300 +577,142 @@ class _OsConferenciaQuantidadeScreenState
             ),
             // Conteúdo principal
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               child: Column(
                 children: [
-                  // Indicador de scanner ativo - compacto
+                  // Indicador de scanner ativo
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 3,
-                      horizontal: 6,
-                    ),
-                    margin: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                    margin: const EdgeInsets.only(bottom: 2),
                     decoration: BoxDecoration(
                       color: Colors.green.shade100,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.qr_code_scanner,
-                          color: Colors.green.shade700,
-                          size: 12,
-                        ),
-                        const SizedBox(width: 4),
+                        Icon(Icons.qr_code_scanner, color: Colors.green.shade700, size: 10),
+                        const SizedBox(width: 3),
                         Text(
-                          'Bipando ${widget.tipoBipado == 'caixa' ? 'CX' : 'UN'}',
-                          style: TextStyle(
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 9,
-                          ),
+                          'Continue bipando para adicionar ${widget.tipoBipado == 'caixa' ? 'CAIXAS' : 'UNIDADES'}',
+                          style: TextStyle(color: Colors.green.shade700, fontWeight: FontWeight.bold, fontSize: 8),
                         ),
                       ],
                     ),
                   ),
-                  // CARD: O QUE PRECISA PEGAR - super compacto
+                  // CARD: PEGUE
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 4,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.blue[600]!, Colors.blue[800]!],
-                      ),
-                      borderRadius: BorderRadius.circular(6),
+                      gradient: LinearGradient(colors: [Colors.blue[600]!, Colors.blue[800]!]),
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Row(
+                    child: Column(
                       children: [
-                        // CAIXAS
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.green[600],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '$_caixasEsperadas',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const Text(
-                                  ' CX',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 9,
-                                  ),
-                                ),
-                                if (_temCaixaQuebrada) ...[
-                                  const SizedBox(width: 2),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 3,
-                                      vertical: 1,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.orange,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                    child: Text(
-                                      '+$_unidadesEsperadas',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 8,
-                                        fontWeight: FontWeight.bold,
+                        Text('PEGUE', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 7, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                decoration: BoxDecoration(color: Colors.green[600], borderRadius: BorderRadius.circular(3)),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text('$_caixasEsperadas', style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
+                                    const Text(' CX', style: TextStyle(color: Colors.white70, fontSize: 8)),
+                                    if (_temCaixaQuebrada) ...[
+                                      const SizedBox(width: 2),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                                        decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(2)),
+                                        child: Text('+$_unidadesEsperadas', style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
                                       ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            'ou',
-                            style: TextStyle(
-                              color: Colors.white60,
-                              fontSize: 8,
-                            ),
-                          ),
-                        ),
-                        // UNIDADES
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[400],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '${widget.qtSolicitada}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                    ],
+                                  ],
                                 ),
-                                const Text(
-                                  ' UN',
-                                  style: TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 9,
-                                  ),
+                              ),
+                            ),
+                            const Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 3),
+                              child: Text('ou', style: TextStyle(color: Colors.white60, fontSize: 7)),
+                            ),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 3),
+                                decoration: BoxDecoration(color: Colors.blue[400], borderRadius: BorderRadius.circular(3)),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text('${widget.qtSolicitada}', style: const TextStyle(color: Colors.white, fontSize: 14,
+                                    fontWeight: FontWeight.bold)),
+                                    const Text(' UN', style: TextStyle(color: Colors.white70, fontSize: 8)),
+                                  ],
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 6),
-                        // Múltiplo
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            '1CX=${widget.multiplo}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                            ),
-                          ),
-                        ),
+                        const SizedBox(height: 2),
+                        Text('1 CX = ${widget.multiplo} UN', style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 7)),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
 
-                  // CARD: CONFERÊNCIA - compacto
+                  // CARD: CONFERÊNCIA
                   Expanded(
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(6),
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(4),
                       ),
                       child: Column(
                         children: [
-                          Text(
-                            'QTD PEGOU',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-
-                          // Input CAIXAS
+                          Text('QUANTIDADE QUE PEGOU', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 7, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 3),
                           _buildCompactInput(
-                            label: 'CX',
+                            label: 'CAIXAS',
                             value: _caixas,
                             color: Colors.green,
                             onIncrement: () => _updateCaixas(_caixas + 1),
                             onDecrement: () => _updateCaixas(_caixas - 1),
-                            onEdit: () => _editarValor(
-                              'Caixas',
-                              _caixas,
-                              (v) => _updateCaixas(v),
-                            ),
+                            onEdit: () => _editarValor('Caixas', _caixas, (v) => _updateCaixas(v)),
                           ),
-                          const SizedBox(height: 3),
-                          // Input UNIDADES
+                          const SizedBox(height: 2),
                           _buildCompactInput(
-                            label: 'UN',
+                            label: 'UNIDADES',
                             value: _unidades,
                             color: Colors.blue,
                             onIncrement: () => _updateUnidades(_unidades + 1),
                             onDecrement: () => _updateUnidades(_unidades - 1),
-                            onEdit: () => _editarValor(
-                              'Unidades',
-                              _unidades,
-                              (v) => _updateUnidades(v),
-                            ),
+                            onEdit: () => _editarValor('Unidades', _unidades, (v) => _updateUnidades(v)),
                           ),
-
                           const Spacer(),
-
                           // Total
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 6,
-                              horizontal: 8,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 6),
                             decoration: BoxDecoration(
-                              color: _quantidadeCorreta
-                                  ? Colors.green[50]
-                                  : _temDiferenca
-                                  ? Colors.red[50]
-                                  : Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHigh,
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: _quantidadeCorreta
-                                    ? Colors.green
-                                    : _temDiferenca
-                                    ? Colors.red
-                                    : Colors.grey,
-                                width: 1.5,
-                              ),
+                              color: _quantidadeCorreta ? Colors.green[50] : _temDiferenca ? Colors.red[50] : Theme.of(context).colorScheme.surfaceContainerHigh,
+                              borderRadius: BorderRadius.circular(3),
+                              border: Border.all(color: _quantidadeCorreta ? Colors.green : _temDiferenca ? Colors.red : Colors.grey, width: 1),
                             ),
-                            child: Column(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (_quantidadeCorreta)
-                                      Icon(
-                                        Icons.check_circle,
-                                        color: Colors.green[700],
-                                        size: 14,
-                                      ),
-                                    if (_temDiferenca)
-                                      Icon(
-                                        Icons.error,
-                                        color: Colors.red[700],
-                                        size: 14,
-                                      ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'TOTAL: $_totalDigitado UN',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: _quantidadeCorreta
-                                            ? Colors.green[700]
-                                            : _temDiferenca
-                                            ? Colors.red[700]
-                                            : null,
-                                      ),
-                                    ),
-                                    if (_temDiferenca)
-                                      Text(
-                                        '  (${_diferenca > 0 ? '+' : ''}$_diferenca)',
-                                        style: TextStyle(
-                                          color: Colors.red[700],
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    if (_quantidadeCorreta)
-                                      Text(
-                                        '  \u2713',
-                                        style: TextStyle(
-                                          color: Colors.green[700],
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                if (_quantidadeCorreta) Icon(Icons.check_circle, color: Colors.green[700], size: 12),
+                                if (_temDiferenca) Icon(Icons.error, color: Colors.red[700], size: 12),
+                                const SizedBox(width: 3),
+                                Text('TOTAL: $_totalDigitado UN', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _quantidadeCorreta ? Colors.green[700] : _temDiferenca ? Colors.red[700] : null)),
+                                if (_temDiferenca) Text('  (${_diferenca > 0 ? '+' : ''}$_diferenca)', style: TextStyle(color: Colors.red[700], fontSize: 9, fontWeight: FontWeight.bold)),
+                                if (_quantidadeCorreta) Text('  \u2713', style: TextStyle(color: Colors.green[700], fontSize: 10, fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ),
@@ -858,38 +721,26 @@ class _OsConferenciaQuantidadeScreenState
                     ),
                   ),
 
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
 
                   // Botão Confirmar
                   SizedBox(
                     width: double.infinity,
-                    height: 36,
+                    height: 30,
                     child: FilledButton(
                       onPressed: _podeConfirmar ? _confirmar : null,
                       style: FilledButton.styleFrom(
                         backgroundColor: Colors.green,
                         disabledBackgroundColor: Colors.grey[400],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            _podeConfirmar
-                                ? Icons.check_circle
-                                : Icons.block,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 4),
-                          const Text(
-                            'CONFIRMAR',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 11,
-                            ),
-                          ),
+                          Icon(_podeConfirmar ? Icons.check_circle : Icons.block, size: 12),
+                          const SizedBox(width: 3),
+                          const Text('CONFIRMAR', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
                         ],
                       ),
                     ),
@@ -913,69 +764,48 @@ class _OsConferenciaQuantidadeScreenState
     VoidCallback? onEdit,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color, width: 1.5),
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(color: color, width: 1),
       ),
       child: Row(
         children: [
           SizedBox(
-            width: 30,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
+            width: 48,
+            child: Text(label, style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: color)),
           ),
           InkWell(
             onTap: onDecrement,
             child: Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Icon(Icons.remove, color: Colors.white, size: 18),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+              child: const Icon(Icons.remove, color: Colors.white, size: 14),
             ),
           ),
           Expanded(
             child: GestureDetector(
               onTap: onEdit,
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 2),
+                padding: const EdgeInsets.symmetric(vertical: 1),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(3),
                   border: Border.all(color: color.withValues(alpha: 0.3)),
                 ),
-                child: Text(
-                  '$value',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
+                child: Text('$value', textAlign: TextAlign.center, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: color)),
               ),
             ),
           ),
           InkWell(
             onTap: onIncrement,
             child: Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Icon(Icons.add, color: Colors.white, size: 18),
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+              child: const Icon(Icons.add, color: Colors.white, size: 14),
             ),
           ),
         ],

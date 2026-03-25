@@ -627,6 +627,9 @@ class _OsListScreenState extends ConsumerState<OsListScreen> {
 
     // Se retornou true (bloqueou ou finalizou), navega para próxima OS
     if (resultado == true && mounted) {
+      // Limpa SnackBars anteriores para não aparecer mensagens da tela anterior
+      ScaffoldMessenger.of(context).clearSnackBars();
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tarefa atualizada!'),

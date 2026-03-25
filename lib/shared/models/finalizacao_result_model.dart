@@ -6,6 +6,9 @@ class FinalizacaoResult {
   final ProximaOs? proximaOs;
   final bool ruaFinalizada;
   final bool deveRegistrarDivergencia;
+  final bool requerDevolucao;
+  final int? qtSobra;
+  final int? qtEstoqueOrigem;
 
   FinalizacaoResult({
     required this.sucesso,
@@ -13,6 +16,9 @@ class FinalizacaoResult {
     this.proximaOs,
     this.ruaFinalizada = false,
     this.deveRegistrarDivergencia = false,
+    this.requerDevolucao = false,
+    this.qtSobra,
+    this.qtEstoqueOrigem,
   });
 
   factory FinalizacaoResult.success({
@@ -29,11 +35,17 @@ class FinalizacaoResult {
   factory FinalizacaoResult.error(
     String erro, {
     bool deveRegistrarDivergencia = false,
+    bool requerDevolucao = false,
+    int? qtSobra,
+    int? qtEstoqueOrigem,
   }) {
     return FinalizacaoResult(
       sucesso: false,
       erro: erro,
       deveRegistrarDivergencia: deveRegistrarDivergencia,
+      requerDevolucao: requerDevolucao,
+      qtSobra: qtSobra,
+      qtEstoqueOrigem: qtEstoqueOrigem,
     );
   }
 

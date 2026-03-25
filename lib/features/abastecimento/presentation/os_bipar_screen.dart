@@ -623,7 +623,11 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
               Builder(
                 builder: (context) {
                   // Agenda a finalização automática após o build (apenas uma vez)
-                  if (!_isProcessing && !_finalizacaoIniciada) {
+                  // Também verifica _qtConferida != null para evitar disparar
+                  // durante o fluxo normal (onde _vincularUnitizador cuida da finalização)
+                  if (!_isProcessing &&
+                      !_finalizacaoIniciada &&
+                      _qtConferida != null) {
                     _finalizacaoIniciada = true;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (mounted) {
@@ -919,11 +923,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   String? _tipoBipado;
 
   Future<void> _biparProduto(OsDetalhe os) async {
+    if (_isProcessing) return;
+
     final ean = _eanController.text.trim();
-    if (ean.isEmpty) {
-      _mostrarErro('Bipe o código do produto');
-      return;
-    }
+    if (ean.isEmpty) return;
 
     // Primeiro valida o código de barras na API
     if (!mounted) return;
@@ -953,12 +956,16 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       // Guarda o tipo bipado para uso posterior
       _tipoBipado = result.tipo;
 
+      // Limpa campo EAN antes de abrir conferência para evitar re-bipagem
+      _eanController.clear();
+      _eanFocusNode.unfocus();
+
       // Produto válido, abre tela para conferência de quantidade
       // Se bipou CAIXA, inicia com 1 CX, se bipou UNIDADE, inicia com 1 UN
       final caixasIniciais = result.isCaixa ? 1 : 0;
       final unidadesIniciais = result.isUnidade ? 1 : 0;
 
-      _mostrarConferenciaQuantidadeComValores(
+      await _mostrarConferenciaQuantidadeComValores(
         ean,
         os,
         caixasIniciais,
@@ -967,6 +974,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       );
     } else {
       _mostrarErro(result.erro ?? 'Código de barras inválido!');
+      _eanController.clear();
+      _eanFocusNode.requestFocus();
     }
   }
 
@@ -1081,6 +1090,9 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     }
 
     if (!mounted) return;
+    // Marca finalização como iniciada para evitar que a auto-finalização
+    // do build() dispare _finalizarOs concorrentemente
+    _finalizacaoIniciada = true;
     setState(() => _isProcessing = false);
 
     // Exibe estação se retornada pela API
@@ -1111,6 +1123,10 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     final qtSobra = estoqueOrigem - os.qtSolicitada.toInt();
 
     if (qtSobra > 0) {
+      // Limpa SnackBars antes de navegar para evitar mensagens de erro persistentes
+      if (mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+      }
       final devolucaoResult = await Navigator.push<DevolucaoSobraResult>(
         context,
         MaterialPageRoute(
@@ -1159,12 +1175,82 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       _unitizadorController.clear();
       // Processa resultado da finalização (próxima OS ou rua finalizada)
       await _processarResultadoFinalizacao(result);
+    } else if (result.requerDevolucao) {
+      // API detectou sobra — abre tela de devolução com dados reais da API
+      await _tratarSobraApi(os, result);
     } else {
       // Verifica se precisa registrar divergência
       if (result.deveRegistrarDivergencia) {
         _mostrarDialogDivergenciaObrigatoria();
       } else {
         _mostrarErro(result.erro ?? 'Erro ao finalizar');
+      }
+    }
+  }
+
+  /// Trata sobra detectada pela API (requer_devolucao = true)
+  Future<void> _tratarSobraApi(OsDetalhe os, FinalizacaoResult result) async {
+    final qtSobra = result.qtSobra ?? (os.qtEstoqueAtual.toInt() - os.qtSolicitada.toInt());
+    if (qtSobra <= 0) {
+      _mostrarErro(result.erro ?? 'Erro ao finalizar');
+      return;
+    }
+
+    // Limpa SnackBars antes de navegar para evitar mensagens de erro persistentes
+    if (mounted) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+    }
+    final devolucaoResult = await Navigator.push<DevolucaoSobraResult>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OsDevolucaoSobraScreen(
+          fase: widget.fase,
+          numos: widget.numos,
+          qtSobra: qtSobra,
+          qtSolicitada: os.qtSolicitada.toInt(),
+          qtEstoqueOrigem: result.qtEstoqueOrigem ?? os.qtEstoqueAtual.toInt(),
+          enderecoOrigemFormatado: os.enderecoOrigem.enderecoFormatado,
+          codenderecoOrigem: os.enderecoOrigem.codendereco,
+          ruaOrigem: os.enderecoOrigem.rua,
+          predioOrigem: os.enderecoOrigem.predio,
+          nivelOrigem: os.enderecoOrigem.nivel,
+          aptoOrigem: os.enderecoOrigem.apto,
+        ),
+      ),
+    );
+
+    if (devolucaoResult == null || !devolucaoResult.confirmado || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _codenderecoDevolucao = devolucaoResult.codenderecoDevolucao;
+    });
+
+    // Refaz a finalização agora com o endereço de devolução
+    if (!mounted) return;
+    setState(() => _isProcessing = true);
+
+    final retryResult = await ref
+        .read(osDetalheNotifierProvider(widget.fase, widget.numos).notifier)
+        .finalizarComQuantidadeResult(
+          _qtConferida!,
+          _caixasConferidas!,
+          _unidadesConferidas!,
+          codenderecoDevolucao: _codenderecoDevolucao,
+        );
+
+    if (!mounted) return;
+    setState(() => _isProcessing = false);
+
+    if (retryResult.sucesso) {
+      _unitizadorController.clear();
+      await _processarResultadoFinalizacao(retryResult);
+    } else {
+      if (retryResult.deveRegistrarDivergencia) {
+        _mostrarDialogDivergenciaObrigatoria();
+      } else {
+        _mostrarErro(retryResult.erro ?? 'Erro ao finalizar');
       }
     }
   }
@@ -1197,6 +1283,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     if (result.sucesso) {
       // Processa resultado da finalização (próxima OS ou rua finalizada)
       await _processarResultadoFinalizacao(result);
+    } else if (result.requerDevolucao) {
+      await _tratarSobraApi(os, result);
     } else {
       // Verifica se precisa registrar divergência
       if (result.deveRegistrarDivergencia) {
@@ -1233,67 +1321,31 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   /// Mostra dialog de parabéns quando a rua foi finalizada
   Future<void> _mostrarDialogRuaFinalizada() async {
     if (!mounted) return;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Ícone de celebração
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.green.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.celebration,
-                color: Colors.green,
-                size: 60,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              '🎉 Parabéns!',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.grey[900],
-              ),
-            ),
+            const Icon(Icons.celebration, color: Colors.green, size: 48),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'Rua Finalizada!',
               style: TextStyle(
                 fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.green[700],
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
               ),
             ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.blue[700]),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Todas as OSs desta rua foram concluídas. Você está liberado para trabalhar em outra rua.',
-                      style: TextStyle(fontSize: 14, color: Colors.blue[700]),
-                    ),
-                  ),
-                ],
-              ),
+            const SizedBox(height: 8),
+            const Text(
+              'Todas as OSs desta rua foram concluídas.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14),
             ),
           ],
         ),
@@ -1303,21 +1355,20 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
             child: FilledButton(
               onPressed: () {
                 Navigator.of(ctx).pop();
-                // Volta para a lista de ruas
                 if (mounted) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 }
               },
               style: FilledButton.styleFrom(
                 backgroundColor: Colors.green,
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
               child: const Text(
                 'ESCOLHER NOVA RUA',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
             ),
           ),
@@ -2493,28 +2544,29 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Form(
               key: formKey,
-              child: Column(
+              child: SingleChildScrollView(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Header
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
                           Icons.exit_to_app,
                           color: Colors.red.shade700,
-                          size: 28,
+                          size: 22,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2522,7 +2574,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                             const Text(
                               'SAIR DA OS',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 15,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -2532,14 +2584,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurfaceVariant,
-                                fontSize: 12,
+                                fontSize: 11,
                               ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close, size: 20),
                         onPressed: isLoading
                             ? null
                             : () => Navigator.pop(sheetContext),
@@ -2547,16 +2599,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
                   // Aviso
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: Colors.orange.withValues(alpha: 0.3),
                       ),
@@ -2566,14 +2616,15 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                         Icon(
                           Icons.warning_amber_rounded,
                           color: Colors.orange[700],
+                          size: 20,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Para sair desta OS é necessária autorização de um supervisor.',
                             style: TextStyle(
                               color: Colors.orange[900],
-                              fontSize: 13,
+                              fontSize: 11,
                             ),
                           ),
                         ),
@@ -2581,18 +2632,22 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
                   // Campo matrícula
                   TextFormField(
                     controller: matriculaController,
+                    style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
                       labelText: 'Matrícula do Supervisor',
-                      prefixIcon: const Icon(Icons.badge),
+                      labelStyle: const TextStyle(fontSize: 12),
+                      prefixIcon: const Icon(Icons.badge, size: 20),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       filled: true,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                     keyboardType: TextInputType.number,
                     validator: (value) {
@@ -2603,18 +2658,22 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                     },
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
                   // Campo senha
                   TextFormField(
                     controller: senhaController,
+                    style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
                       labelText: 'Senha',
-                      prefixIcon: const Icon(Icons.lock),
+                      labelStyle: const TextStyle(fontSize: 12),
+                      prefixIcon: const Icon(Icons.lock, size: 20),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       filled: true,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                     obscureText: true,
                     validator: (value) {
@@ -2658,7 +2717,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Botões
                   Row(
@@ -2669,15 +2728,15 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                               ? null
                               : () => Navigator.pop(sheetContext),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: const Text('CANCELAR'),
+                          child: const Text('CANCELAR', style: TextStyle(fontSize: 12)),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         flex: 2,
                         child: FilledButton(
@@ -2746,15 +2805,15 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                 },
                           style: FilledButton.styleFrom(
                             backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: isLoading
                               ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
+                                  width: 18,
+                                  height: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     color: Colors.white,
@@ -2762,15 +2821,16 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                                 )
                               : const Text(
                                   'SAIR DA OS',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                                 ),
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                 ],
+              ),
               ),
             ),
           ),

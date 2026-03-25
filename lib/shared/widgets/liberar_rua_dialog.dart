@@ -124,50 +124,51 @@ class _LiberarRuaDialogState extends State<LiberarRuaDialog> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Ícone
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: Colors.red.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.exit_to_app_rounded,
-                size: 40,
+                size: 28,
                 color: Colors.red.shade700,
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
 
             // Título
             const Text(
               'Sair da Rua',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
 
             // Descrição
             Text(
               'Para sair da Rua ${widget.rua} é necessária a autorização de um supervisor.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 11,
                 color: isDark ? Colors.white60 : Colors.grey.shade600,
               ),
             ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
 
             // Campo Matrícula
             TextField(
@@ -177,20 +178,24 @@ class _LiberarRuaDialogState extends State<LiberarRuaDialog> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               textInputAction: TextInputAction.next,
               onSubmitted: (_) => _senhaFocus.requestFocus(),
+              style: const TextStyle(fontSize: 14),
               decoration: InputDecoration(
                 labelText: 'Matrícula do Supervisor',
-                prefixIcon: const Icon(Icons.badge_outlined),
+                labelStyle: const TextStyle(fontSize: 12),
+                prefixIcon: const Icon(Icons.badge_outlined, size: 20),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 filled: true,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 fillColor: isDark
                     ? Colors.white.withValues(alpha: 0.05)
                     : Colors.grey.withValues(alpha: 0.1),
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Campo Senha
             TextField(
@@ -199,23 +204,28 @@ class _LiberarRuaDialogState extends State<LiberarRuaDialog> {
               obscureText: _obscureSenha,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _liberarRua(),
+              style: const TextStyle(fontSize: 14),
               decoration: InputDecoration(
                 labelText: 'Senha',
-                prefixIcon: const Icon(Icons.lock_outline),
+                labelStyle: const TextStyle(fontSize: 12),
+                prefixIcon: const Icon(Icons.lock_outline, size: 20),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscureSenha
                         ? Icons.visibility_outlined
                         : Icons.visibility_off_outlined,
+                    size: 20,
                   ),
                   onPressed: () {
                     setState(() => _obscureSenha = !_obscureSenha);
                   },
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 filled: true,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 fillColor: isDark
                     ? Colors.white.withValues(alpha: 0.05)
                     : Colors.grey.withValues(alpha: 0.1),
@@ -224,12 +234,12 @@ class _LiberarRuaDialogState extends State<LiberarRuaDialog> {
 
             // Erro
             if (_erro != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: Colors.red.withValues(alpha: 0.3),
                   ),
@@ -239,15 +249,15 @@ class _LiberarRuaDialogState extends State<LiberarRuaDialog> {
                     Icon(
                       Icons.error_outline,
                       color: Colors.red.shade700,
-                      size: 20,
+                      size: 18,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         _erro!,
                         style: TextStyle(
                           color: Colors.red.shade700,
-                          fontSize: 13,
+                          fontSize: 11,
                         ),
                       ),
                     ),
@@ -256,7 +266,7 @@ class _LiberarRuaDialogState extends State<LiberarRuaDialog> {
               ),
             ],
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 14),
 
             // Botões
             Row(
@@ -265,40 +275,41 @@ class _LiberarRuaDialogState extends State<LiberarRuaDialog> {
                   child: OutlinedButton(
                     onPressed: _isLoading ? null : () => Navigator.pop(context, false),
                     style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('Cancelar'),
+                    child: const Text('Cancelar', style: TextStyle(fontSize: 12)),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: FilledButton(
                     onPressed: _isLoading ? null : _liberarRua,
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.red,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                     child: _isLoading
                         ? const SizedBox(
-                            width: 20,
-                            height: 20,
+                            width: 18,
+                            height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
                               color: Colors.white,
                             ),
                           )
-                        : const Text('Liberar'),
+                        : const Text('Liberar', style: TextStyle(fontSize: 12)),
                   ),
                 ),
               ],
             ),
           ],
+        ),
         ),
       ),
     );

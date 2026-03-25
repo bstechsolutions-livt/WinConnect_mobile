@@ -687,28 +687,29 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Form(
               key: formKey,
-              child: Column(
+              child: SingleChildScrollView(
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Header
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: Colors.red.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
                           Icons.exit_to_app,
                           color: Colors.red.shade700,
-                          size: 28,
+                          size: 22,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -716,7 +717,7 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                             const Text(
                               'SAIR DA OS',
                               style: TextStyle(
-                                fontSize: 18,
+                                fontSize: 15,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -726,14 +727,14 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                                 color: Theme.of(
                                   context,
                                 ).colorScheme.onSurfaceVariant,
-                                fontSize: 12,
+                                fontSize: 11,
                               ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: const Icon(Icons.close, size: 20),
                         onPressed: isLoading
                             ? null
                             : () => Navigator.pop(sheetContext),
@@ -741,16 +742,14 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                     ],
                   ),
 
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
                   // Aviso
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
                       color: Colors.orange.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: Colors.orange.withValues(alpha: 0.3),
                       ),
@@ -760,14 +759,15 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                         Icon(
                           Icons.warning_amber_rounded,
                           color: Colors.orange[700],
+                          size: 20,
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Para sair desta OS é necessária autorização de um supervisor.',
                             style: TextStyle(
                               color: Colors.orange[900],
-                              fontSize: 13,
+                              fontSize: 11,
                             ),
                           ),
                         ),
@@ -775,18 +775,22 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
 
                   // Campo matrícula
                   TextFormField(
                     controller: matriculaController,
+                    style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
                       labelText: 'Matrícula do Supervisor',
-                      prefixIcon: const Icon(Icons.badge),
+                      labelStyle: const TextStyle(fontSize: 12),
+                      prefixIcon: const Icon(Icons.badge, size: 20),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       filled: true,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                     keyboardType: TextInputType.number,
                     validator: (value) {
@@ -797,18 +801,22 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                     },
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
                   // Campo senha
                   TextFormField(
                     controller: senhaController,
+                    style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
                       labelText: 'Senha',
-                      prefixIcon: const Icon(Icons.lock),
+                      labelStyle: const TextStyle(fontSize: 12),
+                      prefixIcon: const Icon(Icons.lock, size: 20),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       filled: true,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     ),
                     obscureText: true,
                     validator: (value) {
@@ -852,7 +860,7 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Botões
                   Row(
@@ -863,15 +871,15 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                               ? null
                               : () => Navigator.pop(sheetContext),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: const Text('CANCELAR'),
+                          child: const Text('CANCELAR', style: TextStyle(fontSize: 12)),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Expanded(
                         flex: 2,
                         child: FilledButton(
@@ -940,15 +948,15 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                                 },
                           style: FilledButton.styleFrom(
                             backgroundColor: Colors.red,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: isLoading
                               ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
+                                  width: 18,
+                                  height: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     color: Colors.white,
@@ -956,15 +964,16 @@ class _OsEnderecoScreenState extends ConsumerState<OsEnderecoScreen> {
                                 )
                               : const Text(
                                   'SAIR DA OS',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                                 ),
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                 ],
+              ),
               ),
             ),
           ),

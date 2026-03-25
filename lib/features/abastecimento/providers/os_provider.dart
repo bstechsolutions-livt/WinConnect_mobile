@@ -77,7 +77,7 @@ class OsNotifier extends _$OsNotifier {
   }
 
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
+    state = const AsyncValue<OsListResult>.loading().copyWithPrevious(state);
     state = await AsyncValue.guard(() => _loadOsFromApi(fase, rua));
   }
 }

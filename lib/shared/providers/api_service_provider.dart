@@ -120,6 +120,15 @@ class ApiService {
     }
   }
 
+  /// POST que propaga DioException sem converter, permitindo acesso ao body completo do erro
+  Future<Map<String, dynamic>> postRaw(
+    String endpoint,
+    Map<String, dynamic> data,
+  ) async {
+    final response = await _dio.post(endpoint, data: data);
+    return response.data;
+  }
+
   Future<Map<String, dynamic>> put(
     String endpoint,
     Map<String, dynamic> data,
