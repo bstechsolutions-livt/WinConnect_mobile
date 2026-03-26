@@ -26,8 +26,7 @@ class UpdateCheckerWrapper extends ConsumerStatefulWidget {
 class _UpdateCheckerWrapperState extends ConsumerState<UpdateCheckerWrapper> {
   bool _hasChecked = false;
 
-  // TODO: Reativar verificação automática quando tela de update estiver pronta
-  static const bool _updateCheckEnabled = false;
+  static const bool _updateCheckEnabled = true;
 
   @override
   void initState() {

@@ -20,20 +20,23 @@ def main():
         
         # Criar ou atualizar registro na tabela app_versions
         cmd = '''cd /var/www/winconnect && php artisan tinker --execute="
-\\App\\Models\\AppVersion::updateOrCreate(
-    ['platform' => 'android', 'client_id' => 'all'],
+\App\Models\AppVersion::query()->update(['is_active' => false]);
+\App\Models\AppVersion::updateOrCreate(
+    ['id' => 2],
     [
-        'version' => '2.9.0',
-        'build_number' => 24,
+        'version' => '2.9.1',
+        'build_number' => 25,
+        'platform' => 'android',
+        'client_id' => 'all',
         'download_url' => 'http://192.168.1.25/systems/winconnect_mobile.apk',
-        'changelog' => 'Correções WMS Fase1: race conditions, UI compactada Zebra, fluxo de sobra/devolução',
+        'changelog' => 'Ativa verificação automática de atualização OTA',
         'file_size' => 70900000,
         'is_active' => true,
         'force_update' => true,
         'released_at' => now()
     ]
 );
-echo 'Versão 2.9.0 (build 24) registrada com sucesso!';
+echo 'Versão 2.9.1 (build 25) registrada com sucesso!';
 "'''
         
         stdin, stdout, stderr = ssh.exec_command(cmd)
