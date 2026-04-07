@@ -36,6 +36,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
   final FocusNode _unitizadorFocusNode = FocusNode();
   bool _isProcessing = false;
   bool _finalizacaoIniciada = false; // Evita chamar finalização múltiplas vezes
+  String? _erroFinalizacao; // Exibe erro persistente quando finalização falha
 
   // Flags de teclado liberado (por campo)
   bool _tecladoLiberadoEan = false;
@@ -627,6 +628,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                   // durante o fluxo normal (onde _vincularUnitizador cuida da finalização)
                   if (!_isProcessing &&
                       !_finalizacaoIniciada &&
+                      _erroFinalizacao == null &&
                       _qtConferida != null) {
                     _finalizacaoIniciada = true;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -638,9 +640,15 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                   return Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withValues(alpha: 0.15),
+                      color: _erroFinalizacao != null
+                          ? Colors.red.withValues(alpha: 0.15)
+                          : Colors.blue.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.blue),
+                      border: Border.all(
+                        color: _erroFinalizacao != null
+                            ? Colors.red
+                            : Colors.blue,
+                      ),
                     ),
                     child: Column(
                       children: [
@@ -682,21 +690,58 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            SizedBox(width: 12),
-                            Text(
-                              'Finalizando tarefa...',
-                              style: TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
+                        if (_erroFinalizacao != null) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: Colors.red,
+                                size: 24,
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  _erroFinalizacao!,
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          FilledButton.icon(
+                            onPressed: _isProcessing
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _erroFinalizacao = null;
+                                      _finalizacaoIniciada = false;
+                                    });
+                                  },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Tentar novamente'),
+                          ),
+                        ] else
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              SizedBox(width: 12),
+                              Text(
+                                'Finalizando tarefa...',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                   );
@@ -1173,6 +1218,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     if (result.sucesso) {
       _unitizadorController.clear();
+      setState(() => _erroFinalizacao = null);
       // Processa resultado da finalização (próxima OS ou rua finalizada)
       await _processarResultadoFinalizacao(result);
     } else if (result.requerDevolucao) {
@@ -1183,7 +1229,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       if (result.deveRegistrarDivergencia) {
         _mostrarDialogDivergenciaObrigatoria();
       } else {
-        _mostrarErro(result.erro ?? 'Erro ao finalizar');
+        final erro = result.erro ?? 'Erro ao finalizar';
+        setState(() => _erroFinalizacao = erro);
       }
     }
   }
@@ -1245,12 +1292,14 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
 
     if (retryResult.sucesso) {
       _unitizadorController.clear();
+      setState(() => _erroFinalizacao = null);
       await _processarResultadoFinalizacao(retryResult);
     } else {
       if (retryResult.deveRegistrarDivergencia) {
         _mostrarDialogDivergenciaObrigatoria();
       } else {
-        _mostrarErro(retryResult.erro ?? 'Erro ao finalizar');
+        final erro = retryResult.erro ?? 'Erro ao finalizar';
+        setState(() => _erroFinalizacao = erro);
       }
     }
   }
@@ -1281,6 +1330,7 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
     setState(() => _isProcessing = false);
 
     if (result.sucesso) {
+      setState(() => _erroFinalizacao = null);
       // Processa resultado da finalização (próxima OS ou rua finalizada)
       await _processarResultadoFinalizacao(result);
     } else if (result.requerDevolucao) {
@@ -1290,7 +1340,8 @@ class _OsBiparScreenState extends ConsumerState<OsBiparScreen> {
       if (result.deveRegistrarDivergencia) {
         _mostrarDialogDivergenciaObrigatoria();
       } else {
-        _mostrarErro(result.erro ?? 'Erro ao finalizar');
+        final erro = result.erro ?? 'Erro ao finalizar';
+        setState(() => _erroFinalizacao = erro);
       }
     }
   }

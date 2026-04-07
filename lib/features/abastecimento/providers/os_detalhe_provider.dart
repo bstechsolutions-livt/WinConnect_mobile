@@ -403,6 +403,13 @@ class OsDetalheNotifier extends _$OsDetalheNotifier {
       );
       return FinalizacaoResult.fromResponse(response);
     } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        return FinalizacaoResult.error(
+          'Tempo esgotado. Verifique sua conexão e tente novamente.',
+        );
+      }
       final data = e.response?.data;
       if (data is Map<String, dynamic> && data['requer_devolucao'] == true) {
         final qtSobra = data['qt_sobra'];
