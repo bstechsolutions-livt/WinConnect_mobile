@@ -244,12 +244,12 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
       return;
     }
 
-    // Encontra o item pelo código de barras (unidade ou caixa)
-    // Validação estrita: aceita apenas codauxiliar e codauxiliar2 (EAN reais)
+    // Encontra o item pelo código de barras (unidade, caixa ou WMS rotina 1701)
     final item = _itens.firstWhere(
       (i) =>
           i['codauxiliar']?.toString() == codigo ||
-          i['codauxiliar2']?.toString() == codigo,
+          i['codauxiliar2']?.toString() == codigo ||
+          ((i['codigos_wms'] as List?) ?? []).map((e) => e.toString()).contains(codigo),
       orElse: () => {},
     );
 
@@ -303,6 +303,7 @@ class _UnitizadorItensScreenState extends ConsumerState<UnitizadorItensScreen> {
         multiplo: multiplo,
         codauxiliar: codauxiliar,
         codauxiliar2: codauxiliar2,
+        codigosWms: (item['codigos_wms'] as List?)?.map((e) => e.toString()).toList() ?? [],
         tipoBipagemInicial: tipoBipagem,
         onConfirmar: (quantidade) async {
           Navigator.pop(context);
@@ -1060,6 +1061,7 @@ class _QuantidadeBottomSheet extends StatefulWidget {
   final int multiplo;
   final String codauxiliar;
   final String codauxiliar2;
+  final List<String> codigosWms;
   final String tipoBipagemInicial;
   final Future<void> Function(int quantidade) onConfirmar;
 
@@ -1069,6 +1071,7 @@ class _QuantidadeBottomSheet extends StatefulWidget {
     required this.multiplo,
     required this.codauxiliar,
     required this.codauxiliar2,
+    this.codigosWms = const [],
     required this.tipoBipagemInicial,
     required this.onConfirmar,
   });
@@ -1138,13 +1141,13 @@ class _QuantidadeBottomSheetState extends State<_QuantidadeBottomSheet> {
   void _processarBipagem(String codigo) {
     if (codigo.isEmpty) return;
 
-    // Verifica se é caixa (codauxiliar2) ou unidade (codauxiliar)
+    // Verifica se é caixa (codauxiliar2) ou unidade (codauxiliar / WMS rotina 1701)
     if (widget.codauxiliar2.isNotEmpty && codigo == widget.codauxiliar2) {
       // É caixa - incrementa caixas
       final atual = int.tryParse(_caixasController.text) ?? 0;
       _caixasController.text = (atual + 1).toString();
       _mostrarFeedback('📦 +1 Caixa');
-    } else if (codigo == widget.codauxiliar || codigo == widget.codprod) {
+    } else if (codigo == widget.codauxiliar || codigo == widget.codprod || widget.codigosWms.contains(codigo)) {
       // É unidade - incrementa unidades
       final atual = int.tryParse(_unidadesController.text) ?? 0;
       _unidadesController.text = (atual + 1).toString();

@@ -12,6 +12,7 @@ class ConferenciaScreen extends ConsumerStatefulWidget {
   final String descricao;
   final String codauxiliar;
   final String? codauxiliar2;
+  final List<String> codigosWms;
   final double quantidade;
   final String unidade;
 
@@ -22,6 +23,7 @@ class ConferenciaScreen extends ConsumerStatefulWidget {
     required this.descricao,
     required this.codauxiliar,
     this.codauxiliar2,
+    this.codigosWms = const [],
     required this.quantidade,
     required this.unidade,
   });
@@ -276,9 +278,9 @@ class _ConferenciaScreenState extends ConsumerState<ConferenciaScreen> {
       return;
     }
 
-    // Validação estrita: aceita codauxiliar (unidade) ou codauxiliar2 (caixa)
+    // Validação: aceita codauxiliar (unidade), codauxiliar2 (caixa) ou códigos WMS (rotina 1701)
     final codauxiliar2 = widget.codauxiliar2 ?? '';
-    if (ean != widget.codauxiliar && (codauxiliar2.isEmpty || ean != codauxiliar2)) {
+    if (ean != widget.codauxiliar && (codauxiliar2.isEmpty || ean != codauxiliar2) && !widget.codigosWms.contains(ean)) {
       _mostrarErro('Produto incorreto! Este EAN não pertence a esta OS.');
       _eanController.clear();
       return;

@@ -2000,14 +2000,16 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
       });
     } else if (_etapa == 1) {
       // Etapa 1: Bipar produto - valida IMEDIATAMENTE se é o produto correto
-      // Aceita apenas código de barras real: codauxiliar (unidade) ou codauxiliar2 (caixa)
+      // Aceita: codauxiliar (unidade), codauxiliar2 (caixa) e códigos WMS (rotina 1701)
       final codauxiliar = item['codauxiliar']?.toString() ?? '';
       final codauxiliar2 = item['codauxiliar2']?.toString() ?? '';
+      final codigosWms = (item['codigos_wms'] as List?)?.map((e) => e.toString()).toList() ?? [];
 
-      // Validação estrita: comparação exata com códigos de barras do produto da OS
+      // Validação: comparação exata com códigos de barras do produto da OS
       final codigoValido =
           (codauxiliar.isNotEmpty && codigo == codauxiliar) ||
-          (codauxiliar2.isNotEmpty && codigo == codauxiliar2);
+          (codauxiliar2.isNotEmpty && codigo == codauxiliar2) ||
+          codigosWms.contains(codigo);
 
       if (!codigoValido) {
         final descricao = item['descricao'] ?? 'Produto desconhecido';
@@ -2600,9 +2602,11 @@ class _EntregaRotaScreenState extends ConsumerState<EntregaRotaScreen> {
             bool validarProduto(String codigo) {
               final codprod = item['codprod']?.toString() ?? '';
               final codauxiliar2 = item['codauxiliar2']?.toString() ?? '';
+              final codigosWms = (item['codigos_wms'] as List?)?.map((e) => e.toString()).toList() ?? [];
               return codigo == codauxiliar ||
                   codigo == codauxiliar2 ||
                   codigo == codprod ||
+                  codigosWms.contains(codigo) ||
                   (codauxiliar.isNotEmpty && codigo.contains(codauxiliar)) ||
                   (codauxiliar2.isNotEmpty && codigo.contains(codauxiliar2)) ||
                   (codprod.isNotEmpty && codigo.contains(codprod));
