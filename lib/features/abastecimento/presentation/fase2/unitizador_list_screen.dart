@@ -133,30 +133,38 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark
-          ? const Color(0xFF0D1117)
-          : const Color(0xFFF5F7FA),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.1)
-                  : Colors.black.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
+    return PopScope(
+      // Bloqueia o gesto/back do sistema enquanto a checagem de saída
+      // (Ticket BSTech #16 — Wallas) não confirmar que a rua está liberada.
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        await _tentarSairDaRua();
+      },
+      child: Scaffold(
+        backgroundColor: isDark
+            ? const Color(0xFF0D1117)
+            : const Color(0xFFF5F7FA),
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.black.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 18,
+                color: isDark ? Colors.white : Colors.grey.shade800,
+              ),
             ),
-            child: Icon(
-              Icons.arrow_back_ios_new_rounded,
-              size: 18,
-              color: isDark ? Colors.white : Colors.grey.shade800,
-            ),
+            onPressed: _tentarSairDaRua,
           ),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: Column(
           children: [
             Text(
@@ -244,7 +252,159 @@ class _UnitizadorListScreenState extends ConsumerState<UnitizadorListScreen> {
           ),
         ],
       ),
-      body: _buildBody(),
+        body: _buildBody(),
+      ),
+    );
+  }
+
+  /// Verifica no backend se o auxiliar pode deixar a rua e age conforme o
+  /// resultado.
+  ///
+  /// Regra de negócio (Ticket BSTech #16 — Wallas, 20/05/2026):
+  /// "Entrou na rua, tem que fazer tudo, independente da ordem."
+  ///
+  /// Se houver OS pendente ou em andamento na rua, mostra um dialog amigável
+  /// explicando o motivo e mantém o auxiliar na tela. Se liberado, faz o pop
+  /// normalmente.
+  Future<void> _tentarSairDaRua() async {
+    if (_isProcessing) return;
+
+    setState(() => _isProcessing = true);
+
+    try {
+      final apiService = ref.read(apiServiceProvider);
+      final response = await apiService.get(
+        '/wms/fase2/rua/${widget.rua}/pode-sair',
+      );
+
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+
+      final liberado = response['liberado'] == true;
+
+      if (liberado) {
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+
+      final pendentes = (response['os_pendentes'] as num?)?.toInt() ?? 0;
+      final emAndamento = (response['os_em_andamento'] as num?)?.toInt() ?? 0;
+      final mensagem = response['mensagem']?.toString() ??
+          'Ainda existem OSs pendentes nesta rua. Finalize todas antes de sair.';
+
+      await _mostrarDialogTravado(
+        rua: widget.rua,
+        mensagem: mensagem,
+        pendentes: pendentes,
+        emAndamento: emAndamento,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isProcessing = false);
+
+      // Falha na consulta: por segurança, mantém comportamento atual e libera
+      // a saída para não prender o operador caso a API esteja indisponível.
+      // O log no backend vai mostrar a falha; supervisor pode liberar manualmente.
+      if (mounted) Navigator.pop(context);
+    }
+  }
+
+  Future<void> _mostrarDialogTravado({
+    required String rua,
+    required String mensagem,
+    required int pendentes,
+    required int emAndamento,
+  }) async {
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          icon: const Icon(
+            Icons.lock_outline_rounded,
+            color: Colors.orange,
+            size: 48,
+          ),
+          title: Text('Você ainda está na Rua $rua'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                mensagem,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14),
+              ),
+              if (pendentes > 0 || emAndamento > 0) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (pendentes > 0)
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.fiber_manual_record,
+                              size: 10,
+                              color: Colors.amber,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              pendentes == 1
+                                  ? '1 OS pendente'
+                                  : '$pendentes OSs pendentes',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      if (emAndamento > 0) ...[
+                        if (pendentes > 0) const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.fiber_manual_record,
+                              size: 10,
+                              color: Colors.blue,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              emAndamento == 1
+                                  ? '1 OS em andamento'
+                                  : '$emAndamento OSs em andamento',
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Continuar nesta rua'),
+            ),
+          ],
+        );
+      },
     );
   }
 
